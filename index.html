@@ -345,6 +345,13 @@
                     <label for="world-book-depth">注入深度 (1-999)</label>
                     <input type="number" id="world-book-depth" min="1" max="999" value="100" placeholder="默认100，数值越小注入顺序越靠前" required>
                 </div>
+                <div class="form-group wb-enabled-toggle-group">
+                    <label class="wb-switch-label">
+                        <input type="checkbox" id="world-book-enabled" checked>
+                        <span class="wb-switch-slider"></span>
+                        <span class="wb-switch-text">启用此条目（取消勾选后，与 AI 聊天时 AI 不会读取此条目）</span>
+                    </label>
+                </div>
                 <button type="submit" class="btn btn-primary">保存条目</button>
             </form>
         </main>
