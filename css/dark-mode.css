@@ -636,3 +636,66 @@
     color: var(--dark-text-secondary) !important;
     opacity: 0.7;
 }
+
+/* === 第二十一层：聊天功能页面（来自用户提供的工作代码，触发条件改为 [data-theme="dark"]）===
+   覆盖：聊天列表、聊天气泡、消息输入区、底部/顶部栏、
+   以及定义 --panel-bg / --bg-color / --text-color 等被 inline style 引用的关键变量
+   说明：
+   - 原代码使用 body.night-mode-active，本项目使用 <html data-theme="dark">，所以这里统一换成 [data-theme="dark"]
+   - 用 !important 是为了压过 chat.css 中的同名类 !important 规则以及 inline style */
+[data-theme="dark"] {
+    --bg-color: #121212;
+    --text-color: #e0e0e0;
+    --white-color: #e0e0e0;
+    --primary-color: #1e1e1e;
+    --secondary-color: #666;
+    --accent-color: #1e1e1e;
+    --top-pinned-bg: #1a1a1a;
+    --panel-bg: #181818;
+    --chat-bottom-bar-bg: #181818;
+    --folder-pill-bg: #1e1e1e;
+    --folder-pill-text: #bbb;
+    --folder-pill-active-bg: #333;
+    --folder-pill-active-text: #fff;
+    --global-title-color: #e0e0e0;
+    --nav-icon-color: #777;
+    --nav-active-icon-color: #e0e0e0;
+    --kkt-icon-color: #e0e0e0;
+    --func-icon-color: #e0e0e0;
+}
+
+/* 背景色设置（聊天列表主区 + 聊天页面背景）*/
+[data-theme="dark"] body,
+[data-theme="dark"] .phone-screen,
+[data-theme="dark"] .screen,
+[data-theme="dark"] .content,
+[data-theme="dark"] #chat-list-container,
+[data-theme="dark"] #chat-list-container .list-item,
+[data-theme="dark"] #chat-list-container .chat-item,
+[data-theme="dark"] .chat-item {
+    background-color: #121212 !important;
+}
+
+/* 顶部/底部栏（导航 + 聊天输入区）*/
+[data-theme="dark"] .app-header,
+[data-theme="dark"] .bottom-nav,
+[data-theme="dark"] .chat-bottom-bar,
+[data-theme="dark"] .message-input-area {
+    background-color: #181818 !important;
+    border-color: #222 !important;
+}
+
+/* 聊天气泡（收到 + 发送区分）*/
+[data-theme="dark"] .message-bubble {
+    background-color: #1e1e1e !important;
+    color: #e0e0e0 !important;
+}
+[data-theme="dark"] .message-wrapper.sent .message-bubble {
+    background-color: #2a2a2a !important;
+}
+
+/* 输入区 textarea */
+[data-theme="dark"] .message-input-area textarea {
+    background-color: #1e1e1e !important;
+    color: #e0e0e0 !important;
+}
