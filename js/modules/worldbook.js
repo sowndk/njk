@@ -673,7 +673,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // --- 世界书：从文档导入 (.txt / .json / .docx) ---
 
 // 按连续空行把一段文本切成多条目
-function parseTextIntoEntries(text) {
+// defaultCategory: 如果条目内未自带 category，则用此值（通常 = 文档名去后缀）
+function parseTextIntoEntries(text, defaultCategory = '') {
     if (!text || !text.trim()) return [];
     // 按 \n\n 或更多连续换行切段
     const blocks = text.split(/\n\s*\n+/);
@@ -686,11 +687,12 @@ function parseTextIntoEntries(text) {
         let firstLine = lines[0].trim().replace(/^#+\s*/, '').replace(/^[【\[\(]\s*/, '').replace(/\s*[】\]\)]$/, '');
         const name = (firstLine || '未命名条目').slice(0, 60);
         const content = block.length > firstLine.length + 1 ? block.slice(block.indexOf(lines[0]) + lines[0].length).trim() || block : block;
-        if (block === name) {
-            entries.push({ name, content: block });
-        } else {
-            entries.push({ name, content });
-        }
+        const entry = (block === name)
+            ? { name, content: block }
+            : { name, content };
+        // 文本/文档默认带 category = 文档名（去后缀），便于按文档分组
+        entry.category = defaultCategory;
+        entries.push(entry);
         if (entries.length >= 999) break; // 安全上限
     }
     return entries;
@@ -704,30 +706,67 @@ function parseJsonIntoEntries(jsonText) {
     } catch (e) {
         throw new Error('JSON 解析失败：' + e.message);
     }
+    // 支持多种顶层 schema：
+    // 1. [...]                               顶层数组
+    // 2. { entries: [...] }                  标准 SillyTavern 数组形式
+    // 3. { entries: { '0': {...}, '1': {...} } }  SillyTavern 手机/小手机 dict 形式
+    // 4. { world_book_entries: [...] }       备用名
+    // 5. { character_book: { entries: [...] } }  角色卡嵌套
     let rawList = [];
     if (Array.isArray(data)) {
         rawList = data;
     } else if (data && Array.isArray(data.entries)) {
         rawList = data.entries;
+    } else if (data && data.entries && typeof data.entries === 'object') {
+        // dict 形式：键是字符串数字（"0","1"...），值是条目对象
+        rawList = Object.values(data.entries);
     } else if (data && Array.isArray(data.world_book_entries)) {
         rawList = data.world_book_entries;
     } else if (data && Array.isArray(data.character_book?.entries)) {
         rawList = data.character_book.entries;
     } else {
-        throw new Error('JSON 结构无法识别，需为数组或 { entries: [...] }');
+        throw new Error('JSON 结构无法识别，需为数组或 { entries: [...] } / { entries: {...} }');
     }
     const validPositions = ['limit_break', 'before', 'after', 'guidelines'];
     return rawList.map(item => {
         if (!item || typeof item !== 'object') return null;
         const content = item.content || item.text || item.description || '';
         if (!content) return null;
+        // 跳过 disable=true 的条目
+        if (item.disable === true) return null;
+        // 名称：SillyTavern 用 comment 字段作标题
+        const rawName = item.comment || item.name || item.title || item.key || '未命名条目';
+        const name = String(Array.isArray(rawName) ? (rawName[0] || '未命名条目') : rawName).slice(0, 60);
+        // 关键词：支持 keywords 数组/字符串，也支持 SillyTavern 的 key 数组
+        let kw = '';
+        if (Array.isArray(item.keywords)) {
+            kw = item.keywords.join(', ');
+        } else if (Array.isArray(item.key)) {
+            kw = item.key.join(', ');
+            if (item.constant === true) kw = '[常量] ' + kw;
+        } else if (typeof item.keywords === 'string') {
+            kw = item.keywords;
+        }
+        // position：SillyTavern 用数字（0/1/2/3，4 是手机导出特有默认），不是有效名称则一律 'before'
+        let pos = 'before';
+        if (typeof item.position === 'string' && validPositions.includes(item.position)) {
+            pos = item.position;
+        }
+        // depth：SillyTavern 用 order（数字越小越靠前），项目用 depth 越大越靠前 → 取反
+        let depth = 100;
+        if (Number.isFinite(item.depth)) {
+            depth = Math.max(1, Math.min(999, Math.floor(item.depth)));
+        } else if (Number.isFinite(item.order)) {
+            // order 995 是示例高优先级，映射到 depth=10；order 越大 depth 越小
+            depth = Math.max(1, Math.min(999, 1000 - Math.floor(item.order)));
+        }
         return {
-            name: String(item.name || item.title || item.key || '未命名条目').slice(0, 60),
+            name,
             content: String(content),
             category: item.category ? String(item.category).slice(0, 40) : '',
-            keywords: Array.isArray(item.keywords) ? item.keywords.join(', ') : (item.keywords || ''),
-            position: validPositions.includes(item.position) ? item.position : 'before',
-            depth: Number.isFinite(item.depth) ? Math.max(1, Math.min(999, Math.floor(item.depth))) : 100
+            keywords: kw,
+            position: pos,
+            depth
         };
     }).filter(Boolean);
 }
@@ -771,11 +810,13 @@ async function importWorldBooksFromFiles(fileList) {
         const file = files[i];
         const ext = (file.name.split('.').pop() || '').toLowerCase();
         showToast(`正在解析 (${i + 1}/${files.length}) ${file.name}`);
+        // 文件名（去后缀）作为该文档导入条目的默认 category
+        const baseName = file.name.replace(/\.[^.]+$/, '');
         let entries = [];
         try {
             if (ext === 'txt') {
                 const text = await file.text();
-                entries = parseTextIntoEntries(text);
+                entries = parseTextIntoEntries(text, baseName);
             } else if (ext === 'json') {
                 const text = await file.text();
                 entries = parseJsonIntoEntries(text);
@@ -787,7 +828,7 @@ async function importWorldBooksFromFiles(fileList) {
                 }
                 const arrayBuffer = await file.arrayBuffer();
                 const result = await mammoth.extractRawText({ arrayBuffer });
-                entries = parseTextIntoEntries(result.value || '');
+                entries = parseTextIntoEntries(result.value || '', baseName);
             } else {
                 showToast(`不支持的格式: .${ext}`);
                 totalSkipped++;
