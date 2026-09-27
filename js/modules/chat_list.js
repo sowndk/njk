@@ -78,7 +78,8 @@ function setupChatListScreen() {
                 : db.groups.find(g => g.id === currentChatId);
             
             if (chat) {
-                updateCustomBubbleStyle(currentChatId, chat.customBubbleCss, chat.useCustomBubbleCss);
+                const resolved = resolveBubbleCssForCurrentTheme(chat);
+                updateCustomBubbleStyle(currentChatId, resolved.css, resolved.enabled);
             }
 
             openChatRoom(currentChatId, currentChatType);

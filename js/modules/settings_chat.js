@@ -82,7 +82,17 @@ function setupChatSettings() {
             updateBubbleCssPreview(privatePreviewBox, customCssTextarea.value, !e.target.checked, theme);
         }
     });
-    
+
+    // 自选日夜组合子开关即时折叠
+    const useDayNightCssCheckbox = document.getElementById('setting-use-custom-css-day-night');
+    const dayNightContainer = document.getElementById('private-bubble-daynight-container');
+    if (useDayNightCssCheckbox && dayNightContainer) {
+        useDayNightCssCheckbox.addEventListener('change', (e) => {
+            triggerHapticFeedback('light');
+            dayNightContainer.style.display = e.target.checked ? 'flex' : 'none';
+        });
+    }
+
     customCssTextarea.addEventListener('input', (e) => {
         const char = db.characters.find(c => c.id === currentChatId);
         if (char && useCustomCssCheckbox.checked) {
@@ -548,6 +558,19 @@ function loadSettingsToSidebar() {
         customCssTextarea.disabled = !useCustomCssCheckbox.checked;
         const theme = colorThemes[e.theme || 'white_pink'];
         updateBubbleCssPreview(privatePreviewBox, e.customBubbleCss, !e.useCustomBubbleCss, theme);
+
+        // 自选日夜组合 CSS
+        const useDayNightCssCheckbox = document.getElementById('setting-use-custom-css-day-night');
+        const dayCssTextarea = document.getElementById('setting-custom-bubble-css-day');
+        const nightCssTextarea = document.getElementById('setting-custom-bubble-css-night');
+        const dayNightContainer = document.getElementById('private-bubble-daynight-container');
+        if (useDayNightCssCheckbox && dayCssTextarea && nightCssTextarea && dayNightContainer) {
+            useDayNightCssCheckbox.checked = !!e.useCustomBubbleCssDayNight;
+            dayCssTextarea.value = e.customBubbleCssDay || '';
+            nightCssTextarea.value = e.customBubbleCssNight || '';
+            dayNightContainer.style.display = useDayNightCssCheckbox.checked ? 'flex' : 'none';
+        }
+
         populateBubblePresetSelect('bubble-preset-select');
         populateMyPersonaSelect();
         if (typeof populateStatusBarPresetSelect === 'function') {
@@ -772,6 +795,9 @@ async function saveSettingsFromSidebar() {
 
         e.useCustomBubbleCss = document.getElementById('setting-use-custom-css').checked;
         e.customBubbleCss = document.getElementById('setting-custom-bubble-css').value;
+        e.useCustomBubbleCssDayNight = document.getElementById('setting-use-custom-css-day-night').checked;
+        e.customBubbleCssDay = document.getElementById('setting-custom-bubble-css-day').value;
+        e.customBubbleCssNight = document.getElementById('setting-custom-bubble-css-night').value;
         e.bilingualModeEnabled = document.getElementById('setting-bilingual-mode').checked;
         e.bilingualBubbleStyle = document.getElementById('setting-bilingual-style').value;
         
