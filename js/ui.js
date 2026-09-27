@@ -1528,3 +1528,45 @@ if (document.readyState === 'loading') {
 } else {
     _initBubbleThemeListener();
 }
+
+// === 全局暗黑模式：跟随 prefers-color-scheme 切换 data-theme + meta theme-color ===
+// 设计：
+//  - 仅设置 [data-theme="dark"] 属性，所有暗色样式由 css/dark-mode.css 定义。
+//  - 同步更新 <meta name="theme-color">，使 Android Chrome 顶栏跟随变色。
+//  - 绝不触碰 #global-css-style：用户 db.globalCss 始终通过 applyGlobalCss()
+//    注入到 head 末尾，DOM 顺序保证其优先级 >= dark-mode.css；用户可用
+//    !important 或更高特异性自由覆盖暗色样式。
+//  - 不影响 _applyBubbleCssForCurrentTheme：聊天气泡的日夜 CSS 是独立机制。
+function _applyGlobalDarkMode() {
+    try {
+        const mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+        const isDark = !!(mq && mq.matches);
+        const root = document.documentElement;
+        if (isDark) {
+            root.setAttribute('data-theme', 'dark');
+        } else {
+            root.removeAttribute('data-theme');
+        }
+        // 同步 meta theme-color（Android Chrome 顶栏）
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) {
+            meta.setAttribute('content', isDark ? '#1a1a1c' : '#ffffff');
+        }
+    } catch (e) {
+        console.warn('[dark-mode] apply failed:', e);
+    }
+}
+function _initGlobalDarkModeListener() {
+    if (!window.matchMedia) return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = () => _applyGlobalDarkMode();
+    if (mq.addEventListener) mq.addEventListener('change', handler);
+    else if (mq.addListener) mq.addListener(handler);
+    // 首次启动时同步一次（防 FOUC inline 脚本已设过；此处为保险）
+    _applyGlobalDarkMode();
+}
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _initGlobalDarkModeListener);
+} else {
+    _initGlobalDarkModeListener();
+}
