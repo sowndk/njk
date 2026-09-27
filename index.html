@@ -52,28 +52,12 @@
     <link rel="stylesheet" href="css/modules/community.css">
     <link rel="stylesheet" href="css/modules/reader.css">
 
-    <!-- Dark Mode: 跟随系统 prefers-color-scheme 自动启用 -->
-    <link rel="stylesheet" href="css/dark-mode.css">
-
     <!-- Other Styles -->
     <link rel="stylesheet" href="contacts.css">
     <link rel="stylesheet" href="more_menu.css">
     <!-- <link rel="stylesheet" href="style.css"> (Deprecated) -->
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-    <!-- 防 FOUC：页面渲染前立即读取系统主题，设置 data-theme + meta theme-color -->
-    <script>
-    (function() {
-        try {
-            var mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
-            if (mq && mq.matches) {
-                document.documentElement.setAttribute('data-theme', 'dark');
-                var meta = document.querySelector('meta[name="theme-color"]');
-                if (meta) meta.setAttribute('content', '#1a1a1c');
-            }
-        } catch (e) { /* 静默失败 */ }
-    })();
-    </script>
 </head>
 
 <body>
@@ -233,7 +217,6 @@
         <div class="action-sheet">
             <button class="action-sheet-button" id="menu-multi-select-btn">多选管理</button>
             <button class="action-sheet-button" id="menu-batch-import-btn">批量导入</button>
-            <button class="action-sheet-button" id="menu-doc-import-btn">📄 从文档导入</button>
             <button class="action-sheet-button" id="menu-add-new-btn">添加新表情</button>
             <button class="action-sheet-button danger" id="menu-cancel-btn">取消</button>
         </div>
@@ -286,12 +269,9 @@
                 
                 <!-- 新建下拉菜单 -->
                 <div id="world-book-new-menu" class="world-book-new-menu" style="display: none;">
+                    <div class="menu-item" id="wb-menu-new-folder">新建文件夹</div>
                     <div class="menu-item" id="wb-menu-new-entry">新建条目</div>
-                    <div class="menu-item" id="wb-menu-import-doc">从文档导入</div>
                 </div>
-
-                <!-- 世界书文档导入：隐藏的文件选择器 -->
-                <input type="file" id="wb-import-file-input" accept=".txt,.json,.docx" multiple style="display:none;">
             </div>
         </header>
         <main class="content" id="world-book-content-scroll">
@@ -344,13 +324,6 @@
                 <div class="form-group">
                     <label for="world-book-depth">注入深度 (1-999)</label>
                     <input type="number" id="world-book-depth" min="1" max="999" value="100" placeholder="默认100，数值越小注入顺序越靠前" required>
-                </div>
-                <div class="form-group wb-enabled-toggle-group">
-                    <label class="wb-switch-label">
-                        <input type="checkbox" id="world-book-enabled" checked>
-                        <span class="wb-switch-slider"></span>
-                        <span class="wb-switch-text">启用此条目（取消勾选后，与 AI 聊天时 AI 不会读取此条目）</span>
-                    </label>
                 </div>
                 <button type="submit" class="btn btn-primary">保存条目</button>
             </form>
@@ -1287,30 +1260,6 @@
                     <textarea id="sticker-urls-textarea" rows="8" placeholder="例如：&#10;开心:https://example.com/happy.gif&#10;哭泣:https://example.com/cry.png"></textarea>
                 </div>
                 <button type="submit" class="btn btn-primary">开始导入</button>
-            </form>
-        </div>
-    </div>
-    <!-- Doc Import Sticker Modal (从 txt/docx/md 文档批量导入表情) -->
-    <div id="doc-import-sticker-modal" class="modal-overlay">
-        <div class="modal-window" style="max-width: 520px;">
-            <h3>📄 从文档导入表情</h3>
-            <form id="doc-import-sticker-form">
-                <div class="form-group">
-                    <label for="doc-import-sticker-group">分组名称（本批次所有表情将归入此组）</label>
-                    <input type="text" id="doc-import-sticker-group" placeholder="如：通用组">
-                </div>
-                <div class="form-group">
-                    <label for="doc-import-sticker-file">选择文档文件（支持 .txt / .docx / .md）</label>
-                    <input type="file" id="doc-import-sticker-file" accept=".txt,.docx,.md,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="width:100%; padding:6px; border:1px solid #eee; border-radius:8px; background:#fff;">
-                </div>
-                <div class="form-group">
-                    <label for="doc-import-sticker-preview">解析预览（识别到 <span id="doc-import-count">0</span> 行有效数据）</label>
-                    <textarea id="doc-import-sticker-preview" rows="8" placeholder="选择文件后此处会显示解析出的 名称:URL 文本，可手动编辑..." style="font-family:monospace; font-size:12px;"></textarea>
-                </div>
-                <div style="display:flex; gap:8px; justify-content:flex-end;">
-                    <button type="button" class="btn btn-neutral" id="doc-import-cancel-btn">取消</button>
-                    <button type="submit" class="btn btn-primary" id="doc-import-submit-btn">开始导入</button>
-                </div>
             </form>
         </div>
     </div>
