@@ -122,6 +122,16 @@ function setupGroupChatSystem() {
         });
     }
 
+    // 日夜组合开关：即时展开/折叠子容器（不影响表单 submit 逻辑）
+    const useGroupDayNightSwitch = document.getElementById('setting-group-use-custom-css-day-night');
+    const groupDayNightBox = document.getElementById('group-bubble-daynight-container');
+    if (useGroupDayNightSwitch && groupDayNightBox) {
+        useGroupDayNightSwitch.addEventListener('change', (e) => {
+            groupDayNightBox.style.display = e.target.checked ? 'flex' : 'none';
+            if (typeof triggerHapticFeedback === 'function') triggerHapticFeedback('light');
+        });
+    }
+
     const useGroupCustomCssCheckbox = document.getElementById('setting-group-use-custom-css'),
         groupCustomCssTextarea = document.getElementById('setting-group-custom-bubble-css'),
         resetGroupCustomCssBtn = document.getElementById('reset-group-custom-bubble-css-btn'),
