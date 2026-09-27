@@ -153,6 +153,76 @@ async function migrateWorldBookCategories() {
     }
 }
 
+const UNCATEGORIZED_FOLDER_NAME = '未分类';
+
+function getOrCreateCategoryFolder(categoryName) {
+    const trimmed = (categoryName || '').trim();
+    const folderName = trimmed || UNCATEGORIZED_FOLDER_NAME;
+    let folder = db.worldBooks.find(item =>
+        item.type === 'folder' &&
+        item.name === folderName &&
+        !item.parentId
+    );
+    if (!folder) {
+        folder = {
+            id: `wb_f_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+            parentId: null,
+            type: 'folder',
+            name: folderName
+        };
+        db.worldBooks.push(folder);
+    }
+    return folder;
+}
+
+function deleteEmptyCategoryFolders() {
+    const topLevelFolders = db.worldBooks.filter(item =>
+        item.type === 'folder' && !item.parentId
+    );
+    const toDelete = topLevelFolders.filter(folder => {
+        const childrenCount = db.worldBooks.filter(item => item.parentId === folder.id).length;
+        return childrenCount === 0;
+    });
+    // 「未分类」文件夹也允许按需删除（只要变空就被回收）——
+    // 后续如果再有未分类条目，getOrCreateCategoryFolder('') 会按需重建。
+    toDelete.forEach(folder => {
+        db.worldBooks = db.worldBooks.filter(item => item.id !== folder.id);
+    });
+    return toDelete.length;
+}
+
+async function ensureCategoryFoldersConsistency() {
+    let changed = false;
+    // 1. 所有顶级 entry（无 parentId）且 type='entry'，未分类的进「未分类」文件夹
+    const orphanEntries = db.worldBooks.filter(item =>
+        item.type === 'entry' && !item.parentId
+    );
+    if (orphanEntries.length > 0) {
+        const uncategorized = getOrCreateCategoryFolder('');
+        orphanEntries.forEach(item => {
+            item.parentId = uncategorized.id;
+            changed = true;
+        });
+    }
+    // 2. 将所有 entry 按 category 重新对齐到对应文件夹（会调用 getOrCreateCategoryFolder 保证文件夹存在）
+    const allEntries = db.worldBooks.filter(item => item.type === 'entry');
+    allEntries.forEach(item => {
+        const targetFolder = getOrCreateCategoryFolder(item.category || '');
+        if (item.parentId !== targetFolder.id) {
+            item.parentId = targetFolder.id;
+            changed = true;
+        }
+    });
+
+    // 3. 删除空 category 文件夹
+    const removed = deleteEmptyCategoryFolders();
+    if (removed > 0) changed = true;
+    if (changed) {
+        await saveData();
+        console.log('Worldbook folders consistency ensured.');
+    }
+}
+
 async function moveSelectedWorldBooksToCurrent() {
     const count = selectedWorldBookIds.size;
     if (count === 0) return;
@@ -206,6 +276,7 @@ async function moveSelectedWorldBooksToCurrent() {
 async function setupWorldBookApp() {
     await migrateWorldBookPositions();
     await migrateWorldBookCategories();
+    await ensureCategoryFoldersConsistency();
     const addWorldBookBtn = document.getElementById('add-world-book-btn');
     const viewToggleBtn = document.getElementById('world-book-view-toggle-btn');
     const backBtn = document.getElementById('world-book-back-btn');
@@ -260,23 +331,6 @@ async function setupWorldBookApp() {
         newMenu.style.display = 'none';
     });
 
-    // 新建文件夹
-    document.getElementById('wb-menu-new-folder').addEventListener('click', async () => {
-        const name = prompt('请输入文件夹名称：');
-        if (name && name.trim()) {
-            const currentFolderId = wbPathStack[wbPathStack.length - 1].id;
-            const newFolder = {
-                id: `wb_f_${Date.now()}`,
-                parentId: currentFolderId,
-                type: 'folder',
-                name: name.trim()
-            };
-            db.worldBooks.push(newFolder);
-            await saveData();
-            renderWorldBookList();
-        }
-    });
-
     // 新建条目
     document.getElementById('wb-menu-new-entry').addEventListener('click', () => {
         currentEditingWorldBookId = null;
@@ -295,10 +349,13 @@ async function setupWorldBookApp() {
         const category = document.getElementById('world-book-category').value.trim();
         const position = document.querySelector('input[name="world-book-position"]:checked').value;
         const depth = parseInt(document.getElementById('world-book-depth').value) || 100;
-        const currentFolderId = wbPathStack[wbPathStack.length - 1].id;
 
         if (!name || !content) return showToast('名称和内容不能为空');
         
+        // 按 category 自动归类：空 category 走 "未分类"，其他走同名文件夹
+        const targetFolder = getOrCreateCategoryFolder(category);
+        const targetFolderId = targetFolder.id;
+
         if (currentEditingWorldBookId) {
             const book = db.worldBooks.find(wb => wb.id === currentEditingWorldBookId);
             if (book) {
@@ -307,11 +364,15 @@ async function setupWorldBookApp() {
                 book.position = position;
                 book.category = category;
                 book.depth = depth;
+                // category 变更时同步调整父文件夹
+                if (book.parentId !== targetFolderId) {
+                    book.parentId = targetFolderId;
+                }
             }
         } else {
             db.worldBooks.push({
                 id: `wb_${Date.now()}`, 
-                parentId: currentFolderId,
+                parentId: targetFolderId,
                 type: 'entry',
                 name, 
                 content, 
@@ -320,6 +381,8 @@ async function setupWorldBookApp() {
                 depth
             });
         }
+        // 保存后清理可能剩下的空文件夹
+        deleteEmptyCategoryFolders();
         await saveData();
         showToast('世界书条目已保存');
         renderWorldBookList();
@@ -699,7 +762,7 @@ function parseTextIntoEntries(text, defaultCategory = '') {
 }
 
 // 解析 JSON 文档为条目数组，支持多种 schema
-function parseJsonIntoEntries(jsonText) {
+function parseJsonIntoEntries(jsonText, defaultCategory = '') {
     let data;
     try {
         data = JSON.parse(jsonText);
@@ -763,7 +826,7 @@ function parseJsonIntoEntries(jsonText) {
         return {
             name,
             content: String(content),
-            category: item.category ? String(item.category).slice(0, 40) : '',
+            category: item.category ? String(item.category).slice(0, 40) : (defaultCategory || ''),
             keywords: kw,
             position: pos,
             depth
@@ -819,7 +882,7 @@ async function importWorldBooksFromFiles(fileList) {
                 entries = parseTextIntoEntries(text, baseName);
             } else if (ext === 'json') {
                 const text = await file.text();
-                entries = parseJsonIntoEntries(text);
+                entries = parseJsonIntoEntries(text, baseName);
             } else if (ext === 'docx') {
                 if (typeof mammoth === 'undefined') {
                     showToast('mammoth.js 未加载，无法解析 .docx');
