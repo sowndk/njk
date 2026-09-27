@@ -457,18 +457,38 @@
     color: var(--dark-text);
 }
 
-/* chat-item 列表项 */
-[data-theme="dark"] .chat-item {
-    background: var(--dark-card-bg);
-    color: var(--dark-text);
-    border-bottom-color: var(--dark-border);
+/* chat-item 列表项
+   ⚠️ 必须用 #chat-list-container 前缀 + !important 才能压过 chat.css 行 248/249
+   原 CSS：#chat-list-container .list-item { background: #fff !important; ... }
+   特异性：(0,1,2) + !important，dark-mode 需同等才能覆盖 */
+[data-theme="dark"] #chat-list-container .list-item,
+[data-theme="dark"] #chat-list-container .chat-item,
+[data-theme="dark"] .list-container .list-item.chat-item {
+    background-color: var(--dark-card-bg) !important;
+    color: var(--dark-text) !important;
+    border-bottom-color: var(--dark-border) !important;
 }
-[data-theme="dark"] .chat-item:active,
-[data-theme="dark"] .chat-item:hover { background: var(--dark-hover-bg); }
-[data-theme="dark"] .item-name { color: var(--dark-text); }
-[data-theme="dark"] .item-preview,
-[data-theme="dark"] .item-meta-container { color: var(--dark-text-secondary); }
-[data-theme="dark"] .item-time { color: var(--dark-text-secondary); }
+[data-theme="dark"] #chat-list-container .list-item:hover {
+    background-color: var(--dark-hover-bg) !important;
+}
+[data-theme="dark"] #chat-list-container .item-name {
+    color: var(--dark-text) !important;
+}
+[data-theme="dark"] #chat-list-container .item-preview {
+    color: var(--dark-text-secondary) !important;
+}
+[data-theme="dark"] #chat-list-container .item-time {
+    color: var(--dark-text-secondary) !important;
+}
+[data-theme="dark"] #chat-list-container .chat-avatar {
+    border-color: var(--dark-border) !important;
+}
+
+/* 通用 .chat-item（也覆盖非 chat-list 区域使用的）*/
+[data-theme="dark"] .chat-item {
+    background-color: var(--dark-card-bg);
+    color: var(--dark-text);
+}
 
 /* 输入框本身（这是用户报告的“内容选择框”白底刺眼源头之一）*/
 [data-theme="dark"] .message-input-area input,
@@ -519,12 +539,15 @@
 [data-theme="dark"] .pin-badge { background: var(--dark-text-secondary); color: var(--dark-bg); }
 
 
-/* === 第二十层：所有弹窗 / 模态框 / 文件夹弹窗 / 输入框 / 选择框 ===
-   一刀切：所有 .modal-window 和带 .content 容器变暗色，
-   避免用户报告的“白底弹窗 + 白底输入框”刺眼 */
-[data-theme="dark"] .modal-window {
-    background: var(--dark-card-bg);
-    color: var(--dark-text);
+/* === 第二十层：iOS 风格底部菜单（action-sheet）/ 模态弹窗 / 文件夹弹窗 / 输入框 / 选择框 ===
+   问题截图：弹窗白底、内容选择框白底刺眼
+   注：很多 .modal-window 有 inline style="background:var(--panel-bg,#fff)"，
+       所以这一层必须用 !important 才能覆盖 inline style。 */
+[data-theme="dark"] .modal-window,
+[data-theme="dark"] div.modal-window[style*="background"] {
+    background-color: var(--dark-card-bg) !important;
+    background: var(--dark-card-bg) !important;
+    color: var(--dark-text) !important;
     border: 1px solid var(--dark-border);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
 }
@@ -532,19 +555,67 @@
 [data-theme="dark"] .modal-window .modal-body,
 [data-theme="dark"] .modal-window .modal-footer,
 [data-theme="dark"] .modal-window .content {
-    background: transparent;
-    color: var(--dark-text);
+    background: transparent !important;
+    background-color: transparent !important;
+    color: var(--dark-text) !important;
 }
 [data-theme="dark"] .modal-window .modal-header { border-bottom-color: var(--dark-border); }
 [data-theme="dark"] .modal-window .modal-footer { border-top-color: var(--dark-border); }
 
+/* iOS 风格从底部弹出的菜单（"多选管理 / 批量导入 / 从文档导入 / 添加新表情"等）*/
+[data-theme="dark"] .action-sheet {
+    background-color: var(--dark-card-bg) !important;
+    background: var(--dark-card-bg) !important;
+    color: var(--dark-text) !important;
+}
+[data-theme="dark"] .action-sheet-button {
+    background-color: var(--dark-surface) !important;
+    background: var(--dark-surface) !important;
+    color: var(--dark-primary) !important;
+    border: 1px solid var(--dark-border);
+}
+[data-theme="dark"] .action-sheet-button.danger {
+    color: #e53935 !important;
+}
+
+/* inline-style 暗色覆盖：白底 <main class="content">、#widget-import-input 周边等
+   示例：<main class="content" style="background: #f5f5f5; padding: 0;"> 行 629
+   用 [style*="background"] 选择器直接覆盖 inline style */
+[data-theme="dark"] main.content[style*="background"],
+[data-theme="dark"] main.content[style*="#fff"],
+[data-theme="dark"] main.content[style*="#f"],
+[data-theme="dark"] .content[style*="background: #fff"],
+[data-theme="dark"] .content[style*="background:#fff"] {
+    background-color: var(--dark-bg) !important;
+    background: var(--dark-bg) !important;
+    color: var(--dark-text) !important;
+}
+
 /* 所有 <select>（世界书、设置、文件夹选择、内容选择…统一收口）*/
 [data-theme="dark"] select,
 [data-theme="dark"] select option,
+[data-theme="dark"] select[style*="background"],
 [data-theme="dark"] input[type="select"] {
-    background: var(--dark-surface);
-    color: var(--dark-text);
-    border-color: var(--dark-border);
+    background-color: var(--dark-surface) !important;
+    background: var(--dark-surface) !important;
+    color: var(--dark-text) !important;
+    border-color: var(--dark-border) !important;
+}
+
+/* 所有 <input> / <textarea> 通用暗色（含隐藏的 file input / 各类输入框）*/
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="search"],
+[data-theme="dark"] input[type="url"],
+[data-theme="dark"] input[type="email"],
+[data-theme="dark"] input[type="password"],
+[data-theme="dark"] input[type="number"],
+[data-theme="dark"] input:not([type]),
+[data-theme="dark"] textarea {
+    background-color: var(--dark-surface) !important;
+    background: var(--dark-surface) !important;
+    color: var(--dark-text) !important;
+    border-color: var(--dark-border) !important;
+    caret-color: var(--dark-primary);
 }
 
 /* 文件夹 / 联系人 / 好友选择弹窗中的列表 */
@@ -552,16 +623,16 @@
 [data-theme="dark"] .list-container,
 [data-theme="dark"] .expansion-grid,
 [data-theme="dark"] .expansion-item {
-    background: var(--dark-card-bg);
+    background-color: var(--dark-card-bg);
     color: var(--dark-text);
 }
 [data-theme="dark"] .expansion-item:hover,
-[data-theme="dark"] .list-item:hover { background: var(--dark-hover-bg); }
+[data-theme="dark"] .list-item:hover { background-color: var(--dark-hover-bg); }
 [data-theme="dark"] .expansion-item-name { color: var(--dark-text); }
 
 /* 输入框 placeholder */
 [data-theme="dark"] input::placeholder,
 [data-theme="dark"] textarea::placeholder {
-    color: var(--dark-text-secondary);
+    color: var(--dark-text-secondary) !important;
     opacity: 0.7;
 }
