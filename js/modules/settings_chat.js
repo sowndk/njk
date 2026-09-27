@@ -40,7 +40,13 @@ function setupChatSettings() {
 
     document.getElementById('chat-settings-form').addEventListener('submit', e => {
         e.preventDefault();
-        saveSettingsFromSidebar();
+        console.log('[chat-settings] submit event fired');
+        try {
+            saveSettingsFromSidebar();
+        } catch (err) {
+            console.error('[chat-settings] saveSettingsFromSidebar threw:', err);
+            showToast('保存失败：' + (err && err.message ? err.message : String(err)));
+        }
     });
 
     // --- Tab 切换逻辑 ---
@@ -104,7 +110,17 @@ function setupChatSettings() {
             showToast('样式已重置为默认');
         }
     });
-    
+
+    // 日夜组合开关：即时展开/折叠子容器（不影响表单 submit 逻辑）
+    const useDayNightSwitch = document.getElementById('setting-use-custom-css-day-night');
+    const dayNightBox = document.getElementById('private-bubble-daynight-container');
+    if (useDayNightSwitch && dayNightBox) {
+        useDayNightSwitch.addEventListener('change', (e) => {
+            dayNightBox.style.display = e.target.checked ? 'flex' : 'none';
+            triggerHapticFeedback && triggerHapticFeedback('light');
+        });
+    }
+
     document.getElementById('setting-char-avatar-upload').addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (file) {

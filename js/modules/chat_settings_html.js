@@ -562,14 +562,13 @@ const chatSettingsHtml = `
                                         <input type="checkbox" id="setting-use-custom-css-day-night">
                                         <span class="kkt-slider"></span>
                                     </label>
-<div class="kkt-item" id="private-bubble-daynight-container" style="display:none;">
+                                </div>
+                                <div class="kkt-item" id="private-bubble-daynight-container" style="display:none; flex-direction:column; align-items:stretch; gap:6px; padding:8px 0;">
                                     <div style="font-size:12px; color:#999; margin-bottom:6px;">白天气泡预设（亮色主题时使用）</div>
                                     <select id="setting-custom-bubble-css-day" style="width:100%; border:1px solid #eee; border-radius:8px; padding:5px;"></select>
                                     <div style="font-size:12px; color:#999; margin: 8px 0 6px;">夜间气泡预设（暗色主题时使用）</div>
                                     <select id="setting-custom-bubble-css-night" style="width:100%; border:1px solid #eee; border-radius:8px; padding:5px;"></select>
                                 </div>
-                            </div>
-                            </div>
                             </div>
                         </div>
                     </div>
