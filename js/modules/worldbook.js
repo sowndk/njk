@@ -497,12 +497,38 @@ function renderWorldBookList() {
 
         const iconWrapperHTML = iconHTML ? `<div class="wb-icon-wrapper">${iconHTML}</div>` : '';
         const disabledBadge = (!isFolder && item.enabled === false) ? '<span class="wb-disabled-badge" title="已禁用，不会注入到 AI 上下文">已禁用</span>' : '';
+        // 卡片内嵌微型开关（仅 entry，多选模式下隐藏）
+        // 点击开关 stopPropagation 阻止冒泡到卡片 → 不触发进入编辑
+        const cardToggleHTML = (!isFolder && !isWorldBookMultiSelectMode) ? `
+            <label class="wb-card-toggle" title="点击切换启用/禁用">
+                <input type="checkbox" class="wb-card-toggle-input" ${item.enabled !== false ? 'checked' : ''}>
+                <span class="wb-card-toggle-slider"></span>
+            </label>
+        ` : '';
         card.innerHTML = `
             ${iconWrapperHTML}
             <div class="wb-item-name">${item.name}</div>
             ${disabledBadge}
+            ${cardToggleHTML}
         `;
-        
+
+        // 开关点击：阻止冒泡 + 立即切换 enabled 状态 + 重新渲染
+        const toggleInput = card.querySelector('.wb-card-toggle-input');
+        if (toggleInput) {
+            toggleInput.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+            toggleInput.addEventListener('change', async (e) => {
+                e.stopPropagation();
+                const target = db.worldBooks.find(wb => wb.id === item.id);
+                if (!target) return;
+                target.enabled = toggleInput.checked;
+                await saveData();
+                showToast(toggleInput.checked ? '已启用' : '已禁用');
+                renderWorldBookList();
+            });
+        }
+
         container.appendChild(card);
     });
 }
