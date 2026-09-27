@@ -2098,7 +2098,12 @@ function setupCustomizeApp() {
             await saveData();
             showToast('全局样式已应用');
         }
-        
+
+        if (target.matches('#global-css-import-btn')) {
+            const fileInput = document.getElementById('global-css-import-file');
+            if (fileInput) fileInput.click();
+        }
+
         if (target.matches('#global-css-apply-btn')) {
             const select = document.getElementById('global-css-preset-select');
             const presetName = select.value;
@@ -2226,6 +2231,21 @@ function setupCustomizeApp() {
             showToast('已重置');
         }
     });
+
+    // ===== 从文档导入全局CSS（支持 .txt / .md / .docx） =====
+    // 复用表情包模块的 mammoth CDN，解析后填入 #global-beautification-css
+    // 仅填入不自动应用，由用户决定是否点"立即应用"
+    const globalCssImportFile = document.getElementById('global-css-import-file');
+    if (globalCssImportFile) {
+        globalCssImportFile.addEventListener('change', async (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (file) {
+                await handleGlobalCssImportFile(file);
+                // 清空 value，允许重复导入同一文件
+                e.target.value = null;
+            }
+        });
+    }
 
     document.body.addEventListener('input', async (e) => {
         const target = e.target;
@@ -2379,6 +2399,43 @@ function setupCustomizeApp() {
             e.target.value = null;
         }
     });
+}
+
+async function handleGlobalCssImportFile(file) {
+    if (!file) return;
+    const nameLower = file.name.toLowerCase();
+    try {
+        let text = '';
+        if (nameLower.endsWith('.docx')) {
+            if (typeof mammoth === 'undefined') {
+                throw new Error('mammoth 库未加载，请检查网络连接');
+            }
+            const arrayBuffer = await file.arrayBuffer();
+            const result = await mammoth.extractRawText({ arrayBuffer });
+            text = (result && result.value) ? result.value : '';
+            if (result && result.messages && result.messages.length) {
+                console.log('[global-css-import] mammoth warnings:', result.messages);
+            }
+        } else if (nameLower.endsWith('.txt') || nameLower.endsWith('.md') || file.type === 'text/plain') {
+            text = await file.text();
+        } else {
+            throw new Error('暂不支持的文件类型：' + (file.type || file.name));
+        }
+        text = text.replace(/\r\n?/g, '\n');
+        const textarea = document.getElementById('global-beautification-css');
+        if (!textarea) {
+            showToast('未找到 CSS 编辑框，请先打开全局CSS美化弹窗');
+            return;
+        }
+        textarea.value = text.trim();
+        // 触发 input 事件，让可能的预览/校验逻辑刷新
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        const sizeKb = (text.length / 1024).toFixed(1);
+        showToast(`已导入 ${file.name}（${sizeKb} KB），点击"立即应用"生效`);
+    } catch (err) {
+        console.error('[global-css-import] 解析失败:', err);
+        showToast('解析失败：' + (err && err.message ? err.message : String(err)));
+    }
 }
 
 function renderCustomizeForm() {
@@ -2543,6 +2600,11 @@ function renderCustomizeForm() {
                         <button type="button" id="apply-global-css-now-btn" class="btn btn-primary btn-small" style="width:auto;">立即应用</button>
                     </div>
                     <textarea id="global-beautification-css" class="form-group" rows="8" placeholder="在此输入CSS代码..." style="width:100%; border:1px solid #eee; border-radius:8px; padding:10px; font-family: monospace; font-size: 12px;"></textarea>
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+                        <input type="file" id="global-css-import-file" accept=".txt,.docx,.md" style="display:none;">
+                        <button type="button" id="global-css-import-btn" class="btn btn-small btn-secondary" style="padding:4px 8px;">📄 从文档导入</button>
+                        <span style="font-size:11px;color:#888;">支持 .txt / .docx / .md，导入后可手动编辑再应用</span>
+                    </div>
                 </div>
                 <div style="background:#f9f9f9; padding:10px; border-radius:8px; border: 1px solid #f0f0f0;">
                     <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
