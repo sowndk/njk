@@ -71,6 +71,11 @@
     opacity: 0.7;
 }
 
+.grid-view .wb-item-card.wb-is-entry {
+    padding: 14px 16px;
+    gap: 0;
+    justify-content: center;
+}
 .grid-view .wb-icon-wrapper {
     width: 84px;
     height: 84px;
@@ -100,10 +105,6 @@
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.18));
 }
 
-.grid-view .wb-entry-icon {
-    color: #42a5f5;
-    fill: #42a5f5;
-}
 
 .grid-view .wb-item-name {
     font-size: 13px;
@@ -117,33 +118,38 @@
     width: 100%;
 }
 
-/* 列表视图 */
+/* 列表视图容器 */
 .list-view {
     display: flex;
     flex-direction: column;
-    background-color: #fff;
-    border-radius: 12px;
-    overflow: hidden;
-    border: 1px solid #eee;
+    gap: 10px;
 }
 
 .list-view .wb-item-card {
     display: flex;
     align-items: center;
-    padding: 12px 16px;
-    gap: 16px;
+    padding: 14px 18px;
+    gap: 14px;
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(12px) saturate(150%);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow:
+        0 4px 14px rgba(15, 23, 42, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.85);
     cursor: pointer;
-    border-bottom: 1px solid #f5f5f5;
-}
-
-.list-view .wb-item-card:last-child {
-    border-bottom: none;
+    transition: transform 0.2s, background 0.2s;
 }
 
 .list-view .wb-item-card:active {
-    background-color: #f0f0f0;
+    background: rgba(255, 255, 255, 0.65);
+    transform: scale(0.99);
 }
 
+.list-view .wb-item-card.wb-is-entry {
+    padding: 12px 18px;
+}
 .list-view .wb-icon-wrapper {
     width: 44px;
     height: 44px;
@@ -166,10 +172,6 @@
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
 }
 
-.list-view .wb-entry-icon {
-    color: #42a5f5;
-    fill: #42a5f5;
-}
 
 .list-view .wb-item-name {
     font-size: 15px;
@@ -344,4 +346,87 @@
     align-items: center;
     gap: 10px;
     width: 100%;
+}
+
+/* ===== 单条 entry 启用/禁用（步骤 12） ===== */
+
+/* 列表卡片禁用态视觉 */
+.wb-item-card.wb-entry-disabled {
+    opacity: 0.5;
+    filter: grayscale(0.6);
+}
+.wb-item-card.wb-entry-disabled .wb-item-name {
+    text-decoration: line-through;
+    text-decoration-thickness: 1.5px;
+}
+.wb-item-card.wb-entry-disabled .wb-icon-wrapper {
+    opacity: 0.5;
+}
+.wb-disabled-badge {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 1px 7px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #fff;
+    background: #9e9e9e;
+    border-radius: 8px;
+    letter-spacing: 0.5px;
+}
+
+/* 编辑表单启用开关（iOS 风格 switch） */
+.wb-enabled-toggle-group {
+    margin-top: 14px;
+    margin-bottom: 6px;
+    padding: 12px 14px;
+    background: rgba(15, 23, 42, 0.04);
+    border-radius: 12px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+}
+.wb-switch-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+}
+.wb-switch-label input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 0;
+    height: 0;
+}
+.wb-switch-slider {
+    flex-shrink: 0;
+    width: 44px;
+    height: 26px;
+    background: #cfd4dc;
+    border-radius: 13px;
+    position: relative;
+    transition: background 0.25s;
+}
+.wb-switch-slider::before {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: transform 0.25s;
+}
+.wb-switch-label input[type="checkbox"]:checked ~ .wb-switch-slider {
+    background: var(--primary-color, #4f8cff);
+}
+.wb-switch-label input[type="checkbox"]:checked ~ .wb-switch-slider::before {
+    transform: translateX(18px);
+}
+.wb-switch-text {
+    flex: 1;
+    font-size: 14px;
+    color: var(--text-color, #333);
+    line-height: 1.4;
 }
