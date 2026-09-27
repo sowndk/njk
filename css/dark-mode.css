@@ -309,3 +309,259 @@
     background: #4a6fa5;
     color: #ffffff;
 }
+/* === 第十七层：世界书页（worldbook.css）===
+   问题截图：标题栏白底、空状态图标/文字白底、".bound-wb-card"、".world-book-select-item" 弹窗白底刺眼 */
+[data-theme="dark"] #world-book-screen,
+[data-theme="dark"] #edit-world-book-screen {
+    background: var(--dark-bg);
+    color: var(--dark-text);
+}
+
+/* 网格视图卡片 */
+[data-theme="dark"] .wb-item-card,
+[data-theme="dark"] .bound-wb-card {
+    background: var(--dark-card-bg);
+    color: var(--dark-text);
+    border: 1px solid var(--dark-border);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+[data-theme="dark"] .wb-item-card .wb-item-name,
+[data-theme="dark"] .bound-wb-card .content {
+    color: var(--dark-text);
+}
+
+/* 列表视图 */
+[data-theme="dark"] .wb-list-item {
+    background: var(--dark-card-bg);
+    color: var(--dark-text);
+    border-bottom-color: var(--dark-border);
+}
+[data-theme="dark"] .wb-list-item-name { color: var(--dark-text); }
+[data-theme="dark"] .wb-list-item-desc { color: var(--dark-text-secondary); }
+[data-theme="dark"] .wb-list-item-arrow { color: var(--dark-text-secondary); }
+
+/* 空状态 */
+[data-theme="dark"] .wb-empty-state,
+[data-theme="dark"] .wb-empty-title,
+[data-theme="dark"] .wb-empty-desc {
+    background: transparent;
+    color: var(--dark-text);
+}
+[data-theme="dark"] .wb-empty-desc { color: var(--dark-text-secondary); }
+[data-theme="dark"] .wb-empty-state-icon svg,
+[data-theme="dark"] .wb-empty-icon svg { stroke: var(--dark-text-secondary); fill: none; }
+
+/* 新建菜单 + 世界书选择弹窗 */
+[data-theme="dark"] .world-book-new-menu,
+[data-theme="dark"] .world-book-select-item,
+[data-theme="dark"] .wb-selector-row {
+    background: var(--dark-card-bg);
+    color: var(--dark-text);
+    border-color: var(--dark-border);
+}
+[data-theme="dark"] .world-book-select-item:hover,
+[data-theme="dark"] .wb-selector-row:hover { background: var(--dark-hover-bg); }
+[data-theme="dark"] .wb-selector-name { color: var(--dark-text); }
+[data-theme="dark"] .wb-selector-arrow,
+[data-theme="dark"] .wb-selector-checkbox { color: var(--dark-text-secondary); }
+[data-theme="dark"] .menu-item {
+    background: var(--dark-card-bg);
+    color: var(--dark-text);
+}
+[data-theme="dark"] .menu-item:hover { background: var(--dark-hover-bg); }
+
+
+/* === 第十八层：书架 / 阅读器（reader.css + bookshelf）===
+   问题截图：我的书架白卡片、导入本地书籍弹窗白底、章节预览白底 */
+[data-theme="dark"] #reader-view-screen,
+[data-theme="dark"] #bookshelf-screen,
+[data-theme="dark"] .reader-bookshelf-content {
+    background: var(--dark-bg);
+    color: var(--dark-text);
+}
+
+/* 书架网格 */
+[data-theme="dark"] .bookshelf-grid .book-item {
+    background: var(--dark-card-bg);
+    color: var(--dark-text);
+    border: 1px solid var(--dark-border);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+[data-theme="dark"] .book-cover {
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+}
+[data-theme="dark"] .book-title { color: var(--dark-text); }
+[data-theme="dark"] .book-author { color: var(--dark-text-secondary); }
+[data-theme="dark"] .book-progress {
+    background: var(--dark-surface);
+    color: var(--dark-text-secondary);
+}
+[data-theme="dark"] .book-progress-bar { background: var(--dark-primary); }
+
+/* 上传 / 导入本地书籍按钮 */
+[data-theme="dark"] .upload-book-btn {
+    background: var(--dark-primary);
+    color: #ffffff;
+    border-color: var(--dark-primary);
+}
+
+/* 章节确认弹窗 */
+[data-theme="dark"] .chapter-confirm-modal,
+[data-theme="dark"] .chapter-confirm-modal-overlay {
+    background: rgba(0, 0, 0, 0.75);
+}
+[data-theme="dark"] .chapter-confirm-modal .modal-content {
+    background: var(--dark-card-bg);
+    color: var(--dark-text);
+    border-color: var(--dark-border);
+}
+
+/* 章节预览列表 */
+[data-theme="dark"] .chapter-preview-list,
+[data-theme="dark"] .preview-empty {
+    background: var(--dark-card-bg);
+    color: var(--dark-text);
+}
+[data-theme="dark"] .preview-chapter-item {
+    background: var(--dark-card-bg);
+    color: var(--dark-text);
+    border-bottom-color: var(--dark-border);
+}
+[data-theme="dark"] .preview-chapter-item:hover { background: var(--dark-hover-bg); }
+[data-theme="dark"] .preview-header,
+[data-theme="dark"] .preview-more { color: var(--dark-text-secondary); }
+[data-theme="dark"] .chapter-tags-container .chapter-tag-btn {
+    background: var(--dark-surface);
+    color: var(--dark-text);
+    border-color: var(--dark-border);
+}
+[data-theme="dark"] .chapter-tag-btn.active,
+[data-theme="dark"] .chapter-tag-btn.selected {
+    background: var(--dark-primary);
+    color: #ffffff;
+    border-color: var(--dark-primary);
+}
+
+
+/* === 第十九层：聊天列表 / 主页（chat.css 中硬编码 #fff 补强）===
+   问题截图：聊天列表白底 + 输入框白底 + 内容选择框白底刺眼 */
+[data-theme="dark"] #chat-list-screen,
+[data-theme="dark"] #chat-screen,
+[data-theme="dark"] #home-screen,
+[data-theme="dark"] .chat-list-header,
+[data-theme="dark"] .message-input-area,
+[data-theme="dark"] .chat-input-wrapper,
+[data-theme="dark"] .input-wrapper {
+    background: var(--dark-bg);
+    color: var(--dark-text);
+}
+
+/* chat-item 列表项 */
+[data-theme="dark"] .chat-item {
+    background: var(--dark-card-bg);
+    color: var(--dark-text);
+    border-bottom-color: var(--dark-border);
+}
+[data-theme="dark"] .chat-item:active,
+[data-theme="dark"] .chat-item:hover { background: var(--dark-hover-bg); }
+[data-theme="dark"] .item-name { color: var(--dark-text); }
+[data-theme="dark"] .item-preview,
+[data-theme="dark"] .item-meta-container { color: var(--dark-text-secondary); }
+[data-theme="dark"] .item-time { color: var(--dark-text-secondary); }
+
+/* 输入框本身（这是用户报告的“内容选择框”白底刺眼源头之一）*/
+[data-theme="dark"] .message-input-area input,
+[data-theme="dark"] .message-input-area textarea,
+[data-theme="dark"] .chat-input-wrapper input,
+[data-theme="dark"] .chat-input-wrapper textarea,
+[data-theme="dark"] .input-wrapper input,
+[data-theme="dark"] .input-wrapper textarea {
+    background: var(--dark-surface);
+    color: var(--dark-text);
+    border-color: var(--dark-border);
+    caret-color: var(--dark-primary);
+}
+
+/* tab / 分类栏 */
+[data-theme="dark"] .chat-category-tabs,
+[data-theme="dark"] .tab-item {
+    background: var(--dark-bg);
+    color: var(--dark-text-secondary);
+    border-color: var(--dark-border);
+}
+[data-theme="dark"] .tab-item.active,
+[data-theme="dark"] .tab-item.is-selected {
+    background: var(--dark-primary);
+    color: #ffffff;
+}
+
+/* 归档 / 状态面板 / 滑出式菜单 */
+[data-theme="dark"] .close-status-panel,
+[data-theme="dark"] .status-panel-content,
+[data-theme="dark"] .status-panel-overlay,
+[data-theme="dark"] .manage-bar-content,
+[data-theme="dark"] .function-swiper-container,
+[data-theme="dark"] .function-swiper-wrapper,
+[data-theme="dark"] .function-slide,
+[data-theme="dark"] .function-pagination,
+[data-theme="dark"] .status-slide,
+[data-theme="dark"] .status-slide-inner,
+[data-theme="dark"] .status-swiper {
+    background: var(--dark-card-bg);
+    color: var(--dark-text);
+    border-color: var(--dark-border);
+}
+[data-theme="dark"] .status-panel-overlay { background: rgba(0, 0, 0, 0.6); }
+
+/* 头像旁未读 / 静音 / 置顶 徽章 */
+[data-theme="dark"] .unread-badge { background: #e84545; color: #fff; }
+[data-theme="dark"] .pin-badge { background: var(--dark-text-secondary); color: var(--dark-bg); }
+
+
+/* === 第二十层：所有弹窗 / 模态框 / 文件夹弹窗 / 输入框 / 选择框 ===
+   一刀切：所有 .modal-window 和带 .content 容器变暗色，
+   避免用户报告的“白底弹窗 + 白底输入框”刺眼 */
+[data-theme="dark"] .modal-window {
+    background: var(--dark-card-bg);
+    color: var(--dark-text);
+    border: 1px solid var(--dark-border);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+}
+[data-theme="dark"] .modal-window .modal-header,
+[data-theme="dark"] .modal-window .modal-body,
+[data-theme="dark"] .modal-window .modal-footer,
+[data-theme="dark"] .modal-window .content {
+    background: transparent;
+    color: var(--dark-text);
+}
+[data-theme="dark"] .modal-window .modal-header { border-bottom-color: var(--dark-border); }
+[data-theme="dark"] .modal-window .modal-footer { border-top-color: var(--dark-border); }
+
+/* 所有 <select>（世界书、设置、文件夹选择、内容选择…统一收口）*/
+[data-theme="dark"] select,
+[data-theme="dark"] select option,
+[data-theme="dark"] input[type="select"] {
+    background: var(--dark-surface);
+    color: var(--dark-text);
+    border-color: var(--dark-border);
+}
+
+/* 文件夹 / 联系人 / 好友选择弹窗中的列表 */
+[data-theme="dark"] .list-item,
+[data-theme="dark"] .list-container,
+[data-theme="dark"] .expansion-grid,
+[data-theme="dark"] .expansion-item {
+    background: var(--dark-card-bg);
+    color: var(--dark-text);
+}
+[data-theme="dark"] .expansion-item:hover,
+[data-theme="dark"] .list-item:hover { background: var(--dark-hover-bg); }
+[data-theme="dark"] .expansion-item-name { color: var(--dark-text); }
+
+/* 输入框 placeholder */
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+    color: var(--dark-text-secondary);
+    opacity: 0.7;
+}
