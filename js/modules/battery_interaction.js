@@ -107,7 +107,7 @@ const BatteryInteraction = {
             if (chat.worldBookIds && chat.worldBookIds.length > 0 && window.db && window.db.worldBooks) {
                 const activeWorldBooks = chat.worldBookIds
                     .map(id => window.db.worldBooks.find(wb => wb.id === id))
-                    .filter(wb => wb && wb.enabled !== false)
+                    .filter(Boolean)
                     .sort((a, b) => (a.depth || 100) - (b.depth || 100));
                 
                 worldBooksLimitBreak = activeWorldBooks.filter(wb => wb.position === 'limit_break').map(wb => wb.content).join('\n\n');
@@ -136,7 +136,7 @@ ${chat.persona || '无'}
 ${chat.myPersona || '无'}
 
 【世界观/背景设定】
-${[worldBooksLimitBreak, worldBooksBefore, worldBooksAfter, worldBooksGuidelines].filter(wb => wb && wb.enabled !== false).join('\n\n') || '无'}
+${[worldBooksLimitBreak, worldBooksBefore, worldBooksAfter, worldBooksGuidelines].filter(Boolean).join('\n\n') || '无'}
 
 【最近对话记录】
 ${recentHistory}
