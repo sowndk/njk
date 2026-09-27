@@ -217,6 +217,7 @@
         <div class="action-sheet">
             <button class="action-sheet-button" id="menu-multi-select-btn">多选管理</button>
             <button class="action-sheet-button" id="menu-batch-import-btn">批量导入</button>
+            <button class="action-sheet-button" id="menu-doc-import-btn">📄 从文档导入</button>
             <button class="action-sheet-button" id="menu-add-new-btn">添加新表情</button>
             <button class="action-sheet-button danger" id="menu-cancel-btn">取消</button>
         </div>
@@ -1260,6 +1261,30 @@
                     <textarea id="sticker-urls-textarea" rows="8" placeholder="例如：&#10;开心:https://example.com/happy.gif&#10;哭泣:https://example.com/cry.png"></textarea>
                 </div>
                 <button type="submit" class="btn btn-primary">开始导入</button>
+            </form>
+        </div>
+    </div>
+    <!-- Doc Import Sticker Modal (从 txt/docx/md 文档批量导入表情) -->
+    <div id="doc-import-sticker-modal" class="modal-overlay">
+        <div class="modal-window" style="max-width: 520px;">
+            <h3>📄 从文档导入表情</h3>
+            <form id="doc-import-sticker-form">
+                <div class="form-group">
+                    <label for="doc-import-sticker-group">分组名称（本批次所有表情将归入此组）</label>
+                    <input type="text" id="doc-import-sticker-group" placeholder="如：通用组">
+                </div>
+                <div class="form-group">
+                    <label for="doc-import-sticker-file">选择文档文件（支持 .txt / .docx / .md）</label>
+                    <input type="file" id="doc-import-sticker-file" accept=".txt,.docx,.md,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="width:100%; padding:6px; border:1px solid #eee; border-radius:8px; background:#fff;">
+                </div>
+                <div class="form-group">
+                    <label for="doc-import-sticker-preview">解析预览（识别到 <span id="doc-import-count">0</span> 行有效数据）</label>
+                    <textarea id="doc-import-sticker-preview" rows="8" placeholder="选择文件后此处会显示解析出的 名称:URL 文本，可手动编辑..." style="font-family:monospace; font-size:12px;"></textarea>
+                </div>
+                <div style="display:flex; gap:8px; justify-content:flex-end;">
+                    <button type="button" class="btn btn-neutral" id="doc-import-cancel-btn">取消</button>
+                    <button type="submit" class="btn btn-primary" id="doc-import-submit-btn">开始导入</button>
+                </div>
             </form>
         </div>
     </div>
