@@ -107,7 +107,7 @@ function setupGroupChatSystem() {
         'setting-group-theme-color', 'setting-group-use-custom-css', 'setting-group-show-timestamp',
         'setting-group-show-notice', 'setting-group-allow-gossip', 'setting-group-avatar-radius',
         'setting-group-bilingual-mode', 'setting-group-bilingual-style', 'setting-group-exclusive-api-enabled',
-        'setting-group-exclusive-api-preset-select'
+        'setting-group-exclusive-api-preset-select', 'setting-group-use-custom-css-day-night'
     ];
     groupAutoSaveChanges.forEach(id => {
         const el = document.getElementById(id);
@@ -157,6 +157,16 @@ function setupGroupChatSystem() {
                 updateBubbleCssPreview(groupPreviewBox, '', true, theme);
                 showToast('样式已重置为默认');
             }
+        });
+    }
+
+    // 自选日夜组合子开关即时折叠
+    const useGroupDayNightCssCheckbox = document.getElementById('setting-group-use-custom-css-day-night');
+    const groupDayNightContainer = document.getElementById('group-bubble-daynight-container');
+    if (useGroupDayNightCssCheckbox && groupDayNightContainer) {
+        useGroupDayNightCssCheckbox.addEventListener('change', (e) => {
+            if (typeof triggerHapticFeedback === 'function') triggerHapticFeedback('light');
+            groupDayNightContainer.style.display = e.target.checked ? 'flex' : 'none';
         });
     }
 
@@ -1113,6 +1123,18 @@ function loadGroupSettingsToSidebar() {
         initTextareaSearchReplace('group-css-toolbar', 'setting-group-custom-bubble-css');
     }
 
+    // 自选日夜组合 CSS（回读）
+    const useGroupDayNightCssCheckbox = document.getElementById('setting-group-use-custom-css-day-night');
+    const groupDayCssTextarea = document.getElementById('setting-group-custom-bubble-css-day');
+    const groupNightCssTextarea = document.getElementById('setting-group-custom-bubble-css-night');
+    const groupDayNightContainer = document.getElementById('group-bubble-daynight-container');
+    if (useGroupDayNightCssCheckbox && groupDayCssTextarea && groupNightCssTextarea && groupDayNightContainer) {
+        useGroupDayNightCssCheckbox.checked = !!group.useCustomBubbleCssDayNight;
+        groupDayCssTextarea.value = group.customBubbleCssDay || '';
+        groupNightCssTextarea.value = group.customBubbleCssNight || '';
+        groupDayNightContainer.style.display = useGroupDayNightCssCheckbox.checked ? 'flex' : 'none';
+    }
+
     const theme = colorThemes[group.theme || 'white_pink'];
     updateBubbleCssPreview(groupPreviewBox, group.customBubbleCss, !group.useCustomBubbleCss, theme);
     populateBubblePresetSelect('group-bubble-preset-select');
@@ -1194,7 +1216,10 @@ async function saveGroupSettingsFromSidebar(showToastFlag = true) {
 
     group.useCustomBubbleCss = document.getElementById('setting-group-use-custom-css').checked;
     group.customBubbleCss = document.getElementById('setting-group-custom-bubble-css').value;
-    
+    group.useCustomBubbleCssDayNight = document.getElementById('setting-group-use-custom-css-day-night').checked;
+    group.customBubbleCssDay = document.getElementById('setting-group-custom-bubble-css-day').value;
+    group.customBubbleCssNight = document.getElementById('setting-group-custom-bubble-css-night').value;
+
     group.titleLayout = document.getElementById('setting-group-title-layout').value;
     const header = document.getElementById('chat-room-header-default');
     if (group.titleLayout === 'center') {

@@ -68,7 +68,8 @@ const switchScreen = (targetId) => {
         if (typeof currentChatId !== 'undefined' && currentChatId) {
             const chat = (currentChatType === 'private') ? db.characters.find(c => c.id === currentChatId) : db.groups.find(g => g.id === currentChatId);
             if (chat) {
-                updateCustomBubbleStyle(currentChatId, chat.customBubbleCss, chat.useCustomBubbleCss);
+                const resolved = resolveBubbleCssForCurrentTheme(chat);
+                updateCustomBubbleStyle(currentChatId, resolved.css, resolved.enabled);
             }
         }
     }
@@ -1500,4 +1501,30 @@ function setupFunctionPanelSwiper() {
             dots.forEach((d, i) => d.classList.toggle('active', i === index));
         }
     });
+}
+
+// === 全局系统主题切换监听：跟随 prefers-color-scheme 切换气泡 CSS ===
+function _applyBubbleCssForCurrentTheme() {
+    if (typeof currentChatId === 'undefined' || !currentChatId) return;
+    const chat = (currentChatType === 'private')
+        ? db.characters.find(c => c.id === currentChatId)
+        : db.groups.find(g => g.id === currentChatId);
+    if (!chat) return;
+    const resolved = resolveBubbleCssForCurrentTheme(chat);
+    updateCustomBubbleStyle(currentChatId, resolved.css, resolved.enabled);
+    if (typeof renderMessages === 'function') {
+        try { renderMessages(false, true); } catch (e) { console.warn('renderMessages after theme change failed', e); }
+    }
+}
+function _initBubbleThemeListener() {
+    if (!window.matchMedia) return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = () => _applyBubbleCssForCurrentTheme();
+    if (mq.addEventListener) mq.addEventListener('change', handler);
+    else if (mq.addListener) mq.addListener(handler);
+}
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _initBubbleThemeListener);
+} else {
+    _initBubbleThemeListener();
 }
