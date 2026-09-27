@@ -160,16 +160,6 @@ function setupGroupChatSystem() {
         });
     }
 
-    // 自选日夜组合子开关即时折叠
-    const useGroupDayNightCssCheckbox = document.getElementById('setting-group-use-custom-css-day-night');
-    const groupDayNightContainer = document.getElementById('group-bubble-daynight-container');
-    if (useGroupDayNightCssCheckbox && groupDayNightContainer) {
-        useGroupDayNightCssCheckbox.addEventListener('change', (e) => {
-            if (typeof triggerHapticFeedback === 'function') triggerHapticFeedback('light');
-            groupDayNightContainer.style.display = e.target.checked ? 'flex' : 'none';
-        });
-    }
-
     const groupAvatarUpload = document.getElementById('setting-group-avatar-upload');
     if (groupAvatarUpload) {
         groupAvatarUpload.addEventListener('change', async (e) => {
@@ -1123,13 +1113,15 @@ function loadGroupSettingsToSidebar() {
         initTextareaSearchReplace('group-css-toolbar', 'setting-group-custom-bubble-css');
     }
 
-    // 自选日夜组合 CSS（回读）
+    // 自选日夜组合预设（先填充选项再设选中值，才能正确显示当前预设名）
     const useGroupDayNightCssCheckbox = document.getElementById('setting-group-use-custom-css-day-night');
     const groupDayCssTextarea = document.getElementById('setting-group-custom-bubble-css-day');
     const groupNightCssTextarea = document.getElementById('setting-group-custom-bubble-css-night');
     const groupDayNightContainer = document.getElementById('group-bubble-daynight-container');
     if (useGroupDayNightCssCheckbox && groupDayCssTextarea && groupNightCssTextarea && groupDayNightContainer) {
         useGroupDayNightCssCheckbox.checked = !!group.useCustomBubbleCssDayNight;
+        populateBubblePresetSelect('setting-group-custom-bubble-css-day');
+        populateBubblePresetSelect('setting-group-custom-bubble-css-night');
         groupDayCssTextarea.value = group.customBubbleCssDay || '';
         groupNightCssTextarea.value = group.customBubbleCssNight || '';
         groupDayNightContainer.style.display = useGroupDayNightCssCheckbox.checked ? 'flex' : 'none';
