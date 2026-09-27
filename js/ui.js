@@ -289,7 +289,7 @@ function removeContextMenu() {
     if (menu) menu.remove();
 }
 
-// 更新气泡样式（支持日夜组合气泡）
+// 更新气泡样式
 function updateCustomBubbleStyle(chatId, css, enabled) {
     const STYLE_TAG_CLASS = 'dynamic-chat-style-tag';
     const existingStyles = document.querySelectorAll(`.${STYLE_TAG_CLASS}, style[id^="custom-bubble-style-for-"]`);
@@ -297,32 +297,24 @@ function updateCustomBubbleStyle(chatId, css, enabled) {
 
     if (!enabled || !css) return;
 
+    // 获取 chat 对象以支持模板变量
     let chat = null;
     if (typeof db !== 'undefined') {
         chat = db.characters.find(c => c.id === chatId) || db.groups.find(g => g.id === chatId);
     }
 
-    if (chat && chat.useDayNightBubble) {
-        const currentMode = (typeof db !== 'undefined' && db.homeScreenMode) ? db.homeScreenMode : 'day';
-        const dayCss = chat.bubbleDayCss || '';
-        const nightCss = chat.bubbleNightCss || '';
-        const targetCss = (currentMode === 'night') ? nightCss : dayCss;
-        if (targetCss) css = targetCss;
-        else return;
-    }
-
-    if (!css) return;
-
+    // 处理模板变量 ({{char_avatar}}, {{user_avatar}} 等)
+    // processTemplate 定义在 js/utils.js 中
     const processedCss = (typeof processTemplate === 'function' && chat) ? processTemplate(css, chat) : css;
 
     const styleElement = document.createElement('style');
     styleElement.id = `custom-bubble-style-for-${chatId}`;
     styleElement.className = STYLE_TAG_CLASS;
+
     styleElement.textContent = processedCss;
+
     document.head.appendChild(styleElement);
 }
-
-
 
 function updateBubbleCssPreview(previewContainer, css, useDefault, theme) {
     previewContainer.innerHTML = '';
@@ -1235,7 +1227,6 @@ async function applyHomeScreenMode(mode) {
         homeScreen.classList.remove('day-mode');
     }
     db.homeScreenMode = mode;
-    if (typeof refreshCurrentChatBubbleByMode === 'function') refreshCurrentChatBubbleByMode();
     await saveData();
 }
 
@@ -1509,38 +1500,4 @@ function setupFunctionPanelSwiper() {
             dots.forEach((d, i) => d.classList.toggle('active', i === index));
         }
     });
-}
-
-function refreshCurrentChatBubbleByMode() {
-    try {
-        const chatScreen = document.getElementById('chat-screen');
-        if (!chatScreen || chatScreen.classList.contains('hidden')) return;
-        let chatId = null;
-        const messagesEl = document.getElementById('chat-messages');
-        if (messagesEl && messagesEl.dataset && messagesEl.dataset.chatId) {
-            chatId = messagesEl.dataset.chatId;
-        }
-        if (!chatId) chatId = chatScreen.dataset.chatId || null;
-        if (!chatId) return;
-        let chat = null;
-        if (typeof db !== 'undefined') {
-            chat = db.characters.find(c => c.id === chatId) || db.groups.find(g => g.id === chatId);
-        }
-        if (!chat) return;
-        const useCustom = !!(chat.useDayNightBubble || chat.useCustomBubbleCss);
-        let css = '';
-        if (chat.useDayNightBubble) {
-            css = (db.homeScreenMode === 'night') ? (chat.bubbleNightCss || '') : (chat.bubbleDayCss || '');
-        } else {
-            css = chat.customBubbleCss || '';
-        }
-        if (typeof updateCustomBubbleStyle === 'function') {
-            updateCustomBubbleStyle(chatId, css, useCustom);
-        }
-    } catch (e) {
-        console.warn('[refreshCurrentChatBubbleByMode]', e);
-    }
-}
-if (typeof window !== 'undefined') {
-    window.refreshCurrentChatBubbleByMode = refreshCurrentChatBubbleByMode;
 }

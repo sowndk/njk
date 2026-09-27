@@ -74,10 +74,6 @@ function setupGroupChatSystem() {
                 unreadCount: 0,
                 useCustomBubbleCss: false,
                 customBubbleCss: '',
-                useDayNightBubble: false,
-                bubbleDayCss: '',
-                bubbleNightCss: '',
-
                 worldBookIds: [],
                 allowGossip: false,
                 privateSessions: {}
@@ -1108,105 +1104,9 @@ function loadGroupSettingsToSidebar() {
     const useGroupCustomCssCheckbox = document.getElementById('setting-group-use-custom-css'),
         groupCustomCssTextarea = document.getElementById('setting-group-custom-bubble-css'),
         groupPreviewBox = document.getElementById('group-bubble-css-preview');
-
-    const groupUseDayNightCheckbox = document.getElementById('setting-group-use-day-night-bubble'),
-        groupBubbleDayTextarea = document.getElementById('setting-group-bubble-day-css'),
-        groupBubbleNightTextarea = document.getElementById('setting-group-bubble-night-css'),
-        groupDayNightPreviewBox = document.getElementById('group-day-night-preview'),
-        groupDayNightPresetSelect = document.getElementById('group-day-night-bubble-preset-select'),
-        groupDayNightApplyPresetBtn = document.getElementById('group-day-night-apply-preset-btn'),
-        groupDayNightSavePresetBtn = document.getElementById('group-day-night-save-preset-btn'),
-        groupDayNightResetBtn = document.getElementById('group-day-night-reset-btn');
     useGroupCustomCssCheckbox.checked = group.useCustomBubbleCss || false;
     groupCustomCssTextarea.value = group.customBubbleCss || '';
     groupCustomCssTextarea.disabled = !useGroupCustomCssCheckbox.checked;
-
-    if (groupUseDayNightCheckbox) {
-        groupUseDayNightCheckbox.checked = !!group.useDayNightBubble;
-        const dnActive = !!group.useDayNightBubble;
-        if (groupBubbleDayTextarea) {
-            groupBubbleDayTextarea.value = group.bubbleDayCss || '';
-            groupBubbleDayTextarea.disabled = dnActive;
-        }
-        if (groupBubbleNightTextarea) {
-            groupBubbleNightTextarea.value = group.bubbleNightCss || '';
-            groupBubbleNightTextarea.disabled = dnActive;
-        }
-    }
-    if (groupDayNightPresetSelect && typeof populateBubblePresetSelect === 'function') {
-        populateBubblePresetSelect('group-day-night-bubble-preset-select');
-    }
-
-    function renderGroupDayNightPreview() {
-        if (!groupDayNightPreviewBox) return;
-        const isNight = document.body.classList.contains('night-mode')
-            || document.documentElement.classList.contains('night-mode');
-        const css = isNight ? (groupBubbleNightTextarea ? groupBubbleNightTextarea.value : '')
-                          : (groupBubbleDayTextarea ? groupBubbleDayTextarea.value : '');
-        groupDayNightPreviewBox.textContent = css || '';
-    }
-    renderGroupDayNightPreview();
-
-    if (groupUseDayNightCheckbox) {
-        groupUseDayNightCheckbox.addEventListener('change', function() {
-            const checked = groupUseDayNightCheckbox.checked;
-            if (groupBubbleDayTextarea) groupBubbleDayTextarea.disabled = checked;
-            if (groupBubbleNightTextarea) groupBubbleNightTextarea.disabled = checked;
-        });
-    }
-    if (groupBubbleDayTextarea) {
-        groupBubbleDayTextarea.addEventListener('input', renderGroupDayNightPreview);
-    }
-    if (groupBubbleNightTextarea) {
-        groupBubbleNightTextarea.addEventListener('input', renderGroupDayNightPreview);
-    }
-    if (groupDayNightApplyPresetBtn) {
-        groupDayNightApplyPresetBtn.addEventListener('click', function() {
-            const sel = groupDayNightPresetSelect;
-            const presets = (typeof _getBubblePresets === 'function') ? _getBubblePresets() : [];
-            const idx = sel ? sel.selectedIndex - 1 : -1;
-            if (idx < 0 || !presets[idx]) {
-                showToast('请选择一个预设：', 'error');
-                return;
-            }
-            const p = presets[idx];
-            if (!p.useDayNightBubble) {
-                showToast('该预设不是日夜组合预设：', 'error');
-                return;
-            }
-            if (groupBubbleDayTextarea) groupBubbleDayTextarea.value = p.bubbleDayCss || '';
-            if (groupBubbleNightTextarea) groupBubbleNightTextarea.value = p.bubbleNightCss || '';
-            renderGroupDayNightPreview();
-            showToast('预设已应用', 'success');
-        });
-    }
-    if (groupDayNightSavePresetBtn) {
-        groupDayNightSavePresetBtn.addEventListener('click', function() {
-            const day = groupBubbleDayTextarea ? groupBubbleDayTextarea.value : '';
-            const night = groupBubbleNightTextarea ? groupBubbleNightTextarea.value : '';
-            if (!day.trim() && !night.trim()) {
-                showToast('两个气泡都为空', 'error');
-                return;
-            }
-            const name = prompt('请输入预设名称：');
-            if (!name) return;
-            const presets = (typeof _getBubblePresets === 'function') ? _getBubblePresets() : [];
-            presets.push({ name: name, useDayNightBubble: true, bubbleDayCss: day, bubbleNightCss: night, createdAt: Date.now() });
-            if (typeof _saveBubblePresets === 'function') _saveBubblePresets(presets);
-            if (groupDayNightPresetSelect && typeof populateBubblePresetSelect === 'function') {
-                populateBubblePresetSelect('group-day-night-bubble-preset-select');
-            }
-            showToast('预设已保存', 'success');
-        });
-    }
-    if (groupDayNightResetBtn) {
-        groupDayNightResetBtn.addEventListener('click', function() {
-            if (groupBubbleDayTextarea) groupBubbleDayTextarea.value = '';
-            if (groupBubbleNightTextarea) groupBubbleNightTextarea.value = '';
-            renderGroupDayNightPreview();
-            showToast('已重置为空', 'success');
-        });
-    }
 
     // 初始化群聊 CSS 搜索替换工具栏
     if (typeof initTextareaSearchReplace === 'function') {
@@ -1294,14 +1194,6 @@ async function saveGroupSettingsFromSidebar(showToastFlag = true) {
 
     group.useCustomBubbleCss = document.getElementById('setting-group-use-custom-css').checked;
     group.customBubbleCss = document.getElementById('setting-group-custom-bubble-css').value;
-    if (groupUseDayNightCheckbox) {
-        group.useDayNightBubble = groupUseDayNightCheckbox.checked;
-    } else {
-        group.useDayNightBubble = false;
-    }
-    group.bubbleDayCss = groupBubbleDayTextarea ? groupBubbleDayTextarea.value : '';
-    group.bubbleNightCss = groupBubbleNightTextarea ? groupBubbleNightTextarea.value : '';
-
     
     group.titleLayout = document.getElementById('setting-group-title-layout').value;
     const header = document.getElementById('chat-room-header-default');
