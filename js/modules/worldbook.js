@@ -356,6 +356,8 @@ async function setupWorldBookApp() {
         const targetFolder = getOrCreateCategoryFolder(category);
         const targetFolderId = targetFolder.id;
 
+        const enabled = document.getElementById('world-book-enabled').checked;
+
         if (currentEditingWorldBookId) {
             const book = db.worldBooks.find(wb => wb.id === currentEditingWorldBookId);
             if (book) {
@@ -364,6 +366,7 @@ async function setupWorldBookApp() {
                 book.position = position;
                 book.category = category;
                 book.depth = depth;
+                book.enabled = enabled;
                 // category 变更时同步调整父文件夹
                 if (book.parentId !== targetFolderId) {
                     book.parentId = targetFolderId;
@@ -371,14 +374,15 @@ async function setupWorldBookApp() {
             }
         } else {
             db.worldBooks.push({
-                id: `wb_${Date.now()}`, 
+                id: `wb_${Date.now()}`,
                 parentId: targetFolderId,
                 type: 'entry',
-                name, 
-                content, 
-                position, 
+                name,
+                content,
+                position,
                 category,
-                depth
+                depth,
+                enabled
             });
         }
         // 保存后清理可能剩下的空文件夹
@@ -421,16 +425,18 @@ async function setupWorldBookApp() {
             worldBookContentInput.value = item.content;
             document.getElementById('world-book-category').value = item.category || '';
             document.getElementById('world-book-depth').value = item.depth !== undefined ? item.depth : 100;
-            
+            // 启用开关：老数据没有 enabled 字段视为启用（向后兼容）
+            document.getElementById('world-book-enabled').checked = item.enabled !== false;
+
         // 安全地设置注入位置，如果不是 after 或 guidelines 或 limit_break 则默认为 before
         let positionValue = 'before';
         if (item.position === 'after') positionValue = 'after';
         else if (item.position === 'guidelines') positionValue = 'guidelines';
         else if (item.position === 'limit_break') positionValue = 'limit_break';
-        
+
         const positionRadio = document.querySelector(`input[name="world-book-position"][value="${positionValue}"]`);
         if (positionRadio) positionRadio.checked = true;
-            
+
             switchScreen('edit-world-book-screen');
         }
     });
@@ -480,13 +486,21 @@ function renderWorldBookList() {
         }
 
         const isFolder = item.type === 'folder';
-        const iconHTML = isFolder 
+        if (!isFolder) card.classList.add('wb-is-entry');
+        // 单条 entry 禁用态视觉：灰显 + 半透明（不作用于 folder）
+        if (!isFolder && item.enabled === false) {
+            card.classList.add('wb-entry-disabled');
+        }
+        const iconHTML = isFolder
             ? `<svg class="wb-folder-icon" viewBox="0 0 24 24" width="${wbViewMode === 'grid' ? 32 : 24}" height="${wbViewMode === 'grid' ? 32 : 24}"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>`
-            : `<svg class="wb-entry-icon" viewBox="0 0 24 24" width="${wbViewMode === 'grid' ? 32 : 24}" height="${wbViewMode === 'grid' ? 32 : 24}"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>`;
+            : '';
 
+        const iconWrapperHTML = iconHTML ? `<div class="wb-icon-wrapper">${iconHTML}</div>` : '';
+        const disabledBadge = (!isFolder && item.enabled === false) ? '<span class="wb-disabled-badge" title="已禁用，不会注入到 AI 上下文">已禁用</span>' : '';
         card.innerHTML = `
-            <div class="wb-icon-wrapper">${iconHTML}</div>
+            ${iconWrapperHTML}
             <div class="wb-item-name">${item.name}</div>
+            ${disabledBadge}
         `;
         
         container.appendChild(card);
@@ -920,7 +934,8 @@ async function importWorldBooksFromFiles(fileList) {
                 content: e.content,
                 category: e.category || baseName,
                 position: e.position || 'before',
-                depth: e.depth || 100
+                depth: e.depth || 100,
+                enabled: e.enabled !== false
             };
             if (e.keywords) newEntry.keywords = e.keywords;
             db.worldBooks.push(newEntry);
