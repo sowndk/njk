@@ -914,11 +914,11 @@ async function importWorldBooksFromFiles(fileList) {
             usedNames.add(finalName);
             const newEntry = {
                 id: `wb_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-                parentId: currentFolderId,
+                parentId: null,
                 type: 'entry',
                 name: finalName,
                 content: e.content,
-                category: e.category || currentFolderName,
+                category: e.category || baseName,
                 position: e.position || 'before',
                 depth: e.depth || 100
             };
@@ -929,6 +929,7 @@ async function importWorldBooksFromFiles(fileList) {
         await saveData();
     }
 
+    await ensureCategoryFoldersConsistency();
     showToast(`导入完成 ✓ 新增 ${totalCreated} 条，跳过 ${totalSkipped} 个文件`);
     renderWorldBookList();
 }
