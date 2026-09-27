@@ -699,3 +699,79 @@
     background-color: #1e1e1e !important;
     color: #e0e0e0 !important;
 }
+/* === 第二十二层：聊天分类栏 + 弹窗 inline 子元素 + 顶部栏按钮白边修复 === */
+/* 触发：用户反馈三个问题
+ *   1) 弹窗“变透明”——根因：#api-presets-list / .content 等 inline style 用了 #fafafa/#f5f5f5/#fff
+ *      而 dark-mode.css 第二十层只覆盖了 .modal-window 自己和 .modal-header/.modal-body/.modal-footer/.content
+ *      这几个类，子元素 inline-style 没被覆盖。
+ *   2) 聊天设置里的选择框白底——根因：chat.css 第 227/233 行 .tab-item.pill-white / .tab-item.tab-manage
+ *      特异性 0,2,0（两 class），dark-mode.css 第二十层 .tab-item 仅 0,1,1，被覆盖。
+ *   3) 顶栏有色差 + All/三横线按钮白边包裹——根因：.chat-category-tabs 整体 #fff（chat.css:189）
+ *      + .page-indicator .dot 是 rgba(0,0,0,0.25)（layout.css:194）深色背景下变深灰点
+ *      + .app-header 的 border-bottom 是 #eee 没改深。
+ * 策略：所有选择器加 [data-theme="dark"] 前缀 + 类链特异化（双 class）+ !important 覆盖 inline-style。
+ */
+[data-theme="dark"] .chat-category-tabs,
+[data-theme="dark"] #chat-category-tabs {
+    background: var(--dark-bg) !important;
+    border-bottom: 1px solid var(--dark-border) !important;
+}
+
+/* 选择框 / 按钮白底 + 浅灰边（chat.css:227/233 特异性 0,2,0，这里同特异性但 !important 胜出）*/
+[data-theme="dark"] .tab-item.pill-white,
+[data-theme="dark"] .tab-item.tab-manage {
+    background-color: var(--dark-surface) !important;
+    color: var(--dark-text) !important;
+    border: 1px solid #2e2e30 !important;
+}
+
+/* 选中态（黑底 pill，dark 模式下保持深色高亮）*/
+[data-theme="dark"] .tab-item.active.pill-black {
+    background-color: var(--dark-primary, #2a2a2c) !important;
+    color: #ffffff !important;
+    border: 1px solid #2e2e30 !important;
+}
+
+/* 三横线 / 星形等 svg 图标（chat.css:240 .tab-item svg 默认黑色）*/
+[data-theme="dark"] .tab-item svg {
+    stroke: var(--dark-text, #e8e8ea) !important;
+    fill: var(--dark-text, #e8e8ea);
+}
+
+/* 页面指示器圆点（layout.css:194 默认黑色半透明，在深色背景下变深灰点 -> 反相）*/
+[data-theme="dark"] .page-indicator .dot {
+    background-color: rgba(255, 255, 255, 0.4) !important;
+}
+[data-theme="dark"] .page-indicator .dot.active {
+    background-color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* 顶部栏底部边线 #eee（layout.css:48）-> 深灰 #2e2e30 避免色差 */
+[data-theme="dark"] .app-header {
+    border-bottom-color: #2e2e30 !important;
+}
+
+/* === 弹窗透明问题修复：覆盖 inline-style 子元素白底 === */
+/* #api-presets-list（index.html:605 inline background:#fafafa;border:1px solid #f0f0f0）*/
+[data-theme="dark"] #api-presets-list {
+    background: var(--dark-card-bg) !important;
+    border-color: var(--dark-border) !important;
+    color: var(--dark-text) !important;
+}
+
+/* 通配覆盖：modal-window 内任何带 inline 浅色背景的子元素 */
+[data-theme="dark"] .modal-window [style*="#fafafa"],
+[data-theme="dark"] .modal-window [style*="#F5F5F5"],
+[data-theme="dark"] .modal-window [style*="#f5f5f5"],
+[data-theme="dark"] .modal-window [style*="#f0f0f0"],
+[data-theme="dark"] .modal-window [style*="#fff"] {
+    background-color: var(--dark-card-bg) !important;
+    color: var(--dark-text) !important;
+    border-color: var(--dark-border) !important;
+}
+
+/* main.content inline background:#f5f5f5（index.html:629 widget-market-screen 等） */
+[data-theme="dark"] main.content[style*="background"] {
+    background-color: var(--dark-bg) !important;
+    color: var(--dark-text) !important;
+}
