@@ -430,3 +430,64 @@
     color: var(--text-color, #333);
     line-height: 1.4;
 }
+
+/* ===== 卡片内嵌启用/禁用开关（步骤 12.bis，区别于表单内 wb-switch） ===== */
+
+/* 让卡片成为 absolute 定位的开关的容器（多选模式下用 .is-selecting 已有 relative） */
+.wb-item-card {
+    position: relative;
+}
+/* 多选模式下隐藏卡片开关，避免与多选 UI 冲突 */
+.wb-item-card.is-selecting .wb-card-toggle {
+    display: none;
+}
+
+/* iOS 风格微型开关（28x16，比表单内 wb-switch 44x26 小一档，专为卡片内嵌设计） */
+.wb-card-toggle {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 16px;
+    display: inline-block;
+    cursor: pointer;
+    z-index: 2;
+    /* 让开关不响应卡片长按进入多选模式 */
+    touch-action: manipulation;
+}
+/* 隐藏原生 checkbox，使用旁边的 slider 做视觉 */
+.wb-card-toggle-input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+/* 滑轨 */
+.wb-card-toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: #cfd4dc;
+    border-radius: 999px;
+    transition: background 0.25s;
+}
+/* 滑块圆点 */
+.wb-card-toggle-slider::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    transition: transform 0.25s;
+}
+/* 选中态 */
+.wb-card-toggle-input:checked ~ .wb-card-toggle-slider {
+    background: var(--primary-color, #4f8cff);
+}
+.wb-card-toggle-input:checked ~ .wb-card-toggle-slider::before {
+    transform: translateX(12px);
+}
