@@ -38,8 +38,7 @@ function setupContactsScreen() {
                 currentChatType = 'private';
                 const char = db.characters.find(c => c.id === charId);
                 if (char) {
-                    const resolved = resolveBubbleCssForCurrentTheme(char);
-                    updateCustomBubbleStyle(currentChatId, resolved.css, resolved.enabled);
+                    updateCustomBubbleStyle(currentChatId, char.customBubbleCss, char.useCustomBubbleCss);
                 }
                 openChatRoom(currentChatId, currentChatType);
             }

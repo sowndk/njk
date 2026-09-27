@@ -596,8 +596,7 @@ function openChatRoom(chatId, type) {
         }
     }
 
-    const resolved = resolveBubbleCssForCurrentTheme(chat);
-    updateCustomBubbleStyle(chatId, resolved.css, resolved.enabled);
+    updateCustomBubbleStyle(chatId, chat.customBubbleCss, chat.useCustomBubbleCss);
     renderMessages(false, true);
     switchScreen('chat-room-screen');
     

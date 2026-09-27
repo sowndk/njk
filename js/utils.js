@@ -920,29 +920,5 @@ window.getRandomValue = getRandomValue;
 window.pad = pad;
 window.formatTimeGap = formatTimeGap;
 window.filterHistoryForAI = filterHistoryForAI;
-
-// 日夜气泡 CSS 解析：根据当前系统主题，从 customBubbleCssDay / customBubbleCssNight（预设名）
-// 中二选一，再查 db.bubbleCssPresets 取对应 css 字段。
-// 日夜组合开关关闭时回退到老 customBubbleCss。
-// 返回 { css: string, enabled: boolean }
-function resolveBubbleCssForCurrentTheme(chat) {
-    if (!chat) return { css: '', enabled: false };
-    if (chat.useCustomBubbleCssDayNight) {
-        const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const presetName = isDark ? (chat.customBubbleCssNight || '') : (chat.customBubbleCssDay || '');
-        if (presetName && window.db && Array.isArray(window.db.bubbleCssPresets)) {
-            const preset = window.db.bubbleCssPresets.find(p => p && p.name === presetName);
-            if (preset && typeof preset.css === 'string') {
-                return { css: preset.css, enabled: !!preset.css.trim() };
-            }
-            // 预设池中找不到该 name（被删除/重命名）—— 回退到空 CSS，不污染
-            return { css: '', enabled: false };
-        }
-        return { css: '', enabled: false };
-    }
-    return { css: chat.customBubbleCss || '', enabled: !!chat.useCustomBubbleCss };
-}
-window.resolveBubbleCssForCurrentTheme = resolveBubbleCssForCurrentTheme;
-
 window.showToast = showToast;
 window.playSound = (typeof playSound !== 'undefined') ? playSound : null; // 防止循环依赖

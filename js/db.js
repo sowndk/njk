@@ -701,9 +701,6 @@ const loadData = async () => {
         if (!c.worldBookIds) c.worldBookIds = [];
         if (c.customBubbleCss === undefined) c.customBubbleCss = '';
         if (c.useCustomBubbleCss === undefined) c.useCustomBubbleCss = false;
-        if (c.useCustomBubbleCssDayNight === undefined) c.useCustomBubbleCssDayNight = false;
-        if (c.customBubbleCssDay === undefined) c.customBubbleCssDay = '';
-        if (c.customBubbleCssNight === undefined) c.customBubbleCssNight = '';
         if (c.showTimestamp === undefined) c.showTimestamp = false;
         if (c.timestampPosition === undefined) c.timestampPosition = 'below_avatar';
         if (!c.statusPanel) {
@@ -734,9 +731,6 @@ const loadData = async () => {
         if (!g.worldBookIds) g.worldBookIds = [];
         if (g.customBubbleCss === undefined) g.customBubbleCss = '';
         if (g.useCustomBubbleCss === undefined) g.useCustomBubbleCss = false;
-        if (g.useCustomBubbleCssDayNight === undefined) g.useCustomBubbleCssDayNight = false;
-        if (g.customBubbleCssDay === undefined) g.customBubbleCssDay = '';
-        if (g.customBubbleCssNight === undefined) g.customBubbleCssNight = '';
         if (g.showTimestamp === undefined) g.showTimestamp = false;
         if (g.timestampPosition === undefined) g.timestampPosition = 'below_avatar';
         if (!g.callHistory) g.callHistory = [];

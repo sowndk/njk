@@ -107,7 +107,7 @@ function setupGroupChatSystem() {
         'setting-group-theme-color', 'setting-group-use-custom-css', 'setting-group-show-timestamp',
         'setting-group-show-notice', 'setting-group-allow-gossip', 'setting-group-avatar-radius',
         'setting-group-bilingual-mode', 'setting-group-bilingual-style', 'setting-group-exclusive-api-enabled',
-        'setting-group-exclusive-api-preset-select', 'setting-group-use-custom-css-day-night'
+        'setting-group-exclusive-api-preset-select'
     ];
     groupAutoSaveChanges.forEach(id => {
         const el = document.getElementById(id);
@@ -119,16 +119,6 @@ function setupGroupChatSystem() {
     if (showGroupNoticeCheckbox && groupNoticeTextarea) {
         showGroupNoticeCheckbox.addEventListener('change', (e) => {
             groupNoticeTextarea.disabled = !e.target.checked;
-        });
-    }
-
-    // 日夜组合开关：即时展开/折叠子容器（不影响表单 submit 逻辑）
-    const useGroupDayNightSwitch = document.getElementById('setting-group-use-custom-css-day-night');
-    const groupDayNightBox = document.getElementById('group-bubble-daynight-container');
-    if (useGroupDayNightSwitch && groupDayNightBox) {
-        useGroupDayNightSwitch.addEventListener('change', (e) => {
-            groupDayNightBox.style.display = e.target.checked ? 'flex' : 'none';
-            if (typeof triggerHapticFeedback === 'function') triggerHapticFeedback('light');
         });
     }
 
@@ -1123,20 +1113,6 @@ function loadGroupSettingsToSidebar() {
         initTextareaSearchReplace('group-css-toolbar', 'setting-group-custom-bubble-css');
     }
 
-    // 自选日夜组合预设（先填充选项再设选中值，才能正确显示当前预设名）
-    const useGroupDayNightCssCheckbox = document.getElementById('setting-group-use-custom-css-day-night');
-    const groupDayCssTextarea = document.getElementById('setting-group-custom-bubble-css-day');
-    const groupNightCssTextarea = document.getElementById('setting-group-custom-bubble-css-night');
-    const groupDayNightContainer = document.getElementById('group-bubble-daynight-container');
-    if (useGroupDayNightCssCheckbox && groupDayCssTextarea && groupNightCssTextarea && groupDayNightContainer) {
-        useGroupDayNightCssCheckbox.checked = !!group.useCustomBubbleCssDayNight;
-        populateBubblePresetSelect('setting-group-custom-bubble-css-day');
-        populateBubblePresetSelect('setting-group-custom-bubble-css-night');
-        groupDayCssTextarea.value = group.customBubbleCssDay || '';
-        groupNightCssTextarea.value = group.customBubbleCssNight || '';
-        groupDayNightContainer.style.display = useGroupDayNightCssCheckbox.checked ? 'flex' : 'none';
-    }
-
     const theme = colorThemes[group.theme || 'white_pink'];
     updateBubbleCssPreview(groupPreviewBox, group.customBubbleCss, !group.useCustomBubbleCss, theme);
     populateBubblePresetSelect('group-bubble-preset-select');
@@ -1218,10 +1194,7 @@ async function saveGroupSettingsFromSidebar(showToastFlag = true) {
 
     group.useCustomBubbleCss = document.getElementById('setting-group-use-custom-css').checked;
     group.customBubbleCss = document.getElementById('setting-group-custom-bubble-css').value;
-    group.useCustomBubbleCssDayNight = document.getElementById('setting-group-use-custom-css-day-night').checked;
-    group.customBubbleCssDay = document.getElementById('setting-group-custom-bubble-css-day').value;
-    group.customBubbleCssNight = document.getElementById('setting-group-custom-bubble-css-night').value;
-
+    
     group.titleLayout = document.getElementById('setting-group-title-layout').value;
     const header = document.getElementById('chat-room-header-default');
     if (group.titleLayout === 'center') {
@@ -1345,9 +1318,9 @@ function sendRenameNotification(group, newName) {
 }
 
 function generateGroupSystemPrompt(group) {
-    const worldBooksBefore = (group.worldBookIds || []).map(id => db.worldBooks.find(wb => wb.id === id && wb.position === 'before')).filter(wb => wb && wb.enabled !== false).sort((a, b) => (a.depth || 100) - (b.depth || 100)).map(wb => wb.content).join('\n');
-    const worldBooksAfter = (group.worldBookIds || []).map(id => db.worldBooks.find(wb => wb.id === id && wb.position === 'after')).filter(wb => wb && wb.enabled !== false).sort((a, b) => (a.depth || 100) - (b.depth || 100)).map(wb => wb.content).join('\n');
-    const worldBooksGuidelines = (group.worldBookIds || []).map(id => db.worldBooks.find(wb => wb.id === id && wb.position === 'guidelines')).filter(wb => wb && wb.enabled !== false).sort((a, b) => (a.depth || 100) - (b.depth || 100)).map(wb => wb.content).join('\n');
+    const worldBooksBefore = (group.worldBookIds || []).map(id => db.worldBooks.find(wb => wb.id === id && wb.position === 'before')).filter(Boolean).sort((a, b) => (a.depth || 100) - (b.depth || 100)).map(wb => wb.content).join('\n');
+    const worldBooksAfter = (group.worldBookIds || []).map(id => db.worldBooks.find(wb => wb.id === id && wb.position === 'after')).filter(Boolean).sort((a, b) => (a.depth || 100) - (b.depth || 100)).map(wb => wb.content).join('\n');
+    const worldBooksGuidelines = (group.worldBookIds || []).map(id => db.worldBooks.find(wb => wb.id === id && wb.position === 'guidelines')).filter(Boolean).sort((a, b) => (a.depth || 100) - (b.depth || 100)).map(wb => wb.content).join('\n');
 
     let prompt = `你正在一个名为“404”的线上聊天软件中，在一个名为“${group.name}”的群聊里进行角色扮演。请严格遵守以下所有规则：\n\n`;
 
