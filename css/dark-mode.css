@@ -836,3 +836,13 @@
 [data-theme="dark"] .wb-switch-text {
     color: var(--dark-text, #e0e0e0);
 }
+
+/* ===== 步骤 12.bis 扩展：卡片内嵌微型开关暗黑模式配色 ===== */
+/* 关状态下滑轨用更深的深灰色，融入暗色卡片背景不刺眼 */
+[data-theme="dark"] .wb-card-toggle-slider {
+    background: #3a3f48;
+}
+/* 选中态保持主色（var(--primary-color) 自动在暗色下亮一点，不另设） */
+[data-theme="dark"] .wb-card-toggle-input:checked ~ .wb-card-toggle-slider {
+    background: var(--primary-color, #4f8cff);
+}
