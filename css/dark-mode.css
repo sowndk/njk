@@ -343,6 +343,24 @@
     fill: #b8b8b8;
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
 }
+[data-theme="dark"] .grid-view .wb-entry-icon,
+[data-theme="dark"] .list-view .wb-entry-icon {
+    color: #707070;
+    fill: #707070;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.4));
+}
+[data-theme="dark"] .list-view .wb-item-card {
+    background: rgba(40, 44, 52, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+        0 4px 14px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px) saturate(150%);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+}
+[data-theme="dark"] .list-view .wb-item-card:active {
+    background: rgba(60, 64, 72, 0.65);
+}
 [data-theme="dark"] .wb-item-card .wb-item-name,
 [data-theme="dark"] .bound-wb-card .content {
     color: var(--dark-text);
@@ -792,4 +810,29 @@
 [data-theme="dark"] main.content[style*="background"] {
     background-color: var(--dark-bg) !important;
     color: var(--dark-text) !important;
+}
+
+/* === 第二十三层：世界书单条 entry 启用/禁用（步骤 12）===
+   触发：用户提出"每个 entry 独立启用/禁用"，禁用时不进 AI 上下文（filter 已在 chat_ai_prompt.js / chat_ai_call.js / group_chat.js 三处完成）
+   视觉：禁用态灰显、"已禁用" 徽章、表单开关在暗黑模式下不刺眼 */
+[data-theme="dark"] .wb-item-card.wb-entry-disabled {
+    opacity: 0.4;
+    filter: grayscale(0.7);
+}
+[data-theme="dark"] .wb-disabled-badge {
+    background: #6a6a6a;
+    color: #d8d8d8;
+}
+[data-theme="dark"] .wb-enabled-toggle-group {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+[data-theme="dark"] .wb-switch-slider {
+    background: #3a3f48;
+}
+[data-theme="dark"] .wb-switch-label input[type="checkbox"]:checked ~ .wb-switch-slider {
+    background: var(--primary-color, #4f8cff);
+}
+[data-theme="dark"] .wb-switch-text {
+    color: var(--dark-text, #e0e0e0);
 }
