@@ -320,10 +320,28 @@
 /* 网格视图卡片 */
 [data-theme="dark"] .wb-item-card,
 [data-theme="dark"] .bound-wb-card {
-    background: var(--dark-card-bg);
+    background: rgba(40, 44, 52, 0.55);
     color: var(--dark-text);
-    border: 1px solid var(--dark-border);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+        0 6px 20px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+}
+[data-theme="dark"] .grid-view .wb-icon-wrapper,
+[data-theme="dark"] .list-view .wb-icon-wrapper {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow:
+        0 6px 18px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+[data-theme="dark"] .grid-view .wb-folder-icon,
+[data-theme="dark"] .list-view .wb-folder-icon {
+    color: #b8b8b8;
+    fill: #b8b8b8;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
 }
 [data-theme="dark"] .wb-item-card .wb-item-name,
 [data-theme="dark"] .bound-wb-card .content {
