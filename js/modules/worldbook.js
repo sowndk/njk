@@ -669,3 +669,184 @@ document.addEventListener('DOMContentLoaded', () => {
         cancelBtn.addEventListener('click', closeWorldBookSelector);
     }
 });
+
+// --- 世界书：从文档导入 (.txt / .json / .docx) ---
+
+// 按连续空行把一段文本切成多条目
+function parseTextIntoEntries(text) {
+    if (!text || !text.trim()) return [];
+    // 按 \n\n 或更多连续换行切段
+    const blocks = text.split(/\n\s*\n+/);
+    const entries = [];
+    for (const raw of blocks) {
+        const block = raw.trim();
+        if (!block) continue;
+        // 段首第一行作 name（去掉 # / 【】 等装饰），剩余作 content
+        const lines = block.split(/\n/);
+        let firstLine = lines[0].trim().replace(/^#+\s*/, '').replace(/^[【\[\(]\s*/, '').replace(/\s*[】\]\)]$/, '');
+        const name = (firstLine || '未命名条目').slice(0, 60);
+        const content = block.length > firstLine.length + 1 ? block.slice(block.indexOf(lines[0]) + lines[0].length).trim() || block : block;
+        if (block === name) {
+            entries.push({ name, content: block });
+        } else {
+            entries.push({ name, content });
+        }
+        if (entries.length >= 999) break; // 安全上限
+    }
+    return entries;
+}
+
+// 解析 JSON 文档为条目数组，支持多种 schema
+function parseJsonIntoEntries(jsonText) {
+    let data;
+    try {
+        data = JSON.parse(jsonText);
+    } catch (e) {
+        throw new Error('JSON 解析失败：' + e.message);
+    }
+    let rawList = [];
+    if (Array.isArray(data)) {
+        rawList = data;
+    } else if (data && Array.isArray(data.entries)) {
+        rawList = data.entries;
+    } else if (data && Array.isArray(data.world_book_entries)) {
+        rawList = data.world_book_entries;
+    } else if (data && Array.isArray(data.character_book?.entries)) {
+        rawList = data.character_book.entries;
+    } else {
+        throw new Error('JSON 结构无法识别，需为数组或 { entries: [...] }');
+    }
+    const validPositions = ['limit_break', 'before', 'after', 'guidelines'];
+    return rawList.map(item => {
+        if (!item || typeof item !== 'object') return null;
+        const content = item.content || item.text || item.description || '';
+        if (!content) return null;
+        return {
+            name: String(item.name || item.title || item.key || '未命名条目').slice(0, 60),
+            content: String(content),
+            category: item.category ? String(item.category).slice(0, 40) : '',
+            keywords: Array.isArray(item.keywords) ? item.keywords.join(', ') : (item.keywords || ''),
+            position: validPositions.includes(item.position) ? item.position : 'before',
+            depth: Number.isFinite(item.depth) ? Math.max(1, Math.min(999, Math.floor(item.depth))) : 100
+        };
+    }).filter(Boolean);
+}
+
+// 检查并返回不冲突的条目名（在当前 db.worldBooks + 新增条目内唯一）
+function uniqueEntryName(baseName, category, usedNames) {
+    const existing = new Set(db.worldBooks.filter(w => w.type === 'entry').map(w => w.name));
+    let candidate = baseName;
+    if (!existing.has(candidate) && !usedNames.has(candidate)) return candidate;
+    // 加分类后缀
+    if (category && !existing.has(`${baseName} (${category})`) && !usedNames.has(`${baseName} (${category})`)) {
+        return `${baseName} (${category})`;
+    }
+    // 随机后缀
+    const suffix = Math.random().toString(36).slice(2, 6);
+    let i = 0;
+    while (i < 100) {
+        candidate = `${baseName}_${suffix}${i > 0 ? '_' + i : ''}`;
+        if (!existing.has(candidate) && !usedNames.has(candidate)) return candidate;
+        i++;
+    }
+    return `${baseName}_${Date.now()}`;
+}
+
+// 核心导入函数
+async function importWorldBooksFromFiles(fileList) {
+    const files = Array.from(fileList || []);
+    if (files.length === 0) {
+        showToast('没有选择文件');
+        return;
+    }
+    const currentFolderId = wbPathStack[wbPathStack.length - 1].id;
+    const currentFolderName = wbPathStack[wbPathStack.length - 1].name;
+    let totalCreated = 0;
+    let totalSkipped = 0;
+    const usedNames = new Set();
+
+    showToast(`开始导入 ${files.length} 个文件...`);
+
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const ext = (file.name.split('.').pop() || '').toLowerCase();
+        showToast(`正在解析 (${i + 1}/${files.length}) ${file.name}`);
+        let entries = [];
+        try {
+            if (ext === 'txt') {
+                const text = await file.text();
+                entries = parseTextIntoEntries(text);
+            } else if (ext === 'json') {
+                const text = await file.text();
+                entries = parseJsonIntoEntries(text);
+            } else if (ext === 'docx') {
+                if (typeof mammoth === 'undefined') {
+                    showToast('mammoth.js 未加载，无法解析 .docx');
+                    totalSkipped++;
+                    continue;
+                }
+                const arrayBuffer = await file.arrayBuffer();
+                const result = await mammoth.extractRawText({ arrayBuffer });
+                entries = parseTextIntoEntries(result.value || '');
+            } else {
+                showToast(`不支持的格式: .${ext}`);
+                totalSkipped++;
+                continue;
+            }
+        } catch (err) {
+            console.error('导入文件失败:', file.name, err);
+            showToast(`解析失败: ${file.name} - ${err.message || err}`);
+            totalSkipped++;
+            continue;
+        }
+
+        if (entries.length === 0) {
+            showToast(`${file.name} 未识别到条目`);
+            continue;
+        }
+
+        for (const e of entries) {
+            const finalName = uniqueEntryName(e.name, e.category, usedNames);
+            usedNames.add(finalName);
+            const newEntry = {
+                id: `wb_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+                parentId: currentFolderId,
+                type: 'entry',
+                name: finalName,
+                content: e.content,
+                category: e.category || currentFolderName,
+                position: e.position || 'before',
+                depth: e.depth || 100
+            };
+            if (e.keywords) newEntry.keywords = e.keywords;
+            db.worldBooks.push(newEntry);
+            totalCreated++;
+        }
+        await saveData();
+    }
+
+    showToast(`导入完成 ✓ 新增 ${totalCreated} 条，跳过 ${totalSkipped} 个文件`);
+    renderWorldBookList();
+}
+
+// 绑定下拉菜单的"从文档导入"项 + 文件 input 事件
+document.addEventListener('DOMContentLoaded', () => {
+    const importMenuItem = document.getElementById('wb-menu-import-doc');
+    const fileInput = document.getElementById('wb-import-file-input');
+    if (!importMenuItem || !fileInput) return;
+
+    importMenuItem.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // 关闭下拉菜单（与新建文件夹/新建条目行为一致）
+        const newMenu = document.getElementById('world-book-new-menu');
+        if (newMenu) newMenu.style.display = 'none';
+        fileInput.value = ''; // 清空以允许选同名文件
+        fileInput.click();
+    });
+
+    fileInput.addEventListener('change', async (e) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+        await importWorldBooksFromFiles(files);
+    });
+});
