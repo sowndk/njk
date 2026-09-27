@@ -52,12 +52,28 @@
     <link rel="stylesheet" href="css/modules/community.css">
     <link rel="stylesheet" href="css/modules/reader.css">
 
+    <!-- Dark Mode: 跟随系统 prefers-color-scheme 自动启用 -->
+    <link rel="stylesheet" href="css/dark-mode.css">
+
     <!-- Other Styles -->
     <link rel="stylesheet" href="contacts.css">
     <link rel="stylesheet" href="more_menu.css">
     <!-- <link rel="stylesheet" href="style.css"> (Deprecated) -->
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <!-- 防 FOUC：页面渲染前立即读取系统主题，设置 data-theme + meta theme-color -->
+    <script>
+    (function() {
+        try {
+            var mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+            if (mq && mq.matches) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                var meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', '#1a1a1c');
+            }
+        } catch (e) { /* 静默失败 */ }
+    })();
+    </script>
 </head>
 
 <body>
