@@ -83,16 +83,6 @@ function setupChatSettings() {
         }
     });
 
-    // 自选日夜组合子开关即时折叠
-    const useDayNightCssCheckbox = document.getElementById('setting-use-custom-css-day-night');
-    const dayNightContainer = document.getElementById('private-bubble-daynight-container');
-    if (useDayNightCssCheckbox && dayNightContainer) {
-        useDayNightCssCheckbox.addEventListener('change', (e) => {
-            triggerHapticFeedback('light');
-            dayNightContainer.style.display = e.target.checked ? 'flex' : 'none';
-        });
-    }
-
     customCssTextarea.addEventListener('input', (e) => {
         const char = db.characters.find(c => c.id === currentChatId);
         if (char && useCustomCssCheckbox.checked) {
@@ -559,13 +549,15 @@ function loadSettingsToSidebar() {
         const theme = colorThemes[e.theme || 'white_pink'];
         updateBubbleCssPreview(privatePreviewBox, e.customBubbleCss, !e.useCustomBubbleCss, theme);
 
-        // 自选日夜组合 CSS
+        // 自选日夜组合预设（先填充选项再设选中值，才能正确显示当前预设名）
         const useDayNightCssCheckbox = document.getElementById('setting-use-custom-css-day-night');
         const dayCssTextarea = document.getElementById('setting-custom-bubble-css-day');
         const nightCssTextarea = document.getElementById('setting-custom-bubble-css-night');
         const dayNightContainer = document.getElementById('private-bubble-daynight-container');
         if (useDayNightCssCheckbox && dayCssTextarea && nightCssTextarea && dayNightContainer) {
             useDayNightCssCheckbox.checked = !!e.useCustomBubbleCssDayNight;
+            populateBubblePresetSelect('setting-custom-bubble-css-day');
+            populateBubblePresetSelect('setting-custom-bubble-css-night');
             dayCssTextarea.value = e.customBubbleCssDay || '';
             nightCssTextarea.value = e.customBubbleCssNight || '';
             dayNightContainer.style.display = useDayNightCssCheckbox.checked ? 'flex' : 'none';

@@ -274,12 +274,12 @@ const groupSettingsHtml = `
                                     <span class="kkt-slider"></span>
                                 </label>
                             </div>
+<div class="kkt-item" id="group-bubble-daynight-container" style="display:none;">
+                            <div class="kkt-item-label">日间气泡预设（亮色主题时使用）</div>
+                            <select id="setting-group-custom-bubble-css-day" style="width:100%; border:1px solid #eee; border-radius:8px; padding:5px; margin-top:5px;"></select>
+                            <div class="kkt-item-label" style="margin-top:10px;">夜间气泡预设（暗色主题时使用）</div>
+                            <select id="setting-group-custom-bubble-css-night" style="width:100%; border:1px solid #eee; border-radius:8px; padding:5px; margin-top:5px;"></select>
                         </div>
-                        <div class="kkt-item" id="group-bubble-daynight-container" style="display:none;">
-                            <div class="kkt-item-label">日间气泡 CSS（亮色主题时使用）</div>
-                            <textarea id="setting-group-custom-bubble-css-day" rows="4" placeholder="日间 CSS..." style="width:100%; border:1px solid #eee; border-radius:8px; padding:5px; margin-top:5px;"></textarea>
-                            <div class="kkt-item-label" style="margin-top:10px;">夜间气泡 CSS（暗色主题时使用）</div>
-                            <textarea id="setting-group-custom-bubble-css-night" rows="4" placeholder="夜间 CSS..." style="width:100%; border:1px solid #eee; border-radius:8px; padding:5px; margin-top:5px;"></textarea>
                         </div>
                     </div>
 
