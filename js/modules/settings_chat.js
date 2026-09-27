@@ -40,13 +40,7 @@ function setupChatSettings() {
 
     document.getElementById('chat-settings-form').addEventListener('submit', e => {
         e.preventDefault();
-        console.log('[chat-settings] submit event fired');
-        try {
-            saveSettingsFromSidebar();
-        } catch (err) {
-            console.error('[chat-settings] saveSettingsFromSidebar threw:', err);
-            showToast('保存失败：' + (err && err.message ? err.message : String(err)));
-        }
+        saveSettingsFromSidebar();
     });
 
     // --- Tab 切换逻辑 ---
@@ -88,7 +82,7 @@ function setupChatSettings() {
             updateBubbleCssPreview(privatePreviewBox, customCssTextarea.value, !e.target.checked, theme);
         }
     });
-
+    
     customCssTextarea.addEventListener('input', (e) => {
         const char = db.characters.find(c => c.id === currentChatId);
         if (char && useCustomCssCheckbox.checked) {
@@ -110,17 +104,7 @@ function setupChatSettings() {
             showToast('样式已重置为默认');
         }
     });
-
-    // 日夜组合开关：即时展开/折叠子容器（不影响表单 submit 逻辑）
-    const useDayNightSwitch = document.getElementById('setting-use-custom-css-day-night');
-    const dayNightBox = document.getElementById('private-bubble-daynight-container');
-    if (useDayNightSwitch && dayNightBox) {
-        useDayNightSwitch.addEventListener('change', (e) => {
-            dayNightBox.style.display = e.target.checked ? 'flex' : 'none';
-            triggerHapticFeedback && triggerHapticFeedback('light');
-        });
-    }
-
+    
     document.getElementById('setting-char-avatar-upload').addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -564,21 +548,6 @@ function loadSettingsToSidebar() {
         customCssTextarea.disabled = !useCustomCssCheckbox.checked;
         const theme = colorThemes[e.theme || 'white_pink'];
         updateBubbleCssPreview(privatePreviewBox, e.customBubbleCss, !e.useCustomBubbleCss, theme);
-
-        // 自选日夜组合预设（先填充选项再设选中值，才能正确显示当前预设名）
-        const useDayNightCssCheckbox = document.getElementById('setting-use-custom-css-day-night');
-        const dayCssTextarea = document.getElementById('setting-custom-bubble-css-day');
-        const nightCssTextarea = document.getElementById('setting-custom-bubble-css-night');
-        const dayNightContainer = document.getElementById('private-bubble-daynight-container');
-        if (useDayNightCssCheckbox && dayCssTextarea && nightCssTextarea && dayNightContainer) {
-            useDayNightCssCheckbox.checked = !!e.useCustomBubbleCssDayNight;
-            populateBubblePresetSelect('setting-custom-bubble-css-day');
-            populateBubblePresetSelect('setting-custom-bubble-css-night');
-            dayCssTextarea.value = e.customBubbleCssDay || '';
-            nightCssTextarea.value = e.customBubbleCssNight || '';
-            dayNightContainer.style.display = useDayNightCssCheckbox.checked ? 'flex' : 'none';
-        }
-
         populateBubblePresetSelect('bubble-preset-select');
         populateMyPersonaSelect();
         if (typeof populateStatusBarPresetSelect === 'function') {
@@ -803,9 +772,6 @@ async function saveSettingsFromSidebar() {
 
         e.useCustomBubbleCss = document.getElementById('setting-use-custom-css').checked;
         e.customBubbleCss = document.getElementById('setting-custom-bubble-css').value;
-        e.useCustomBubbleCssDayNight = document.getElementById('setting-use-custom-css-day-night').checked;
-        e.customBubbleCssDay = document.getElementById('setting-custom-bubble-css-day').value;
-        e.customBubbleCssNight = document.getElementById('setting-custom-bubble-css-night').value;
         e.bilingualModeEnabled = document.getElementById('setting-bilingual-mode').checked;
         e.bilingualBubbleStyle = document.getElementById('setting-bilingual-style').value;
         

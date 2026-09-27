@@ -266,21 +266,6 @@ const groupSettingsHtml = `
                                  <button type="button" id="reset-group-custom-bubble-css-btn" class="btn btn-small btn-neutral" style="padding:4px 8px;">重置</button>
                              </div>
                         </div>
-                        <div class="kkt-item">
-                            <div class="kkt-item-label">日夜组合（跟随系统主题）</div>
-                            <div class="kkt-item-control">
-                                <label class="kkt-switch">
-                                    <input type="checkbox" id="setting-group-use-custom-css-day-night">
-                                    <span class="kkt-slider"></span>
-                                </label>
-                            </div>
-                            <div class="kkt-item" id="group-bubble-daynight-container" style="display:none; flex-direction:column; align-items:stretch; gap:6px; padding:8px 0;">
-                                <div class="kkt-item-label">日间气泡预设（亮色主题时使用）</div>
-                                <select id="setting-group-custom-bubble-css-day" style="width:100%; border:1px solid #eee; border-radius:8px; padding:5px; margin-top:5px;"></select>
-                                <div class="kkt-item-label" style="margin-top:10px;">夜间气泡预设（暗色主题时使用）</div>
-                                <select id="setting-group-custom-bubble-css-night" style="width:100%; border:1px solid #eee; border-radius:8px; padding:5px; margin-top:5px;"></select>
-                            </div>
-                        </div>
                     </div>
 
                     <button type="submit" class="btn btn-primary" style="margin-top:20px;">保存所有更改</button>

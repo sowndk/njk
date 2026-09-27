@@ -550,25 +550,8 @@ const chatSettingsHtml = `
                                      <button type="button" id="manage-presets-btn" class="btn btn-small" style="padding:4px 8px;">管</button>
                                      <button type="button" id="export-preset-btn" class="btn btn-small" style="padding:4px 8px;">导出</button>
                                      <button type="button" id="import-preset-btn" class="btn btn-small" style="padding:4px 8px;">导入</button>
-<button type="button" id="reset-custom-bubble-css-btn" class="btn btn-small btn-neutral" style="padding:4px 8px;">重置</button>
+                                     <button type="button" id="reset-custom-bubble-css-btn" class="btn btn-small btn-neutral" style="padding:4px 8px;">重置</button>
                                  </div>
-                             </div>
-
-                            <!-- 日夜组合子开关（同气泡组内） -->
-                            <div class="kkt-item">
-                                <div class="kkt-item-label">日夜组合（跟随系统主题）</div>
-                                <div class="kkt-item-control">
-                                    <label class="kkt-switch">
-                                        <input type="checkbox" id="setting-use-custom-css-day-night">
-                                        <span class="kkt-slider"></span>
-                                    </label>
-                                </div>
-                                <div class="kkt-item" id="private-bubble-daynight-container" style="display:none; flex-direction:column; align-items:stretch; gap:6px; padding:8px 0;">
-                                    <div style="font-size:12px; color:#999; margin-bottom:6px;">白天气泡预设（亮色主题时使用）</div>
-                                    <select id="setting-custom-bubble-css-day" style="width:100%; border:1px solid #eee; border-radius:8px; padding:5px;"></select>
-                                    <div style="font-size:12px; color:#999; margin: 8px 0 6px;">夜间气泡预设（暗色主题时使用）</div>
-                                    <select id="setting-custom-bubble-css-night" style="width:100%; border:1px solid #eee; border-radius:8px; padding:5px;"></select>
-                                </div>
                             </div>
                         </div>
                     </div>

@@ -7,7 +7,6 @@ async function setupStickerSystem() {
     
     const menuMultiSelectBtn = document.getElementById('menu-multi-select-btn');
     const menuBatchImportBtn = document.getElementById('menu-batch-import-btn');
-    const menuDocImportBtn = document.getElementById('menu-doc-import-btn');
     const menuAddNewBtn = document.getElementById('menu-add-new-btn');
     const menuCancelBtn = document.getElementById('menu-cancel-btn');
 
@@ -82,127 +81,6 @@ async function setupStickerSystem() {
         batchAddStickerModal.classList.add('visible');
         stickerUrlsTextarea.value = '';
         batchStickerGroupInput.value = '';
-    });
-
-    // ===== 从文档导入表情（支持 .txt / .md / .docx） =====
-    const docImportStickerModal = document.getElementById('doc-import-sticker-modal');
-    const docImportStickerForm = document.getElementById('doc-import-sticker-form');
-    const docImportGroupInput = document.getElementById('doc-import-sticker-group');
-    const docImportFileInput = document.getElementById('doc-import-sticker-file');
-    const docImportPreview = document.getElementById('doc-import-sticker-preview');
-    const docImportCount = document.getElementById('doc-import-count');
-    const docImportCancelBtn = document.getElementById('doc-import-cancel-btn');
-
-    function refreshDocImportCount() {
-        const text = (docImportPreview.value || '').trim();
-        if (!text) {
-            docImportCount.textContent = '0';
-            return;
-        }
-        const lines = text.split('\n');
-        let count = 0;
-        for (const line of lines) {
-            const t = line.trim().replace('：', ':');
-            if (!t) continue;
-            const ci = t.indexOf(':');
-            if (ci > 0 && t.substring(ci + 1).trim().startsWith('http')) count++;
-        }
-        docImportCount.textContent = String(count);
-    }
-
-    // 解析后的文本先入预览框（用户可编辑），点"开始导入"才真正入库
-    async function handleDocImportFile(file) {
-        if (!file) return;
-        const nameLower = file.name.toLowerCase();
-        docImportPreview.value = `⏳ 正在解析 ${file.name} ...`;
-        docImportCount.textContent = '0';
-        try {
-            let text = '';
-            if (nameLower.endsWith('.docx')) {
-                // 用项目已有的 mammoth 把 docx 转纯文本（项目已通过 CDN 引入 mammoth@1.4.21）
-                if (typeof mammoth === 'undefined') {
-                    throw new Error('mammoth 库未加载，请检查网络连接');
-                }
-                const arrayBuffer = await file.arrayBuffer();
-                const result = await mammoth.extractRawText({ arrayBuffer });
-                text = (result && result.value) ? result.value : '';
-                if (result && result.messages && result.messages.length) {
-                    console.log('[doc-import] mammoth warnings:', result.messages);
-                }
-            } else if (nameLower.endsWith('.txt') || nameLower.endsWith('.md') || file.type === 'text/plain') {
-                text = await file.text();
-            } else {
-                throw new Error('暂不支持的文件类型：' + (file.type || file.name));
-            }
-            // 规范化换行 + 过滤空行
-            text = text.replace(/\r\n?/g, '\n');
-            docImportPreview.value = text.trim();
-            refreshDocImportCount();
-            showToast(`已解析 ${file.name}`);
-        } catch (err) {
-            console.error('[doc-import] 解析失败:', err);
-            docImportPreview.value = '';
-            refreshDocImportCount();
-            showToast('解析失败：' + (err && err.message ? err.message : String(err)));
-        }
-    }
-
-    menuDocImportBtn.addEventListener('click', () => {
-        stickerMenuActionSheet.classList.remove('visible');
-        docImportGroupInput.value = '';
-        docImportFileInput.value = '';
-        docImportPreview.value = '';
-        docImportCount.textContent = '0';
-        docImportStickerModal.classList.add('visible');
-    });
-
-    docImportCancelBtn.addEventListener('click', () => {
-        docImportStickerModal.classList.remove('visible');
-    });
-
-    docImportFileInput.addEventListener('change', (e) => {
-        const file = e.target.files && e.target.files[0];
-        if (file) handleDocImportFile(file);
-    });
-
-    // 用户编辑预览文本时实时刷新计数
-    docImportPreview.addEventListener('input', refreshDocImportCount);
-
-    docImportStickerForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const textInput = (docImportPreview.value || '').trim();
-        const groupName = docImportGroupInput.value.trim();
-        if (!textInput) return showToast('请先选择文件或在预览框粘贴 名称:URL 数据');
-        if (!groupName) return showToast('请填写分组名称');
-        const lines = textInput.split('\n');
-        const newStickers = [];
-        for (const line of lines) {
-            let trimmedLine = line.trim().replace('：', ':');
-            if (!trimmedLine) continue;
-            const colonIndex = trimmedLine.indexOf(':');
-            if (colonIndex <= 0) continue;
-            const name = trimmedLine.substring(0, colonIndex).trim();
-            const url = trimmedLine.substring(colonIndex + 1).trim();
-            if (name && url.startsWith('http')) {
-                newStickers.push({
-                    id: `sticker_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                    name: name,
-                    data: url,
-                    group: groupName,
-                    lastUsedTime: Date.now()
-                });
-            }
-        }
-        if (newStickers.length > 0) {
-            db.myStickers.push(...newStickers);
-            await saveData();
-            docImportStickerModal.classList.remove('visible');
-            showToast(`文档导入成功，新增 ${newStickers.length} 个表情`);
-            renderStickerCategories();
-            renderStickerGrid();
-        } else {
-            showToast('未识别到有效的 名称:URL 数据');
-        }
     });
 
     menuAddNewBtn.addEventListener('click', () => {
