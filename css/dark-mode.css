@@ -320,46 +320,10 @@
 /* 网格视图卡片 */
 [data-theme="dark"] .wb-item-card,
 [data-theme="dark"] .bound-wb-card {
-    background: rgba(40, 44, 52, 0.55);
+    background: var(--dark-card-bg);
     color: var(--dark-text);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow:
-        0 6px 20px rgba(0, 0, 0, 0.35),
-        inset 0 1px 0 rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(12px) saturate(140%);
-    -webkit-backdrop-filter: blur(12px) saturate(140%);
-}
-[data-theme="dark"] .grid-view .wb-icon-wrapper,
-[data-theme="dark"] .list-view .wb-icon-wrapper {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow:
-        0 6px 18px rgba(0, 0, 0, 0.3),
-        inset 0 1px 0 rgba(255, 255, 255, 0.08);
-}
-[data-theme="dark"] .grid-view .wb-folder-icon,
-[data-theme="dark"] .list-view .wb-folder-icon {
-    color: #b8b8b8;
-    fill: #b8b8b8;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
-}
-[data-theme="dark"] .grid-view .wb-entry-icon,
-[data-theme="dark"] .list-view .wb-entry-icon {
-    color: #707070;
-    fill: #707070;
-    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.4));
-}
-[data-theme="dark"] .list-view .wb-item-card {
-    background: rgba(40, 44, 52, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow:
-        0 4px 14px rgba(0, 0, 0, 0.3),
-        inset 0 1px 0 rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(12px) saturate(150%);
-    -webkit-backdrop-filter: blur(12px) saturate(150%);
-}
-[data-theme="dark"] .list-view .wb-item-card:active {
-    background: rgba(60, 64, 72, 0.65);
+    border: 1px solid var(--dark-border);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 [data-theme="dark"] .wb-item-card .wb-item-name,
 [data-theme="dark"] .bound-wb-card .content {
@@ -811,38 +775,92 @@
     background-color: var(--dark-bg) !important;
     color: var(--dark-text) !important;
 }
-
-/* === 第二十三层：世界书单条 entry 启用/禁用（步骤 12）===
-   触发：用户提出"每个 entry 独立启用/禁用"，禁用时不进 AI 上下文（filter 已在 chat_ai_prompt.js / chat_ai_call.js / group_chat.js 三处完成）
-   视觉：禁用态灰显、"已禁用" 徽章、表单开关在暗黑模式下不刺眼 */
-[data-theme="dark"] .wb-item-card.wb-entry-disabled {
-    opacity: 0.4;
-    filter: grayscale(0.7);
+/* === 第二十三层：剩余弹窗卡片透明修复 === */
+/* 触发：用户反馈“只剩下这个弹窗卡片，还是透明的”
+ *   上轮修复后仍剩以下 inline-style 浅色背景的弹窗卡片 / 玻璃拟态元素未盖住：
+ *     1) index.html:1464 <div class="modal-window" style="...; background: #f5f5f5;">  世界书选择全屏弹窗
+ *     2) index.html:1802 <div class="modal-window" style="...; background: #f5f5f5;">  转发聊天弹窗
+ *     3) index.html:1803 <div style="padding:15px; background:#fff; border-bottom:1px solid #eee;">  标题条
+ *     4) index.html:2159 <div class="modal-window" style="background: transparent;">  全屏透明容器（不需覆盖）
+ *     5) index.html:2167 <div id="airdrop-window" class="modal-window" style="background: rgba(255,255,255,0.1); backdrop-filter:blur(16px);">  玻璃拟态
+ *     6) index.html:2244 <div style="padding:15px; border-bottom:1px solid #eee; background:#fff;">  airdrop历史标题条
+ *     7) index.html:2250 <div id="airdrop-history-grid" style="...; background:#f5f5f5;">  网格容器
+ *     8) index.html:745  <div class="more-profile-card custom-glass-style">  玻璃拟态卡片（依赖 base.css）
+ *     9) index.html:724  <div class="scope-modal-content">  搜索范围弹窗内容
+ *    10) index.html:1473 wb-selector-breadcrumb style="background:#fff; padding:10px 15px; border-bottom:1px solid #eee"
+ *
+ * 根因：上一轮用 .modal-window[style*="background"] 看似匹配 inline `background: #f5f5f5`，
+ *      但 inline `background: #f5f5f5` 简写在 Chrome cascade 中即使被 `!important` 也与作者样式表的简写冲突，
+ *      Chrome 在某些场景下让 inline 胜出（背景仍是 #f5f5f5）。
+ *
+ * 修复：用 [style*="#f5f5f5"]、[style*="#fff"] 等精确字符串属性选择器 + 同时声明 background-color/background-image 等子属性，
+ *      绕过简写冲突 + 额外覆盖玻璃拟态卡片、搜索范围弹窗、airdrop 弹窗等。
+ */
+/* ---- (A) 整个 modal-window 本身是浅色 inline 背景 ---- */
+[data-theme="dark"] div.modal-window[style*="#f5f5f5"],
+[data-theme="dark"] div.modal-window[style*="#F5F5F5"],
+[data-theme="dark"] div.modal-window[style*="#fafafa"],
+[data-theme="dark"] div.modal-window[style*="#f0f0f0"],
+[data-theme="dark"] div.modal-window[style*="#fff"] {
+    background-color: var(--dark-card-bg) !important;
+    background-image: none !important;
+    color: var(--dark-text) !important;
+    border-color: var(--dark-border) !important;
 }
-[data-theme="dark"] .wb-disabled-badge {
-    background: #6a6a6a;
-    color: #d8d8d8;
+/* ---- (B) modal-window 内任意 inline 浅色背景子元素（含 #fff 标题条、#f5f5f5 网格）---- */
+[data-theme="dark"] div[style*="#f5f5f5"],
+[data-theme="dark"] div[style*="#F5F5F5"],
+[data-theme="dark"] div[style*="#fafafa"],
+[data-theme="dark"] div[style*="#f0f0f0"],
+[data-theme="dark"] div[style*="background: #fff"] {
+    background-color: var(--dark-card-bg) !important;
+    background-image: none !important;
+    color: var(--dark-text) !important;
 }
-[data-theme="dark"] .wb-enabled-toggle-group {
-    background: rgba(255, 255, 255, 0.04);
-    border-color: rgba(255, 255, 255, 0.1);
+/* ---- (C) airdrop-window 玻璃拟态：iOS 风毛玻璃在深色模式下加深 ---- */
+[data-theme="dark"] #airdrop-window {
+    background-color: rgba(20, 20, 22, 0.75) !important;
+    background-image: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(20px) saturate(140%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
+    color: var(--dark-text) !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6) !important;
 }
-[data-theme="dark"] .wb-switch-slider {
-    background: #3a3f48;
+/* airdrop-window 内文本色 */
+[data-theme="dark"] #airdrop-window * { color: var(--dark-text) !important; }
+/* ---- (D) airdrop-history 网格容器浅色 #f5f5f5 已被 (B) 覆盖；补充内嵌文本 ---- */
+[data-theme="dark"] #airdrop-history-grid { background-image: none !important; }
+/* ---- (E) 玻璃拟态卡片：more-profile-card + custom-glass-style 通用覆盖 ---- */
+[data-theme="dark"] .more-profile-card,
+[data-theme="dark"] .custom-glass-style {
+    background-color: rgba(30, 30, 32, 0.7) !important;
+    background-image: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(20px) saturate(140%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
+    color: var(--dark-text) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
-[data-theme="dark"] .wb-switch-label input[type="checkbox"]:checked ~ .wb-switch-slider {
-    background: var(--primary-color, #4f8cff);
+[data-theme="dark"] .more-profile-card .more-profile-name,
+[data-theme="dark"] .more-profile-card .profile-content-layer { color: var(--dark-text) !important; }
+/* ---- (F) 搜索范围弹窗（scope-modal-content）---- */
+[data-theme="dark"] .scope-modal-content {
+    background-color: var(--dark-card-bg) !important;
+    background-image: none !important;
+    color: var(--dark-text) !important;
+    border: 1px solid var(--dark-border) !important;
 }
-[data-theme="dark"] .wb-switch-text {
-    color: var(--dark-text, #e0e0e0);
+[data-theme="dark"] .scope-modal-content h3 { color: var(--dark-text) !important; }
+[data-theme="dark"] .scope-list { background-color: transparent !important; }
+/* ---- (G) 世界书选择器顶部条 #1473 wb-selector-breadcrumb ---- */
+[data-theme="dark"] .wb-selector-breadcrumb {
+    background-color: var(--dark-surface) !important;
+    color: var(--dark-text) !important;
+    border-bottom-color: var(--dark-border) !important;
 }
-
-/* ===== 步骤 12.bis 扩展：卡片内嵌微型开关暗黑模式配色 ===== */
-/* 关状态下滑轨用更深的深灰色，融入暗色卡片背景不刺眼 */
-[data-theme="dark"] .wb-card-toggle-slider {
-    background: #3a3f48;
-}
-/* 选中态保持主色（var(--primary-color) 自动在暗色下亮一点，不另设） */
-[data-theme="dark"] .wb-card-toggle-input:checked ~ .wb-card-toggle-slider {
-    background: var(--primary-color, #4f8cff);
-}
+/* ---- (H) 全屏透明容器 full-image-modal 内容（#2159）保持 transparent，只改子元素文字 ---- */
+[data-theme="dark"] #full-image-modal { background-color: rgba(0, 0, 0, 0.95) !important; }
+/* ----  兜底：forwarded-chat-modal / forwarded-chat-content 内文字 ---- */
+[data-theme="dark"] #forwarded-chat-content { color: var(--dark-text) !important; background-color: var(--dark-card-bg) !important; }
+[data-theme="dark"] #forwarded-chat-modal .modal-window[style*="#f5f5f5"] { background-image: none !important; }
