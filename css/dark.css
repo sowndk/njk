@@ -296,6 +296,26 @@
         background: #1c1c1e !important;
         border-color: #48484a !important;
     }
+
+    /* 世界书列表视图暗色玻璃拟态适配 */
+    .list-view {
+        background: rgba(44, 44, 46, 0.7) !important;
+        border-color: rgba(255, 255, 255, 0.1) !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+    }
+    .list-view .wb-item-card {
+        border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+    }
+    .list-view .wb-item-card:active {
+        background-color: rgba(255, 255, 255, 0.08) !important;
+    }
+    .list-view .wb-item-name {
+        color: #f2f2f7 !important;
+    }
+    .list-view .wb-folder-icon {
+        color: #8e8e93 !important;
+        fill: #8e8e93 !important;
+    }
 }
 
 /* === 第十二层：全局 ActionSheet / ContextMenu（弹层） === */
