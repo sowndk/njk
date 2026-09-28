@@ -1,6 +1,5 @@
 // --- 世界书功能 (js/modules/worldbook.js) ---
 
-let wbViewMode = 'grid'; // 'grid' 或 'list'
 let wbPathStack = [{ id: null, name: '世界书' }];
 
 function enterWorldBookMultiSelectMode(initialId) {
@@ -8,7 +7,6 @@ function enterWorldBookMultiSelectMode(initialId) {
     isWorldBookMultiSelectMode = true;
 
     document.getElementById('add-world-book-btn').style.display = 'none';
-    document.getElementById('world-book-view-toggle-btn').style.display = 'none';
     document.getElementById('cancel-wb-multi-select-btn').style.display = 'inline-block';
     document.getElementById('world-book-multi-select-bar').style.display = 'flex';
     document.querySelector('#world-book-screen .content').style.paddingBottom = '70px';
@@ -26,7 +24,6 @@ function exitWorldBookMultiSelectMode() {
     isWorldBookMultiSelectMode = false;
 
     document.getElementById('add-world-book-btn').style.display = 'inline-block';
-    document.getElementById('world-book-view-toggle-btn').style.display = 'inline-block';
     document.getElementById('cancel-wb-multi-select-btn').style.display = 'none';
     document.getElementById('world-book-multi-select-bar').style.display = 'none';
     document.querySelector('#world-book-screen .content').style.paddingBottom = '0';
@@ -207,7 +204,6 @@ async function setupWorldBookApp() {
     await migrateWorldBookPositions();
     await migrateWorldBookCategories();
     const addWorldBookBtn = document.getElementById('add-world-book-btn');
-    const viewToggleBtn = document.getElementById('world-book-view-toggle-btn');
     const backBtn = document.getElementById('world-book-back-btn');
     const newMenu = document.getElementById('world-book-new-menu');
     
@@ -216,15 +212,6 @@ async function setupWorldBookApp() {
     const worldBookContentInput = document.getElementById('world-book-content');
     const worldBookListContainer = document.getElementById('world-book-list-container');
     const worldBookIdInput = document.getElementById('world-book-id');
-
-    // 视图切换
-    viewToggleBtn.addEventListener('click', () => {
-        wbViewMode = wbViewMode === 'grid' ? 'list' : 'grid';
-        document.getElementById('wb-grid-icon').style.display = wbViewMode === 'grid' ? 'block' : 'none';
-        document.getElementById('wb-list-icon').style.display = wbViewMode === 'list' ? 'block' : 'none';
-        worldBookListContainer.className = wbViewMode === 'grid' ? 'grid-view' : 'list-view';
-        renderWorldBookList();
-    });
 
     // 返回逻辑
     backBtn.addEventListener('click', (e) => {
@@ -665,8 +652,8 @@ function renderWorldBookList() {
 
         const isFolder = item.type === 'folder';
         const iconHTML = isFolder 
-            ? `<svg class="wb-folder-icon" viewBox="0 0 24 24" width="${wbViewMode === 'grid' ? 32 : 24}" height="${wbViewMode === 'grid' ? 32 : 24}"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>`
-            : `<svg class="wb-entry-icon" viewBox="0 0 24 24" width="${wbViewMode === 'grid' ? 32 : 24}" height="${wbViewMode === 'grid' ? 32 : 24}"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>`;
+            ? `<svg class="wb-folder-icon" viewBox="0 0 24 24" width="24" height="24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>`
+            : `<svg class="wb-entry-icon" viewBox="0 0 24 24" width="24" height="24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>`;
 
         card.innerHTML = `
             <div class="wb-icon-wrapper">${iconHTML}</div>
