@@ -67,6 +67,9 @@ function setupChatSettings() {
     const useCustomCssCheckbox = document.getElementById('setting-use-custom-css'),
         customCssTextarea = document.getElementById('setting-custom-bubble-css'),
         resetCustomCssBtn = document.getElementById('reset-custom-bubble-css-btn'),
+        useDayNightCheckbox = document.getElementById('setting-use-bubble-day-night-preset'),
+        bubblePresetDaySelect = document.getElementById('setting-bubble-preset-day-select'),
+        bubblePresetNightSelect = document.getElementById('setting-bubble-preset-night-select'),
         privatePreviewBox = document.getElementById('private-bubble-css-preview');
 
     // 初始化私聊 CSS 搜索替换工具栏
@@ -545,6 +548,9 @@ function loadSettingsToSidebar() {
             privatePreviewBox = document.getElementById('private-bubble-css-preview');
         useCustomCssCheckbox.checked = e.useCustomBubbleCss || false;
         customCssTextarea.value = e.customBubbleCss || '';
+        useDayNightCheckbox.checked = e.useBubbleDayNightPreset === true;
+        bubblePresetDaySelect.value = e.bubbleCssPresetDayName || '';
+        bubblePresetNightSelect.value = e.bubbleCssPresetNightName || '';
         customCssTextarea.disabled = !useCustomCssCheckbox.checked;
         const theme = colorThemes[e.theme || 'white_pink'];
         updateBubbleCssPreview(privatePreviewBox, e.customBubbleCss, !e.useCustomBubbleCss, theme);
@@ -772,6 +778,9 @@ async function saveSettingsFromSidebar() {
 
         e.useCustomBubbleCss = document.getElementById('setting-use-custom-css').checked;
         e.customBubbleCss = document.getElementById('setting-custom-bubble-css').value;
+        e.useBubbleDayNightPreset = document.getElementById('setting-use-bubble-day-night-preset').checked;
+        e.bubbleCssPresetDayName = document.getElementById('setting-bubble-preset-day-select').value;
+        e.bubbleCssPresetNightName = document.getElementById('setting-bubble-preset-night-select').value;
         e.bilingualModeEnabled = document.getElementById('setting-bilingual-mode').checked;
         e.bilingualBubbleStyle = document.getElementById('setting-bilingual-style').value;
         

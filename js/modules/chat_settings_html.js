@@ -551,6 +551,20 @@ const chatSettingsHtml = `
                                      <button type="button" id="export-preset-btn" class="btn btn-small" style="padding:4px 8px;">导出</button>
                                      <button type="button" id="import-preset-btn" class="btn btn-small" style="padding:4px 8px;">导入</button>
                                      <button type="button" id="reset-custom-bubble-css-btn" class="btn btn-small btn-neutral" style="padding:4px 8px;">重置</button>
+                                <div class="kkt-group" style="margin-top:8px; padding-top:8px; border-top:1px solid #eee;">
+                                    <div class="kkt-item">
+                                        <label class="kkt-switch"><input type="checkbox" id="setting-use-bubble-day-night-preset"><span class="kkt-slider"></span></label>
+                                        <span class="kkt-item-label">启用气泡日夜组合预设（跟随系统）</span>
+                                    </div>
+                                    <div class="kkt-item">
+                                        <span class="kkt-item-label">☀️ 白天预设</span>
+                                        <select id="setting-bubble-preset-day-select" class="kkt-item-control" style="flex:1;"><option value="">— 选择预设 —</option></select>
+                                    </div>
+                                    <div class="kkt-item">
+                                        <span class="kkt-item-label">🌙 夜间预设</span>
+                                        <select id="setting-bubble-preset-night-select" class="kkt-item-control" style="flex:1;"><option value="">— 选择预设 —</option></select>
+                                    </div>
+                                </div>
                                  </div>
                             </div>
                         </div>
