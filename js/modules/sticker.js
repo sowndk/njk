@@ -243,22 +243,32 @@ async function setupStickerSystem() {
         if (!textInput) return showToast('请输入数据');
         const lines = textInput.split('\n');
         const newStickers = [];
+        // 放宽契约：只要行内任意位置出现 http:// 或 https:// 即视为一条 URL
+        // 名字取 URL 之前的文本（去空白），空名字用文件名兜底
+        const urlRegex = /https?:\/\/\S+/i;
+        // 用于无名字时的兜底：优先用导入文档名，否则用默认前缀
+        const fallbackNameBase = (groupName || '表情').replace(/[\\/:*?"<>|]/g, '_');
+        let fallbackCounter = 0;
         for (const line of lines) {
-            let trimmedLine = line.trim().replace('：', ':');
+            const trimmedLine = line.trim();
             if (!trimmedLine) continue;
-            const colonIndex = trimmedLine.indexOf(':');
-            if (colonIndex <= 0) continue;
-            const name = trimmedLine.substring(0, colonIndex).trim();
-            const url = trimmedLine.substring(colonIndex + 1).trim();
-            if (name && url.startsWith('http')) {
-                newStickers.push({
-                    id: `sticker_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                    name: name,
-                    data: url,
-                    group: groupName,
-                    lastUsedTime: Date.now() 
-                });
+            const match = trimmedLine.match(urlRegex);
+            if (!match) continue;
+            const url = match[0];
+            const before = trimmedLine.substring(0, match.index).trim();
+            // 去掉常见分隔符尾巴（:,：,=,-,空格 等）以获得更干净的名字
+            let name = before.replace(/[\s:：=\-]+$/, '').trim();
+            if (!name) {
+                fallbackCounter++;
+                name = `${fallbackNameBase}_${fallbackCounter}`;
             }
+            newStickers.push({
+                id: `sticker_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                name: name,
+                data: url,
+                group: groupName,
+                lastUsedTime: Date.now()
+            });
         }
         if (newStickers.length > 0) {
             db.myStickers.push(...newStickers);
