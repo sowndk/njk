@@ -42,23 +42,27 @@
     background-color: #f0f0f0;
 }
 
-/* 列表视图 */
+/* 列表视图 - 玻璃拟态风格 */
 .list-view {
     display: flex;
     flex-direction: column;
-    background-color: #fff;
-    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 14px;
     overflow: hidden;
-    border: 1px solid #eee;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
 .list-view .wb-item-card {
     display: flex;
     align-items: center;
-    padding: 12px 16px;
-    gap: 16px;
+    padding: 13px 16px;
+    gap: 14px;
     cursor: pointer;
-    border-bottom: 1px solid #f5f5f5;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    transition: background-color 0.15s ease;
 }
 
 .list-view .wb-item-card:last-child {
@@ -66,30 +70,27 @@
 }
 
 .list-view .wb-item-card:active {
-    background-color: #f0f0f0;
+    background-color: rgba(0, 0, 0, 0.05);
 }
 
 .list-view .wb-icon-wrapper {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 }
 
 .list-view .wb-folder-icon {
-    color: #ffca28;
-    fill: #ffca28;
-}
-
-.list-view .wb-entry-icon {
-    color: #42a5f5;
-    fill: #42a5f5;
+    color: #3a3a3c;
+    fill: #3a3a3c;
 }
 
 .list-view .wb-item-name {
     font-size: 15px;
-    color: #333;
+    font-weight: 500;
+    color: #1c1c1e;
     flex: 1;
     white-space: nowrap;
     overflow: hidden;
@@ -101,8 +102,13 @@
     position: relative;
 }
 
+.wb-item-card.selected {
+    background-color: rgba(0, 122, 255, 0.12) !important;
+}
+
 .wb-item-card.selected .wb-icon-wrapper {
     background: var(--primary-color) !important;
+    border-radius: 6px;
 }
 
 .wb-item-card.selected .wb-icon-wrapper svg {
