@@ -420,7 +420,7 @@ async function setupWorldBookApp() {
                 const currentFolderId = wbPathStack[wbPathStack.length - 1].id;
                 const now = Date.now();
 
-                // 自动归纳：根据条目分类自动在当前层级查找或创建文件夹；分类空白归入「未分类」文件夹
+                // 自动归纳：根据条目分类自动在根目录下查找或创建文件夹；分类空白归入「未分类」文件夹
                 const folderMap = new Map();
                 let createdFolderCount = 0;
 
@@ -429,10 +429,10 @@ async function setupWorldBookApp() {
 
                     let targetFolderId = folderMap.get(catName);
                     if (!targetFolderId) {
-                        // 先在当前目录下查找是否存在同名文件夹
+                        // 在根目录下查找是否存在同名文件夹
                         let existingFolder = db.worldBooks.find(b =>
                             b.type === 'folder' &&
-                            b.parentId === currentFolderId &&
+                            !b.parentId &&
                             b.name === catName
                         );
 
@@ -441,7 +441,7 @@ async function setupWorldBookApp() {
                             const newFolderId = `wb_f_${now}_${createdFolderCount}`;
                             existingFolder = {
                                 id: newFolderId,
-                                parentId: currentFolderId,
+                                parentId: null,
                                 type: 'folder',
                                 name: catName
                             };
@@ -501,6 +501,18 @@ async function setupWorldBookApp() {
 
         if (!name || !content) return showToast('名称和内容不能为空');
         
+        const targetCatName = category || '未分类';
+        let targetFolder = db.worldBooks.find(b => b.type === 'folder' && !b.parentId && b.name === targetCatName);
+        if (!targetFolder) {
+            targetFolder = {
+                id: `wb_f_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+                parentId: null,
+                type: 'folder',
+                name: targetCatName
+            };
+            db.worldBooks.push(targetFolder);
+        }
+
         if (currentEditingWorldBookId) {
             const book = db.worldBooks.find(wb => wb.id === currentEditingWorldBookId);
             if (book) {
@@ -509,11 +521,12 @@ async function setupWorldBookApp() {
                 book.position = position;
                 book.category = category;
                 book.depth = depth;
+                book.parentId = targetFolder.id;
             }
         } else {
             db.worldBooks.push({
                 id: `wb_${Date.now()}`, 
-                parentId: currentFolderId,
+                parentId: targetFolder.id,
                 type: 'entry',
                 name, 
                 content, 
