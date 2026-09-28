@@ -1233,6 +1233,11 @@ function addMessageBubble(message, targetChatId, targetChatType) {
                 name: senderName,
                 message: previewText.substring(0, 30)
             });
+
+            // 如果处于后台或非当前聊天，触发系统级锁屏通知
+            if (typeof window.sendSystemNotification === 'function') {
+                window.sendSystemNotification(senderName, previewText);
+            }
         }
         return; 
     }
