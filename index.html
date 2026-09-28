@@ -267,23 +267,6 @@
                 <h1 class="title" id="world-book-title">世界书</h1>
             </div>
             <div class="action-btn-group" style="position: relative;">
-                <!-- 视图切换按钮 -->
-                <button class="action-btn" id="world-book-view-toggle-btn" title="切换视图" style="display: flex; align-items: center; justify-content: center;">
-                    <svg id="wb-grid-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="3" width="7" height="7"></rect>
-                        <rect x="14" y="3" width="7" height="7"></rect>
-                        <rect x="14" y="14" width="7" height="7"></rect>
-                        <rect x="3" y="14" width="7" height="7"></rect>
-                    </svg>
-                    <svg id="wb-list-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
-                        <line x1="8" y1="6" x2="21" y2="6"></line>
-                        <line x1="8" y1="12" x2="21" y2="12"></line>
-                        <line x1="8" y1="18" x2="21" y2="18"></line>
-                        <line x1="3" y1="6" x2="3.01" y2="6"></line>
-                        <line x1="3" y1="12" x2="3.01" y2="12"></line>
-                        <line x1="3" y1="18" x2="3.01" y2="18"></line>
-                    </svg>
-                </button>
                 <button class="action-btn" id="add-world-book-btn">+</button>
                 <button class="action-btn" id="cancel-wb-multi-select-btn" style="display: none; font-size: 16px;">取消</button>
                 
@@ -295,7 +278,7 @@
             </div>
         </header>
         <main class="content" id="world-book-content-scroll">
-            <div id="world-book-list-container" class="grid-view"></div>
+            <div id="world-book-list-container" class="list-view"></div>
             <div class="placeholder-text" id="no-world-books-placeholder" style="display: none;">
                 <p>你的世界一片混沌...</p>
                 <p>点击右上角的“+”创造第一个设定吧！</p>
