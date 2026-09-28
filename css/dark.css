@@ -36,8 +36,8 @@
         --chat-bottom-bar-bg: #2c2c2e;
         --folder-pill-bg: #2c2c2e;
         --folder-pill-text: #d0d0d2;
-        --folder-pill-active-bg: #ffffff;
-        --folder-pill-active-text: #1c1c1e;
+        --folder-pill-active-bg: #2c2c2e;        /* 修复：原写 #ffffff 导致 active 态白底黑字，现改为深灰保持"深底高亮"一致 */
+        --folder-pill-active-text: #ffffff;       /* 修复：原写 #1c1c1e 与 active-bg 反向 */
         /* 切换系统 form 控件风格 */
         color-scheme: dark;
     }
@@ -329,5 +329,61 @@
     }
     .action-sheet-button.danger {
         color: #ff453a !important;
+    }
+}
+/* === 第十三层：联系人列表页白底闭环（步骤 15） ===
+   问题：#chat-list-screen 顶部"文件夹 pill 行"刺眼白底 + 联系人行白底
+   根因：①.chat-category-tabs 整行 background:#fff（chat.css L189）
+         ②.tab-item.pill-white 单标签白底（chat.css L226）
+         ③.tab-item.tab-manage 单标签白底（chat.css L232）
+         ④.tab-item.active.pill-black 在暗色下 #1e1e1e 与 #1c1c1e 背景融为一体看不见
+         ⑤#chat-list-container .list-item 是 ID 限定选择器（特异性 0,1,1），
+            上一版用 .list-item（0,1,0）压不住，必须升级到同等/更高特异性
+*/
+@media (prefers-color-scheme: dark) {
+    /* 顶部文件夹标签行整行背景 */
+    .chat-category-tabs {
+        background-color: #1c1c1e !important;
+    }
+    /* 非 active 态标签（pill-white / tab-manage）→ 深灰卡片色 */
+    .tab-item.pill-white,
+    .tab-item.tab-manage {
+        background-color: #2c2c2e !important;
+        border-color: #3a3a3c !important;
+        color: #e0e0e0 !important;
+    }
+    /* active 态标签（pill-black）：原 #1e1e1e 与背景 #1c1c1e 融为一体看不见，
+       改为 #0a84ff 蓝色高亮 + 白字（保留"选中态"语义又能在暗色背景上明显区分） */
+    .tab-item.active.pill-black {
+        background-color: #0a84ff !important;
+        color: #ffffff !important;
+        border-color: #0a84ff !important;
+    }
+    /* 联系人行：升级到 #chat-list-container .list-item 限定选择器
+       （与 chat.css L246-252 原选择器特异性 0,1,1 等同） */
+    #chat-list-container .list-item {
+        background-color: #1c1c1e !important;
+        border-bottom: 1px solid #2c2c2e !important;
+    }
+    #chat-list-container .list-item:hover {
+        background-color: #2c2c2e !important;
+    }
+    /* 联系人列表头像边框在暗色下改色 */
+    #chat-list-container .chat-avatar {
+        border-color: #3a3a3c !important;
+    }
+    /* 联系人名字/详情文字色（防止深色背景上还是黑字看不见） */
+    #chat-list-container .item-details .name,
+    #chat-list-container .item-details .preview,
+    #chat-list-container .item-details .time {
+        color: #e0e0e0;
+    }
+    #chat-list-container .item-details .preview {
+        color: #8e8e93;
+    }
+    /* 顶部 + 按钮（新建文件夹）图标在暗色下提亮 */
+    .chat-category-tabs .tab-item svg,
+    .chat-category-tabs .tab-item svg path {
+        stroke: #e0e0e0;
     }
 }
