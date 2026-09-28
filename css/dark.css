@@ -147,3 +147,187 @@
         border-color: #3a3a3c;
     }
 }
+
+/* === 第九层：设置页卡片组（kkt-group / kkt-item / feature-card / bubble-css-preview） === */
+@media (prefers-color-scheme: dark) {
+    /* 设置主卡片容器 */
+    .kkt-group {
+        background-color: #2c2c2e !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    }
+    /* 设置列表项（基础 + last-child 去掉白底） */
+    .kkt-item {
+        background-color: #2c2c2e !important;
+        border-bottom-color: #3a3a3c !important;
+    }
+    .kkt-item:active {
+        background-color: #3a3a3c !important;
+    }
+    /* 气泡 CSS 预览卡片（个性化设置里的实时预览块） */
+    .bubble-css-preview {
+        background-color: #2c2c2e !important;
+        border-color: #3a3a3c !important;
+    }
+    /* 个性化设置「功能开关」网格卡片 */
+    .feature-control-center {
+        background-color: #1c1c1e !important;
+    }
+    .feature-card {
+        background-color: #2c2c2e !important;
+        color: #e0e0e0 !important;
+    }
+    .feature-card.is-on {
+        background-color: rgba(10, 132, 255, 0.18) !important; /* 暗色版淡蓝高亮 */
+    }
+    .feature-card-icon,
+    .feature-card-title {
+        color: #e0e0e0 !important;
+    }
+    .feature-card-desc {
+        color: #8e8e93 !important;
+    }
+    /* 折叠详情面板 */
+    .feature-details-panel {
+        background-color: transparent !important;
+    }
+    .feature-details-panel .kkt-group {
+        background-color: #2c2c2e !important;
+    }
+    /* 设置里贴纸/标签组 */
+    .sticker-group-tag {
+        background-color: #2c2c2e !important;
+        color: #e0e0e0 !important;
+    }
+    .sticker-group-tag.selected {
+        background-color: #0a84ff !important;
+        color: #ffffff !important;
+    }
+    /* API 设置里的成员/收件人选择行 */
+    .group-recipient-select-item,
+    .member-selection-item,
+    .invite-member-select-item,
+    .storage-detail-item {
+        background-color: #2c2c2e !important;
+        border-bottom-color: #3a3a3c !important;
+        color: #e0e0e0 !important;
+    }
+    .storage-detail-name {
+        color: #e0e0e0 !important;
+    }
+    .storage-detail-size,
+    .storage-detail-percentage {
+        color: #8e8e93 !important;
+    }
+}
+
+/* === 第十层：编辑工具栏（textarea-edit-toolbar） === */
+@media (prefers-color-scheme: dark) {
+    .toolbar-main-box {
+        background: #2c2c2e !important;
+        border-color: #3a3a3c !important;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4) !important;
+    }
+    .toolbar-toggle-btn {
+        background: #2c2c2e !important;
+        color: #e0e0e0 !important;
+    }
+    .toolbar-toggle-btn:active {
+        background: #3a3a3c !important;
+    }
+    .toolbar-search-input,
+    .toolbar-replace-input {
+        background-color: #1c1c1e !important;
+        border-color: #3a3a3c !important;
+        color: #e0e0e0 !important;
+    }
+    .toolbar-match-count {
+        color: #8e8e93 !important;
+    }
+    .textarea-edit-toolbar button:not(.toolbar-toggle-btn) {
+        color: #d0d0d2 !important;
+    }
+    .textarea-edit-toolbar button:not(.toolbar-toggle-btn):active {
+        background: #3a3a3c !important;
+    }
+    .toolbar-replace-row {
+        border-top-color: #3a3a3c !important;
+    }
+    /* 自定义壁纸预览 */
+    .wallpaper-preview {
+        background-color: #2c2c2e !important;
+    }
+}
+
+/* === 第十一层：世界书 popover 菜单（新建文件夹/新建条目） === */
+@media (prefers-color-scheme: dark) {
+    /* 世界书页背景容器 */
+    #world-book-screen,
+    #edit-world-book-screen {
+        background-color: #1c1c1e !important;
+    }
+    /* 世界书「新建文件夹/新建条目」下拉 popover */
+    .world-book-new-menu {
+        background: #2c2c2e !important;
+        border-color: #3a3a3c !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important;
+    }
+    .world-book-new-menu .menu-item {
+        color: #e0e0e0 !important;
+        border-bottom-color: #3a3a3c !important;
+    }
+    .world-book-new-menu .menu-item:last-child {
+        border-bottom: none !important;
+    }
+    .world-book-new-menu .menu-item:active {
+        background-color: #3a3a3c !important;
+    }
+    /* 世界书全屏选择器列表 */
+    .wb-selector-row {
+        background: #2c2c2e !important;
+        border-bottom-color: #3a3a3c !important;
+    }
+    .wb-selector-row:active {
+        background-color: #3a3a3c !important;
+    }
+    .wb-selector-name {
+        color: #e0e0e0 !important;
+    }
+    .wb-selector-checkbox {
+        background: #1c1c1e !important;
+        border-color: #48484a !important;
+    }
+}
+
+/* === 第十二层：全局 ActionSheet / ContextMenu（弹层） === */
+@media (prefers-color-scheme: dark) {
+    /* 右键/长按上下文菜单 */
+    .context-menu {
+        background: rgba(44, 44, 46, 0.96) !important;
+        border-color: rgba(255, 255, 255, 0.08) !important;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6) !important;
+    }
+    .context-menu-item {
+        color: #e0e0e0 !important;
+    }
+    .context-menu-item:hover {
+        background-color: rgba(255, 255, 255, 0.08) !important;
+    }
+    .context-menu-item:active {
+        background-color: rgba(255, 255, 255, 0.14) !important;
+    }
+    /* 底部 ActionSheet（聊天设置/世界书/API 设置共用） */
+    .action-sheet {
+        background: #2c2c2e !important;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5) !important;
+    }
+    .action-sheet-button {
+        background: #3a3a3c !important;
+        color: #0a84ff !important;
+    }
+    .action-sheet-button:active {
+        background: #48484a !important;
+    }
+    .action-sheet-button.danger {
+        color: #ff453a !important;
+    }
+}
