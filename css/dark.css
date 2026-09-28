@@ -746,4 +746,18 @@
     .kkt-slider {
         background-color: #48484a !important;
     }
+
+    /* ---- 17. 气泡预设操作胶囊按钮暗色适配 ---- */
+    .bubble-action-text-row {
+        width: 100% !important;
+    }
+    .bubble-text-btn {
+        background: #2c2c2e !important;
+        border-color: #3a3a3c !important;
+        color: #0a84ff !important;
+    }
+    .bubble-text-btn:active {
+        background: #3a3a3c !important;
+        opacity: 0.9 !important;
+    }
 }
