@@ -25,6 +25,8 @@ async function setupStickerSystem() {
     const batchAddStickerForm = document.getElementById('batch-add-sticker-form');
     const stickerUrlsTextarea = document.getElementById('sticker-urls-textarea');
     const batchStickerGroupInput = document.getElementById('batch-sticker-group');
+    const stickerDocFile = document.getElementById('sticker-doc-file');
+    const stickerDocStatus = document.getElementById('sticker-doc-status');
     const addStickerModal = document.getElementById('add-sticker-modal');
     const addStickerForm = document.getElementById('add-sticker-form');
     const stickerNameInput = document.getElementById('sticker-name');
@@ -172,6 +174,68 @@ async function setupStickerSystem() {
         }
     });
 
+    // === 文档导入辅助：docx/txt/md 文件 → 自动填充分组+文本域 ===
+    function stripFileExt(name) {
+        return (name || '').replace(/\.[^./\\]+$/, '');
+    }
+    async function readDocxText(arrayBuffer) {
+        // mammoth.extractRawText 已通过 index.html CDN 引入
+        if (typeof mammoth === 'undefined' || !mammoth || !mammoth.extractRawText) {
+            throw new Error('mammoth 未加载，无法解析 docx');
+        }
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        return result && result.value ? result.value : '';
+    }
+    async function handleStickerDocFile(file) {
+        if (!file) return;
+        stickerDocStatus.textContent = `正在解析 ${file.name}...`;
+        stickerDocStatus.style.color = '#888';
+        try {
+            const lowerName = (file.name || '').toLowerCase();
+            let text = '';
+            if (lowerName.endsWith('.docx')) {
+                const buf = await file.arrayBuffer();
+                text = await readDocxText(buf);
+            } else if (lowerName.endsWith('.txt') || lowerName.endsWith('.md') || file.type.startsWith('text/')) {
+                text = await file.text();
+            } else {
+                throw new Error('仅支持 .txt / .md / .docx 格式');
+            }
+            // 填入文本域
+            stickerUrlsTextarea.value = text;
+            // 自动填分组：仅在用户没填时才用文件名
+            if (!batchStickerGroupInput.value.trim()) {
+                batchStickerGroupInput.value = stripFileExt(file.name);
+            }
+            const lineCount = text.split('\n').filter(l => l.trim()).length;
+            stickerDocStatus.textContent = `✓ 已解析 ${file.name}（${lineCount} 行有效文本）`;
+            stickerDocStatus.style.color = '#34c759';
+        } catch (err) {
+            console.error('文档解析失败:', err);
+            stickerDocStatus.textContent = `✗ 解析失败：${err.message || err}`;
+            stickerDocStatus.style.color = '#ff3b30';
+            showToast('文档解析失败');
+        }
+    }
+    if (stickerDocFile) {
+        stickerDocFile.addEventListener('change', (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (file) handleStickerDocFile(file);
+        });
+    }
+    // modal 关闭时清空 file input 与状态
+    if (batchAddStickerModal) {
+        const observer = new MutationObserver(() => {
+            if (!batchAddStickerModal.classList.contains('visible')) {
+                if (stickerDocFile) stickerDocFile.value = '';
+                if (stickerDocStatus) {
+                    stickerDocStatus.textContent = '';
+                    stickerDocStatus.style.color = '#888';
+                }
+            }
+        });
+        observer.observe(batchAddStickerModal, { attributes: true, attributeFilter: ['class'] });
+    }
     batchAddStickerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const textInput = stickerUrlsTextarea.value.trim();
