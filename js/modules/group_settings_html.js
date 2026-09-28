@@ -265,6 +265,29 @@ const groupSettingsHtml = `
                                  <button type="button" id="group-import-preset-btn" class="btn btn-small" style="padding:4px 8px;">导入</button>
                                  <button type="button" id="reset-group-custom-bubble-css-btn" class="btn btn-small btn-neutral" style="padding:4px 8px;">重置</button>
                              </div>
+
+                             <!-- 日夜组合预设子块：开启后跟随系统模式自动切换 -->
+                             <div class="kkt-item" style="flex-direction: column; align-items: stretch; margin-top: 10px;">
+                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                        <div class="kkt-item-label">日夜组合预设（跟随系统模式）</div>
+                                        <div class="kkt-item-control">
+                                            <label class="kkt-switch">
+                                                <input type="checkbox" id="setting-group-use-day-night-preset">
+                                                <span class="kkt-slider"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div id="group-bubble-daynight-container" style="display: none; flex-direction: column; gap: 6px;">
+                                        <div style="display: flex; align-items: center; gap: 6px;">
+                                            <span style="font-size: 12px; color: #666; min-width: 36px;">白天</span>
+                                            <select id="setting-group-bubble-preset-day-select" style="flex: 1; padding: 4px;"><option value="">未选择</option></select>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 6px;">
+                                            <span style="font-size: 12px; color: #666; min-width: 36px;">夜间</span>
+                                            <select id="setting-group-bubble-preset-night-select" style="flex: 1; padding: 4px;"><option value="">未选择</option></select>
+                                        </div>
+                                    </div>
+                             </div>
                         </div>
                     </div>
 

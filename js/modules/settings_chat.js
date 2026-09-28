@@ -553,6 +553,25 @@ function loadSettingsToSidebar() {
         if (typeof populateStatusBarPresetSelect === 'function') {
             populateStatusBarPresetSelect();
         }
+
+        // 日夜组合预设子块初始化（步骤 18）
+        const useDayNightPresetCheckbox = document.getElementById('setting-use-day-night-preset');
+        const dayPresetSelect = document.getElementById('setting-bubble-preset-day-select');
+        const nightPresetSelect = document.getElementById('setting-bubble-preset-night-select');
+        const daynightContainer = document.getElementById('private-bubble-daynight-container');
+        if (useDayNightPresetCheckbox && dayPresetSelect && nightPresetSelect && daynightContainer) {
+            populateBubblePresetSelect('setting-bubble-preset-day-select');
+            populateBubblePresetSelect('setting-bubble-preset-night-select');
+            const useFlag = e.useBubbleDayNightPreset === true;
+            useDayNightPresetCheckbox.checked = useFlag;
+            dayPresetSelect.value = e.bubbleCssPresetDayName || '';
+            nightPresetSelect.value = e.bubbleCssPresetNightName || '';
+            daynightContainer.style.display = useFlag ? 'flex' : 'none';
+            // 开关切换时显隐下拉容器
+            useDayNightPresetCheckbox.addEventListener('change', () => {
+                daynightContainer.style.display = useDayNightPresetCheckbox.checked ? 'flex' : 'none';
+            });
+        }
     }
 }
 
@@ -772,6 +791,15 @@ async function saveSettingsFromSidebar() {
 
         e.useCustomBubbleCss = document.getElementById('setting-use-custom-css').checked;
         e.customBubbleCss = document.getElementById('setting-custom-bubble-css').value;
+        // 日夜组合预设（步骤 18）
+        const useDayNightPresetCheckbox = document.getElementById('setting-use-day-night-preset');
+        const dayPresetSelect = document.getElementById('setting-bubble-preset-day-select');
+        const nightPresetSelect = document.getElementById('setting-bubble-preset-night-select');
+        if (useDayNightPresetCheckbox && dayPresetSelect && nightPresetSelect) {
+            e.useBubbleDayNightPreset = useDayNightPresetCheckbox.checked;
+            e.bubbleCssPresetDayName = dayPresetSelect.value || '';
+            e.bubbleCssPresetNightName = nightPresetSelect.value || '';
+        }
         e.bilingualModeEnabled = document.getElementById('setting-bilingual-mode').checked;
         e.bilingualBubbleStyle = document.getElementById('setting-bilingual-style').value;
         
