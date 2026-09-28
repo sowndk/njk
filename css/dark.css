@@ -485,3 +485,195 @@
         border-color: #3a3a3c !important;
     }
 }
+
+/* ============================================================
+ * 第 15 层：聊天设置屏文字色 + All 图标反向改白底黑字 + 联系人 name/preview 改白 + 弹出菜单盲区扫描覆盖
+ * 触发源：用户 #2 反馈「聊天设置里文字改白」「All 蓝底改白底黑字」「联系人名字预览都改白」「扫描弹出菜单盲区」
+ * 设计要点：
+ *   - 聊天设置屏 3 screen（#chat-settings-screen / #group-settings-screen / #customize-screen）背景是硬编码 #f2f2f2，
+ *     设置页主卡片（.kkt-group / .kkt-item）和 modal 一样也需要暗背景；
+ *   - 文字色统一按「主要→纯白 / 次要→#d0d0d2 / 辅助→#8e8e93」三档分布；
+ *   - All 图标（.tab-item.active.pill-black）从步骤 15 的「蓝底白字」反向改回「白底黑字」；
+ *   - 联系人名字/预览必须用真实存在的类名（.item-name / .item-preview，
+ *     第 13 层用了简写 .name/.preview 实际匹配不到 — 这是反向 bug，本层修复）；
+ *   - 扫描盲区覆盖：.settings-tabs / .settings-tab-item / .feature-card.is-on / .sticker-group-tag / 
+ *     .wallpaper-preview / .bubble-css-preview / .toolbar-toggle-btn / .toolbar-search-input / 
+ *     .icon-custom-item / .kkt-danger-btn / 群成员头像边框等
+ * ============================================================ */
+@media (prefers-color-scheme: dark) {
+    /* ---- 1. 聊天设置屏 3 screen 背景（聊天设置 / 群设置 / 个性化） ---- */
+    #chat-settings-screen,
+    #group-settings-screen,
+    #customize-screen {
+        background-color: #1c1c1e !important;
+    }
+
+    /* ---- 2. 聊天设置屏文字色全谱（设置页顶部 + 项列表） ---- */
+    .kkt-profile-name {
+        color: #ffffff !important;
+    }
+    .kkt-profile-status {
+        color: #d0d0d2 !important;
+    }
+    .kkt-item-title {
+        color: #ffffff !important;
+    }
+    .kkt-item-subtitle {
+        color: #d0d0d2 !important;
+    }
+    .kkt-item-label {
+        color: #ffffff !important;
+    }
+    .kkt-item-control {
+        color: #d0d0d2 !important;
+    }
+    .kkt-arrow {
+        color: #8e8e93 !important;
+    }
+
+    /* ---- 3. All 图标（.tab-item.active.pill-black）反向：白底黑字 ---- */
+    /* 步骤 15 改过「蓝底白字 #0a84ff」，用户 #2 要求改回「白底黑字」 */
+    .tab-item.active.pill-black {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        border-color: #ffffff !important;
+    }
+
+    /* ---- 4. 联系人名字/预览文字升级：name + preview 都改纯白 ---- */
+    /* 修复步骤 13 层的反向 bug：当时用了 .name/.preview 简写，
+       实际 chat.css 里真实类名是 .item-name 和 .item-preview（不在 .item-details 父类下），
+       所以从未生效 —— 本层用真实类名修正 */
+    #chat-list-container .item-name {
+        color: #ffffff !important;
+    }
+    #chat-list-container .item-preview {
+        color: #ffffff !important;  /* 升级：#8e8e93 → #ffffff */
+    }
+    #chat-list-container .item-time {
+        color: #e0e0e0 !important;   /* 时间保留浅灰，避免三列全白太刺眼 */
+    }
+    /* 顺便保留 .item-details 内的 .name/.preview 兼容分支（用户截图可能会命中） */
+    #chat-list-container .item-details .name {
+        color: #ffffff !important;
+    }
+
+    /* ---- 5. 设置页面板容器（settings tabs）文字色 ---- */
+    .settings-tabs {
+        background-color: #2c2c2e !important;
+        border-bottom: 1px solid #3a3a3c !important;
+    }
+    .settings-tab-item {
+        color: #d0d0d2 !important;
+    }
+    .settings-tab-item.active {
+        background-color: #48484a !important;
+        color: #ffffff !important;
+    }
+
+    /* ---- 6. 功能卡片 .feature-card 激活态（重要：浅蓝高亮太刺眼） ---- */
+    .feature-card {
+        background-color: #2c2c2e !important;
+        border: 1px solid #3a3a3c !important;
+    }
+    .feature-card.is-on {
+        background-color: #1c3a5e !important;  /* 深蓝激活态，不刺眼 */
+        border-color: #0a84ff !important;
+    }
+    .feature-card-icon {
+        color: #ffffff !important;
+    }
+
+    /* ---- 7. 表情贴纸分组标签 .sticker-group-tag ---- */
+    .sticker-group-tag {
+        background-color: #2c2c2e !important;
+        color: #e0e0e0 !important;
+        border: 1px solid #3a3a3c !important;
+    }
+    .sticker-group-tag.selected {
+        background-color: var(--primary-color) !important;
+        color: #ffffff !important;
+    }
+
+    /* ---- 8. 壁纸预览 .wallpaper-preview ---- */
+    .wallpaper-preview {
+        background-color: #1c1c1e !important;
+        border-color: var(--primary-color) !important;
+    }
+    .wallpaper-preview .wallpaper-placeholder {
+        color: #8e8e93 !important;
+    }
+
+    /* ---- 9. 气泡 CSS 预览 .bubble-css-preview ---- */
+    .bubble-css-preview {
+        background-color: #1c1c1e !important;
+        border-color: #3a3a3c !important;
+    }
+
+    /* ---- 10. 编辑工具栏系列 ---- */
+    .toolbar-toggle-btn {
+        background-color: #2c2c2e !important;
+        border-color: #3a3a3c !important;
+        color: #e0e0e0 !important;
+    }
+    .toolbar-search-input,
+    .toolbar-replace-input {
+        background-color: #1c1c1e !important;
+        border-color: #3a3a3c !important;
+        color: #ffffff !important;
+    }
+
+    /* ---- 11. 图标自定义项 ---- */
+    .icon-custom-item {
+        background-color: #2c2c2e !important;
+        border-color: #3a3a3c !important;
+    }
+    .icon-details p {
+        color: #d0d0d2 !important;
+    }
+
+    /* ---- 12. 危险按钮（退出群聊/删除聊天）背景 ---- */
+    .kkt-danger-btn {
+        background-color: #2c2c2e !important;
+        color: #ff453a !important;
+    }
+
+    /* ---- 13. 群设置成员头像边框/添加按钮 ---- */
+    #group-settings-screen .group-member img {
+        border-color: #3a3a3c !important;
+    }
+    #group-settings-screen .add-member-btn {
+        background-color: #2c2c2e !important;
+        border-color: #3a3a3c !important;
+    }
+    #group-settings-screen .add-member-btn .add-icon {
+        color: #8e8e93 !important;
+    }
+
+    /* ---- 14. 群成员选择/邀请选择项 ---- */
+    .group-recipient-select-item,
+    .member-selection-item,
+    .invite-member-select-item {
+        background-color: #2c2c2e !important;
+        border-color: #3a3a3c !important;
+    }
+    .group-recipient-select-item.selected,
+    .member-selection-item.selected,
+    .invite-member-select-item.selected {
+        background-color: var(--primary-color) !important;
+        color: #ffffff !important;
+    }
+
+    /* ---- 15. 气泡 CSS 相关编辑行 ---- */
+    .bubble-css-edit-row {
+        border-bottom-color: #3a3a3c !important;
+    }
+    .bubble-css-actions .bubble-css-btn {
+        background-color: #3a3a3c !important;
+        color: #e0e0e0 !important;
+    }
+
+    /* ---- 16. 开关滑动条（slider）暗色 ---- */
+    .kkt-slider {
+        background-color: #48484a !important;
+    }
+}
