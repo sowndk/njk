@@ -352,12 +352,13 @@ function renderStickerCategories() {
     bar.innerHTML = '';
 
     const groups = [...new Set(db.myStickers.map(s => s.group).filter(g => g))];
-    
+    // 步骤 20：「未分类」分组按需显示 —— 只有存在 group 为空的表情时才出现
+    const hasUngrouped = db.myStickers.some(s => !s.group);
     const categories = [
         { id: 'recent', name: '最近使用' },
         { id: 'all', name: '全部' },
         ...groups.map(g => ({ id: g, name: g })),
-        { id: 'ungrouped', name: '未分类' }
+        ...(hasUngrouped ? [{ id: 'ungrouped', name: '未分类' }] : [])
     ];
 
     categories.forEach(cat => {
