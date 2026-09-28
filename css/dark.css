@@ -283,11 +283,14 @@
     }
     /* 世界书全屏选择器列表 */
     .wb-selector-row {
-        background: #2c2c2e !important;
-        border-bottom-color: #3a3a3c !important;
+        background: transparent !important;
+        border-bottom-color: rgba(255, 255, 255, 0.08) !important;
     }
     .wb-selector-row:active {
-        background-color: #3a3a3c !important;
+        background-color: rgba(255, 255, 255, 0.08) !important;
+    }
+    .wb-selector-icon {
+        color: #e0e0e0 !important;
     }
     .wb-selector-name {
         color: #e0e0e0 !important;
