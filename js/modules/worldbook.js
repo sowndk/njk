@@ -260,23 +260,6 @@ async function setupWorldBookApp() {
         newMenu.style.display = 'none';
     });
 
-    // 新建文件夹
-    document.getElementById('wb-menu-new-folder').addEventListener('click', async () => {
-        const name = prompt('请输入文件夹名称：');
-        if (name && name.trim()) {
-            const currentFolderId = wbPathStack[wbPathStack.length - 1].id;
-            const newFolder = {
-                id: `wb_f_${Date.now()}`,
-                parentId: currentFolderId,
-                type: 'folder',
-                name: name.trim()
-            };
-            db.worldBooks.push(newFolder);
-            await saveData();
-            renderWorldBookList();
-        }
-    });
-
 
     // 从文档导入世界书
     const importModal = document.getElementById('import-worldbook-modal');
