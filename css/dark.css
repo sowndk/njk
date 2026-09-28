@@ -387,3 +387,101 @@
         stroke: #e0e0e0;
     }
 }
+
+/* ============================================================
+ * 第 14 层：设置页卡片文字色 + 全局 modal 弹窗暗色化
+ * 触发源：
+ *   - 用户反馈：个性化/API 设置页 .kkt-item-title / .feature-card-title 在深色卡片上看不清（黑字/灰字）
+ *   - 用户反馈：联系人页面“创建角色 / 创建群聊 / SillyTavern 玩家认证”三个 dialog 弹窗是白底
+ * 根因：
+ *   - settings.css L99-110 → .kkt-item-title color:#333 / .kkt-item-subtitle color:#888
+ *   - settings.css L678-686 → .feature-card-title color:#333 / .feature-card-desc color:#777
+ *   - base.css L78-87 → .modal-window background:#ffffff（白底硬编码）
+ *   - base.css L88-92 → .modal-window h3 color:var(--primary-color)（浅蓝，暗色下勉强可见）
+ *   - base.css L105-130 → .form-group 内 label/input/select/textarea 颜色硬编码
+ * 目标 modal（全部 class="modal-overlay" + class="modal-window" 结构）：
+ *   - #add-char-modal (L1158) - 创建角色
+ *   - #create-group-modal (L1453) - 创建群聊
+ *   - #st-unlock-modal (L1198) - SillyTavern 玩家认证
+ * 设计原则：
+ *   - 用类选择器（特异性 0,1,0）覆盖 .kkt-item-title / .feature-card-title / .modal-window 等
+ *   - 对 3 个目标 modal 用 ID 限定（特异性 0,1,1）兜底，防止 chat.css / settings.css 中 ID+类 组合覆盖
+ *   - 严格不动 .message-bubble 全局（保护自定义气泡 CSS）
+ * ============================================================ */
+@media (prefers-color-scheme: dark) {
+
+    /* ====== 1. 个性化/API 设置页卡片文字色 ====== */
+    .kkt-item-title {
+        color: #ffffff;
+    }
+    .kkt-item-subtitle {
+        color: #d0d0d2;
+    }
+    .feature-card-title {
+        color: #ffffff;
+    }
+    .feature-card-desc {
+        color: #d0d0d2;
+    }
+
+    /* ====== 2. 全局 .modal-window 暗色化（覆盖 base.css L78 白底） ====== */
+    .modal-window {
+        background-color: #2c2c2e !important;
+        color: #e0e0e0;
+    }
+    .modal-window h3 {
+        color: #ffffff;
+    }
+    .modal-window .form-group label {
+        color: #e0e0e0;
+    }
+    .modal-window .form-group input[type="text"],
+    .modal-window .form-group input[type="password"],
+    .modal-window .form-group input[type="number"],
+    .modal-window .form-group input[type="email"],
+    .modal-window .form-group input:not([type]),
+    .modal-window .form-group textarea {
+        background-color: #1c1c1e;
+        color: #e0e0e0;
+        border-color: #3a3a3c;
+    }
+    .modal-window .form-group select {
+        background-color: #1c1c1e;
+        color: #e0e0e0;
+        border-color: #3a3a3c;
+    }
+    .modal-window button {
+        color: #e0e0e0;
+    }
+
+    /* ====== 3. 三个目标 modal ID 限定兜底（特异性 0,1,1） ====== */
+    #add-char-modal .modal-window,
+    #create-group-modal .modal-window,
+    #st-unlock-modal .modal-window {
+        background-color: #2c2c2e !important;
+        color: #e0e0e0;
+    }
+    #add-char-modal .modal-window h3,
+    #create-group-modal .modal-window h3,
+    #st-unlock-modal .modal-window h3 {
+        color: #ffffff;
+    }
+    #add-char-modal .modal-window .form-group label,
+    #create-group-modal .modal-window .form-group label,
+    #st-unlock-modal .modal-window .form-group label {
+        color: #e0e0e0;
+    }
+    #add-char-modal .modal-window input,
+    #add-char-modal .modal-window select,
+    #add-char-modal .modal-window textarea,
+    #create-group-modal .modal-window input,
+    #create-group-modal .modal-window select,
+    #create-group-modal .modal-window textarea,
+    #st-unlock-modal .modal-window input,
+    #st-unlock-modal .modal-window select,
+    #st-unlock-modal .modal-window textarea {
+        background-color: #1c1c1e !important;
+        color: #e0e0e0 !important;
+        border-color: #3a3a3c !important;
+    }
+}
