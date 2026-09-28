@@ -814,3 +814,35 @@ input:checked + .kkt-slider:before {
     padding-top: 8px;
     animation: fadeIn 0.2s ease-out;
 }
+
+/* 步骤 24：气泡预设与导入导出工具栏紧凑单行排版 */
+.bubble-preset-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 6px;
+    width: 100%;
+    box-sizing: border-box;
+}
+.bubble-preset-toolbar select {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 28px;
+    padding: 2px 4px;
+    font-size: 12px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    box-sizing: border-box;
+}
+.bubble-preset-toolbar .btn-preset-action {
+    flex: 0 0 auto;
+    height: 28px;
+    padding: 0 6px !important;
+    font-size: 12px !important;
+    line-height: 28px;
+    border-radius: 6px;
+    white-space: nowrap;
+    box-sizing: border-box;
+    margin: 0 !important;
+    width: auto !important;
+}
