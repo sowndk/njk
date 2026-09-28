@@ -1,0 +1,149 @@
+/* =========================================================================
+   UwU 章鱼喷墨机 · 暗黑模式
+   -------------------------------------------------------------------------
+   设计原则（2026-09-28 步骤 13）：
+   1. 跟随系统深色主题：@media (prefers-color-scheme: dark) 包裹，加载即生效，
+      零 JS、零白屏闪烁、PWA 离线/SW 重启用同样工作。
+   2. 不提供独立切换按钮（用户明确要求）。
+   3. 不覆盖 .message-bubble 全局：项目里 .message-bubble 无 CSS 默认色，
+      完全靠 JS 动态 inline style 或用户自定义气泡 CSS（customBubbleCss
+      注入 <style id="custom-bubble-style-for-{chatId}">）。全局覆盖会破坏
+      自定义气泡。
+   4. 覆盖策略：先重声明 :root 里的 CSS 变量（自动作用于所有 var(--xxx) 调用），
+      再对硬编码颜色（phone-screen / bottom-nav / app-header / chat-list-header
+      等少量组件）精确覆盖，最后给 peek 区气泡硬编码色提供兜底。
+   5. 颜色取值采用 iOS 13+ 标准暗黑层级（#000/#1c1c1e/#2c2c2e/#3a3a3c/#e0e0e0）。
+   ========================================================================= */
+
+/* === 第一层：重声明 CSS 变量（覆盖 base.css :root 浅色默认值） === */
+@media (prefers-color-scheme: dark) {
+    :root {
+        /* 基础背景与文字 */
+        --bg-color: #1c1c1e;             /* 主背景 */
+        --primary-color: #2c2c2e;       /* 主色调（背景型控件） */
+        --secondary-color: #3a3a3c;     /* 次要色 */
+        --accent-color: #1c1c1e;
+        --text-color: #e0e0e0;          /* 主文字 */
+        --white-color: #e0e0e0;
+        --top-pinned-bg: #2c2c2e;       /* 置顶背景 */
+        /* 导航与图标 */
+        --nav-icon-color: #8e8e93;
+        --nav-active-icon-color: #ffffff;
+        --func-icon-color: #e0e0e0;     /* 功能图标色（黑→白） */
+        --kkt-icon-color: #ffffff;      /* KKT 图标白 */
+        --global-title-color: #ffffff;
+        /* 底部栏/卡片/面板 */
+        --chat-bottom-bar-bg: #2c2c2e;
+        --folder-pill-bg: #2c2c2e;
+        --folder-pill-text: #d0d0d2;
+        --folder-pill-active-bg: #ffffff;
+        --folder-pill-active-text: #1c1c1e;
+        /* 切换系统 form 控件风格 */
+        color-scheme: dark;
+    }
+}
+
+/* === 第二层：硬编码背景色的主容器（layout.css 里直接写 #ffffff） === */
+@media (prefers-color-scheme: dark) {
+    body {
+        background: #1c1c1e;
+        color: var(--text-color);
+    }
+    .phone-screen {
+        background-color: #1c1c1e !important;
+    }
+    .screen {
+        background-color: #1c1c1e;
+    }
+    .content {
+        background-color: #1c1c1e;
+        color: var(--text-color);
+    }
+}
+
+/* === 第三层：顶部导航栏与底部导航栏（半透明白→半透明黑） === */
+@media (prefers-color-scheme: dark) {
+    .app-header {
+        background-color: rgba(28, 28, 30, 0.85) !important;
+        border-bottom-color: #2c2c2e !important;
+        color: var(--text-color);
+    }
+    .bottom-nav {
+        background-color: #2c2c2e !important;
+        border-top-color: #3a3a3c !important;
+    }
+}
+
+/* === 第四层：聊天列表与列表项（硬编码 #fff / #fdf6f8） === */
+@media (prefers-color-scheme: dark) {
+    .chat-list-header {
+        background-color: #1c1c1e !important;
+        color: var(--global-title-color) !important;
+    }
+    .chat-list-header .title {
+        color: #ffffff !important;
+    }
+    .list-item {
+        background-color: #1c1c1e;
+        border-bottom-color: #2c2c2e !important;
+    }
+    .list-item:hover {
+        background-color: #2c2c2e;
+    }
+    .chat-item.pinned {
+        background-color: #2c2c2e !important;
+    }
+}
+
+/* === 第五层：消息输入区（chat.css 用 #fff / #f5f5f5） === */
+@media (prefers-color-scheme: dark) {
+    #chat-room-screen .message-input-area,
+    .message-input-area {
+        background-color: #2c2c2e !important;
+        border-top-color: #3a3a3c !important;
+        color: var(--text-color);
+    }
+    .message-input-area textarea {
+        background-color: #1c1c1e !important;
+        color: #e0e0e0 !important;
+        border-color: #3a3a3c !important;
+    }
+}
+
+/* === 第六层：聊天背景区（chat.css L407-415 #chat-room-screen .content 是浅灰） === */
+@media (prefers-color-scheme: dark) {
+    #chat-room-screen .content {
+        background-color: #1c1c1e;
+    }
+}
+
+/* === 第七层：peek 区气泡硬编码色兜底（peek.css L455-466 强制 #e9ecef / #007bff）
+   注意：此规则只覆盖 ID 限定的 .message-bubble，不影响其他屏的气泡，也不影响
+   用户自定义气泡 CSS（用户 CSS 注入位置晚于本文件，但用 #peek-conversation-screen
+   + .message-bubble 已是最强 ID 特异性，如仍需调整请用更高特异性如 [style*=]）。 === */
+@media (prefers-color-scheme: dark) {
+    #peek-conversation-screen .message-bubble.received {
+        background-color: #2c2c2e !important;
+        color: #e0e0e0 !important;
+    }
+    #peek-conversation-screen .message-bubble.sent {
+        background-color: #0a84ff !important;
+        color: #ffffff !important;
+    }
+}
+
+/* === 第八层：滚动条与表单元素（跟随系统） === */
+@media (prefers-color-scheme: dark) {
+    ::-webkit-scrollbar {
+        background: #1c1c1e;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #3a3a3c;
+        border-radius: 4px;
+    }
+    input, textarea, select {
+        background-color: #1c1c1e;
+        color: #e0e0e0;
+        border-color: #3a3a3c;
+    }
+}
