@@ -107,7 +107,9 @@ function setupGroupChatSystem() {
         'setting-group-theme-color', 'setting-group-use-custom-css', 'setting-group-show-timestamp',
         'setting-group-show-notice', 'setting-group-allow-gossip', 'setting-group-avatar-radius',
         'setting-group-bilingual-mode', 'setting-group-bilingual-style', 'setting-group-exclusive-api-enabled',
-        'setting-group-exclusive-api-preset-select'
+        'setting-group-exclusive-api-preset-select',
+        // 日夜组合预设（步骤 18）
+        'setting-group-use-day-night-preset', 'setting-group-bubble-preset-day-select', 'setting-group-bubble-preset-night-select'
     ];
     groupAutoSaveChanges.forEach(id => {
         const el = document.getElementById(id);
@@ -1117,6 +1119,24 @@ function loadGroupSettingsToSidebar() {
     updateBubbleCssPreview(groupPreviewBox, group.customBubbleCss, !group.useCustomBubbleCss, theme);
     populateBubblePresetSelect('group-bubble-preset-select');
 
+    // 日夜组合预设子块初始化（步骤 18）
+    const useDayNightPresetCheckbox = document.getElementById('setting-group-use-day-night-preset');
+    const dayPresetSelect = document.getElementById('setting-group-bubble-preset-day-select');
+    const nightPresetSelect = document.getElementById('setting-group-bubble-preset-night-select');
+    const daynightContainer = document.getElementById('group-bubble-daynight-container');
+    if (useDayNightPresetCheckbox && dayPresetSelect && nightPresetSelect && daynightContainer) {
+        populateBubblePresetSelect('setting-group-bubble-preset-day-select');
+        populateBubblePresetSelect('setting-group-bubble-preset-night-select');
+        const useFlag = group.useBubbleDayNightPreset === true;
+        useDayNightPresetCheckbox.checked = useFlag;
+        dayPresetSelect.value = group.bubbleCssPresetDayName || '';
+        nightPresetSelect.value = group.bubbleCssPresetNightName || '';
+        daynightContainer.style.display = useFlag ? 'flex' : 'none';
+        useDayNightPresetCheckbox.addEventListener('change', () => {
+            daynightContainer.style.display = useDayNightPresetCheckbox.checked ? 'flex' : 'none';
+        });
+    }
+
     // 触发群设置引导 (连续引导)
     if (window.GuideSystem) {
         window.GuideSystem.check('guide_group_notice', () => {
@@ -1194,7 +1214,16 @@ async function saveGroupSettingsFromSidebar(showToastFlag = true) {
 
     group.useCustomBubbleCss = document.getElementById('setting-group-use-custom-css').checked;
     group.customBubbleCss = document.getElementById('setting-group-custom-bubble-css').value;
-    
+    // 日夜组合预设（步骤 18）
+    const useDayNightPresetCheckbox = document.getElementById('setting-group-use-day-night-preset');
+    const dayPresetSelect = document.getElementById('setting-group-bubble-preset-day-select');
+    const nightPresetSelect = document.getElementById('setting-group-bubble-preset-night-select');
+    if (useDayNightPresetCheckbox && dayPresetSelect && nightPresetSelect) {
+        group.useBubbleDayNightPreset = useDayNightPresetCheckbox.checked;
+        group.bubbleCssPresetDayName = dayPresetSelect.value || '';
+        group.bubbleCssPresetNightName = nightPresetSelect.value || '';
+    }
+
     group.titleLayout = document.getElementById('setting-group-title-layout').value;
     const header = document.getElementById('chat-room-header-default');
     if (group.titleLayout === 'center') {

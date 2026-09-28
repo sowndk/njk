@@ -64,11 +64,15 @@ const switchScreen = (targetId) => {
         const customStyles = document.querySelectorAll('style[id^="custom-bubble-style-for-"]');
         customStyles.forEach(style => style.remove());
     } else {
-        // 返回聊天室时重新应用样式
+        // 返回聊天室时重新应用样式（步骤 18：优先应用"日夜组合预设"，否则走手动 CSS）
         if (typeof currentChatId !== 'undefined' && currentChatId) {
             const chat = (currentChatType === 'private') ? db.characters.find(c => c.id === currentChatId) : db.groups.find(g => g.id === currentChatId);
             if (chat) {
-                updateCustomBubbleStyle(currentChatId, chat.customBubbleCss, chat.useCustomBubbleCss);
+                if (typeof applyChatBubbleCss === 'function') {
+                    applyChatBubbleCss(currentChatId, chat);
+                } else {
+                    updateCustomBubbleStyle(currentChatId, chat.customBubbleCss, chat.useCustomBubbleCss);
+                }
             }
         }
     }
@@ -375,6 +379,39 @@ function applyChatBubbleCss(chatId, chat) {
         applyBubbleDayNightPresetForCurrentMode(chatId, chat);
     } else {
         updateCustomBubbleStyle(chatId, chat.customBubbleCss || '', chat.useCustomBubbleCss === true);
+    }
+}
+
+// 步骤 18：监听系统深色模式变化，自动切换当前可见 chat 的气泡预设
+if (typeof window !== 'undefined' && window.matchMedia) {
+    try {
+        const darkMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        const handleColorSchemeChange = () => {
+            try {
+                // 仅在当前处于聊天界面时刷新样式（避免无关页面被影响）
+                if (typeof currentChatId !== 'undefined' && currentChatId && typeof document !== 'undefined') {
+                    const chatRoom = document.getElementById('chat-room-screen');
+                    if (chatRoom && chatRoom.classList.contains('active')) {
+                        const chat = (typeof currentChatType !== 'undefined' && currentChatType === 'private')
+                            ? db.characters.find(c => c.id === currentChatId)
+                            : db.groups.find(g => g.id === currentChatId);
+                        if (chat && typeof applyChatBubbleCss === 'function') {
+                            applyChatBubbleCss(currentChatId, chat);
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn('日夜组合预设：系统模式切换刷新失败', err);
+            }
+        };
+        if (typeof darkMediaQuery.addEventListener === 'function') {
+            darkMediaQuery.addEventListener('change', handleColorSchemeChange);
+        } else if (typeof darkMediaQuery.addListener === 'function') {
+            // 兼容旧 API
+            darkMediaQuery.addListener(handleColorSchemeChange);
+        }
+    } catch (err) {
+        console.warn('日夜组合预设：matchMedia 监听注册失败', err);
     }
 }
 
