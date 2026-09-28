@@ -58,7 +58,7 @@
 .list-view .wb-item-card {
     display: flex;
     align-items: center;
-    padding: 13px 16px;
+    padding: 18px 16px;
     gap: 14px;
     cursor: pointer;
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
