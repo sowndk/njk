@@ -277,6 +277,199 @@ async function setupWorldBookApp() {
         }
     });
 
+
+    // 从文档导入世界书
+    const importModal = document.getElementById('import-worldbook-modal');
+    const importForm = document.getElementById('import-worldbook-form');
+    const importFileInput = document.getElementById('worldbook-doc-file');
+    const importStatus = document.getElementById('worldbook-doc-status');
+    const cancelImportBtn = document.getElementById('cancel-import-worldbook-btn');
+
+    function closeWbImportModal() {
+        if (importModal) importModal.classList.remove('visible');
+        if (importForm) importForm.reset();
+        if (importStatus) importStatus.textContent = '';
+    }
+
+    if (document.getElementById('wb-menu-import-doc')) {
+        document.getElementById('wb-menu-import-doc').addEventListener('click', () => {
+            newMenu.style.display = 'none';
+            if (importStatus) importStatus.textContent = '';
+            if (importFileInput) importFileInput.value = '';
+            if (importModal) importModal.classList.add('visible');
+        });
+    }
+
+    if (cancelImportBtn) {
+        cancelImportBtn.addEventListener('click', closeWbImportModal);
+    }
+    if (importModal) {
+        importModal.addEventListener('click', (e) => {
+            if (e.target === importModal) closeWbImportModal();
+        });
+    }
+
+    function stripWbFileExt(name) {
+        return (name || '').replace(/\.[^./\\]+$/, '');
+    }
+
+    async function readWbDocxText(arrayBuffer) {
+        if (typeof mammoth === 'undefined' || !mammoth || !mammoth.extractRawText) {
+            throw new Error('mammoth 未加载，无法解析 docx 文档');
+        }
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        return result && result.value ? result.value : '';
+    }
+
+    function parseWbTextToEntries(rawText, baseDocName) {
+        const text = (rawText || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+        if (!text) return [];
+
+        // 按两行及以上空行分割
+        const sections = text.split(/\n\s*\n+/).map(s => s.trim()).filter(Boolean);
+        if (sections.length <= 1) {
+            return [{
+                name: baseDocName || '未命名条目',
+                content: text
+            }];
+        }
+
+        return sections.map((sec, idx) => {
+            const lines = sec.split('\n').map(l => l.trim()).filter(Boolean);
+            const firstLine = lines[0] || '';
+            let name = '';
+            let content = sec;
+
+            // 支持 # 标题 或 条目名: 开头
+            const headerMatch = firstLine.match(/^(?:#+\s*|(?:条目名|条目|名称|标题)[:：]\s*)(.+)$/);
+            if (headerMatch && headerMatch[1].trim()) {
+                name = headerMatch[1].trim();
+                content = lines.slice(1).join('\n').trim() || name;
+            } else if (lines.length > 1 && firstLine.length <= 30 && !/[。！？.!?]$/.test(firstLine)) {
+                // 第一行简短且非句尾，通常为段落小标题
+                name = firstLine;
+                content = lines.slice(1).join('\n').trim();
+            } else {
+                name = `${baseDocName || '条目'} #${idx + 1}`;
+                content = sec;
+            }
+
+            return { name, content };
+        });
+    }
+
+    function parseWbJsonToEntries(jsonObj, baseDocName) {
+        if (!jsonObj) return [];
+        let items = [];
+
+        if (Array.isArray(jsonObj)) {
+            items = jsonObj;
+        } else if (jsonObj.entries) {
+            // SillyTavern / 酒馆格式 entry 字典或数组
+            items = Array.isArray(jsonObj.entries) ? jsonObj.entries : Object.values(jsonObj.entries);
+        } else if (jsonObj.character_book && jsonObj.character_book.entries) {
+            const cbEntries = jsonObj.character_book.entries;
+            items = Array.isArray(cbEntries) ? cbEntries : Object.values(cbEntries);
+        } else {
+            // 单个对象
+            const entryName = jsonObj.name || jsonObj.title || jsonObj.comment || baseDocName || '导入配置';
+            const entryContent = jsonObj.content || jsonObj.text || JSON.stringify(jsonObj, null, 2);
+            return [{ name: String(entryName), content: String(entryContent) }];
+        }
+
+        return items.map((item, idx) => {
+            if (typeof item === 'string') {
+                return { name: `${baseDocName} #${idx + 1}`, content: item };
+            }
+            const name = item.name || item.title || item.comment || (item.keys && item.keys[0]) || `${baseDocName} #${idx + 1}`;
+            const content = item.content || item.text || item.value || JSON.stringify(item, null, 2);
+            return {
+                name: String(name).trim() || `${baseDocName} #${idx + 1}`,
+                content: String(content).trim(),
+                position: item.position || undefined,
+                depth: item.depth || undefined
+            };
+        }).filter(e => e.content);
+    }
+
+    if (importForm) {
+        importForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const file = importFileInput && importFileInput.files ? importFileInput.files[0] : null;
+            if (!file) {
+                if (importStatus) importStatus.textContent = '请先选择文件';
+                return;
+            }
+
+            const fileName = file.name || '';
+            const lowerName = fileName.toLowerCase();
+            const baseDocName = stripWbFileExt(fileName) || '导入文档';
+
+            if (importStatus) importStatus.textContent = '正在解析文档...';
+
+            try {
+                let parsedEntries = [];
+
+                if (lowerName.endsWith('.docx')) {
+                    const buf = await file.arrayBuffer();
+                    const text = await readWbDocxText(buf);
+                    parsedEntries = parseWbTextToEntries(text, baseDocName);
+                } else if (lowerName.endsWith('.json')) {
+                    const jsonText = await file.text();
+                    const parsedJson = JSON.parse(jsonText);
+                    parsedEntries = parseWbJsonToEntries(parsedJson, baseDocName);
+                } else {
+                    // .txt 或其它文本类型
+                    const text = await file.text();
+                    parsedEntries = parseWbTextToEntries(text, baseDocName);
+                }
+
+                if (!parsedEntries || parsedEntries.length === 0) {
+                    if (importStatus) importStatus.textContent = '未解析到有效内容';
+                    return;
+                }
+
+                if (importStatus) importStatus.textContent = `解析成功，正在创建文件夹与 ${parsedEntries.length} 个条目...`;
+
+                const currentFolderId = wbPathStack[wbPathStack.length - 1].id;
+                const now = Date.now();
+
+                // 1. 自动创建收纳文件夹
+                const folderId = `wb_f_${now}`;
+                const newFolder = {
+                    id: folderId,
+                    parentId: currentFolderId,
+                    type: 'folder',
+                    name: baseDocName
+                };
+                db.worldBooks.push(newFolder);
+
+                // 2. 批量创建条目并放入新建文件夹
+                parsedEntries.forEach((entry, index) => {
+                    db.worldBooks.push({
+                        id: `wb_${now}_${index + 1}`,
+                        parentId: folderId,
+                        type: 'entry',
+                        name: entry.name || `${baseDocName} #${index + 1}`,
+                        content: entry.content || '',
+                        position: entry.position || 'before',
+                        category: '',
+                        depth: typeof entry.depth === 'number' ? entry.depth : 100
+                    });
+                });
+
+                await saveData();
+                renderWorldBookList();
+                closeWbImportModal();
+                showToast(`成功导入 ${parsedEntries.length} 条世界书至「${baseDocName}」文件夹`);
+            } catch (err) {
+                console.error('[WorldBook Import Error]', err);
+                if (importStatus) importStatus.textContent = '导入失败：' + (err.message || '未知错误');
+            }
+        });
+    }
+
+
     // 新建条目
     document.getElementById('wb-menu-new-entry').addEventListener('click', () => {
         currentEditingWorldBookId = null;
