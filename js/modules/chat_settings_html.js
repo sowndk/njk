@@ -508,6 +508,10 @@ const chatSettingsHtml = `
                                 </div>
                             </div>
                             <div class="kkt-item" style="display:block;">
+                                 <div class="bubble-action-text-row">
+                                     <button type="button" id="apply-preset-btn" class="bubble-text-btn">应用预设</button>
+                                     <button type="button" id="apply-to-all-bubble-btn" class="bubble-text-btn">应用到全体</button>
+                                 </div>
                                  <div id="private-bubble-css-preview" class="bubble-css-preview" style="margin-bottom:10px;"></div>
                                  <div id="private-bubble-author-note" style="font-size: 12px; color: #999; margin-bottom: 5px; display: none;"></div>
                                  
@@ -545,7 +549,6 @@ const chatSettingsHtml = `
                                  <textarea id="setting-custom-bubble-css" rows="4" placeholder="CSS代码..." style="width:100%; border:1px solid #eee; border-radius:8px; padding:5px;" disabled></textarea>
                                  <div class="bubble-preset-toolbar">
                                      <select id="bubble-preset-select"><option value="">选择预设</option></select>
-                                     <button type="button" id="apply-preset-btn" class="btn btn-primary btn-preset-action">应用</button>
                                      <button type="button" id="save-preset-btn" class="btn btn-preset-action">存</button>
                                      <button type="button" id="manage-presets-btn" class="btn btn-preset-action">管</button>
                                      <button type="button" id="export-preset-btn" class="btn btn-preset-action">导出</button>

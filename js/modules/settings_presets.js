@@ -118,6 +118,101 @@ async function applyPresetToCurrentChat(presetName) {
     }
 }
 
+
+async function applyBubblePresetToAllCharactersAndGroups() {
+    let isDayNightMode = false;
+    let dayPresetName = '';
+    let nightPresetName = '';
+    let customCss = '';
+    let useCustomCss = false;
+
+    if (currentChatType === 'private') {
+        const dayNightCheckbox = document.getElementById('setting-use-day-night-preset');
+        isDayNightMode = dayNightCheckbox ? dayNightCheckbox.checked : false;
+        const daySelect = document.getElementById('setting-bubble-preset-day-select');
+        const nightSelect = document.getElementById('setting-bubble-preset-night-select');
+        dayPresetName = daySelect ? (daySelect.value || '') : '';
+        nightPresetName = nightSelect ? (nightSelect.value || '') : '';
+
+        const customCssCheckbox = document.getElementById('setting-use-custom-css');
+        useCustomCss = customCssCheckbox ? customCssCheckbox.checked : false;
+        const textarea = document.getElementById('setting-custom-bubble-css');
+        customCss = textarea ? textarea.value : '';
+    } else {
+        const dayNightCheckbox = document.getElementById('setting-group-use-day-night-preset');
+        isDayNightMode = dayNightCheckbox ? dayNightCheckbox.checked : false;
+        const daySelect = document.getElementById('setting-group-bubble-preset-day-select');
+        const nightSelect = document.getElementById('setting-group-bubble-preset-night-select');
+        dayPresetName = daySelect ? (daySelect.value || '') : '';
+        nightPresetName = nightSelect ? (nightSelect.value || '') : '';
+
+        const customCssCheckbox = document.getElementById('setting-group-use-custom-css');
+        useCustomCss = customCssCheckbox ? customCssCheckbox.checked : false;
+        const textarea = document.getElementById('setting-group-custom-bubble-css');
+        customCss = textarea ? textarea.value : '';
+    }
+
+    if (isDayNightMode) {
+        if (!dayPresetName && !nightPresetName) {
+            return showToast('当前日夜预设均未选择，无法应用');
+        }
+        const confirmMsg = `确定要将当前的日夜组合预设（日间: ${dayPresetName || '无'}, 夜间: ${nightPresetName || '无'}）应用到所有角色和群聊吗？`;
+        if (!confirm(confirmMsg)) return;
+
+        if (Array.isArray(db.characters)) {
+            db.characters.forEach(c => {
+                c.useBubbleDayNightPreset = true;
+                c.bubbleCssPresetDayName = dayPresetName;
+                c.bubbleCssPresetNightName = nightPresetName;
+            });
+        }
+        if (Array.isArray(db.groups)) {
+            db.groups.forEach(g => {
+                g.useBubbleDayNightPreset = true;
+                g.bubbleCssPresetDayName = dayPresetName;
+                g.bubbleCssPresetNightName = nightPresetName;
+            });
+        }
+    } else {
+        if (!customCss && !useCustomCss) {
+            return showToast('当前未配置气泡样式');
+        }
+        const confirmMsg = '确定要将当前的气泡 CSS 样式应用到所有角色和群聊吗？';
+        if (!confirm(confirmMsg)) return;
+
+        if (Array.isArray(db.characters)) {
+            db.characters.forEach(c => {
+                c.useBubbleDayNightPreset = false;
+                c.customBubbleCss = customCss;
+                c.useCustomBubbleCss = useCustomCss;
+            });
+        }
+        if (Array.isArray(db.groups)) {
+            db.groups.forEach(g => {
+                g.useBubbleDayNightPreset = false;
+                g.customBubbleCss = customCss;
+                g.useCustomBubbleCss = useCustomCss;
+            });
+        }
+    }
+
+    try {
+        await saveData();
+        if (typeof currentChatId !== 'undefined' && currentChatId) {
+            const currentChat = (currentChatType === 'private')
+                ? db.characters.find(c => c.id === currentChatId)
+                : db.groups.find(g => g.id === currentChatId);
+            if (currentChat && typeof applyChatBubbleCss === 'function') {
+                applyChatBubbleCss(currentChatId, currentChat);
+            }
+        }
+        showToast('已成功应用到全体角色与群聊');
+    } catch (err) {
+        console.error('applyBubblePresetToAllCharactersAndGroups error:', err);
+        showToast('应用失败，请重试');
+    }
+}
+
 function saveCurrentTextareaAsPreset() {
     const textarea = document.getElementById('setting-custom-bubble-css') || document.getElementById('setting-group-custom-bubble-css');
     if (!textarea) return showToast('找不到自定义 CSS 文本框');
@@ -549,6 +644,8 @@ function setupPresetFeatures() {
     if (importBtn) importBtn.addEventListener('click', importApiPresets);
     if (exportBtn) exportBtn.addEventListener('click', exportApiPresets);
     
+    const bubbleApplyToAllBtn = document.getElementById('apply-to-all-bubble-btn');
+    const groupBubbleApplyToAllBtn = document.getElementById('group-apply-to-all-bubble-btn');
     const bubbleApplyBtn = document.getElementById('apply-preset-btn');
     const bubbleSaveBtn = document.getElementById('save-preset-btn');
     const bubbleManageBtn = document.getElementById('manage-presets-btn');
@@ -770,6 +867,9 @@ function setupPresetFeatures() {
             }
         });
     }
+
+    if (bubbleApplyToAllBtn) bubbleApplyToAllBtn.addEventListener('click', applyBubblePresetToAllCharactersAndGroups);
+    if (groupBubbleApplyToAllBtn) groupBubbleApplyToAllBtn.addEventListener('click', applyBubblePresetToAllCharactersAndGroups);
 
     if (bubbleApplyBtn) bubbleApplyBtn.addEventListener('click', () => {
         const selVal = document.getElementById('bubble-preset-select').value;
