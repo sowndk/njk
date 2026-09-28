@@ -183,15 +183,13 @@ function setupChatSettings() {
         openWorldBookSelector(character.worldBookIds || []);
     });
 
-    const linkGroupWbBtn = document.getElementById('link-group-world-book-btn');
-    if (linkGroupWbBtn) linkGroupWbBtn.addEventListener('click', () => {
+    document.getElementById('link-group-world-book-btn').addEventListener('click', () => {
         const group = db.groups.find(g => g.id === currentChatId);
         if (!group) return;
         openWorldBookSelector(group.worldBookIds || []);
     });
 
-    const saveWbSelBtn = document.getElementById('save-world-book-selection-btn');
-    if (saveWbSelBtn) saveWbSelBtn.addEventListener('click', async () => {
+    document.getElementById('save-world-book-selection-btn').addEventListener('click', async () => {
         const selectedIds = Array.from(tempSelectedWbIds);
         if (currentChatType === 'private') {
             const character = db.characters.find(c => c.id === currentChatId);
@@ -453,15 +451,7 @@ function loadSettingsToSidebar() {
             customCssTextarea = document.getElementById('setting-custom-bubble-css'),
             privatePreviewBox = document.getElementById('private-bubble-css-preview');
         useCustomCssCheckbox.checked = e.useCustomBubbleCss || false;
-                customCssTextarea.value = e.customBubbleCss || '';
-        // 步骤 18: 日夜组合预设字段
-        const useDayNightCheckbox = document.getElementById('setting-use-bubble-day-night-preset'),
-            bubblePresetDaySelect = document.getElementById('setting-bubble-preset-day-select'),
-            bubblePresetNightSelect = document.getElementById('setting-bubble-preset-night-select');
-        if (useDayNightCheckbox) useDayNightCheckbox.checked = e.useBubbleDayNightPreset === true;
-        if (bubblePresetDaySelect) bubblePresetDaySelect.value = e.bubbleCssPresetDayName || '';
-        if (bubblePresetNightSelect) bubblePresetNightSelect.value = e.bubbleCssPresetNightName || '';
-
+        customCssTextarea.value = e.customBubbleCss || '';
         customCssTextarea.disabled = !useCustomCssCheckbox.checked;
         const theme = colorThemes[e.theme || 'white_pink'];
         updateBubbleCssPreview(privatePreviewBox, e.customBubbleCss, !e.useCustomBubbleCss, theme);
@@ -665,12 +655,7 @@ async function saveSettingsFromSidebar() {
         e.replyCountMin = parseInt(document.getElementById('setting-reply-count-min').value, 10) || 3;
         e.replyCountMax = parseInt(document.getElementById('setting-reply-count-max').value, 10) || 8;
         e.useCustomBubbleCss = document.getElementById('setting-use-custom-css').checked;
-                e.customBubbleCss = document.getElementById('setting-custom-bubble-css').value;
-        // 步骤 18: 日夜组合预设字段保存
-        e.useBubbleDayNightPreset = document.getElementById('setting-use-bubble-day-night-preset').checked;
-        e.bubbleCssPresetDayName = document.getElementById('setting-bubble-preset-day-select').value;
-        e.bubbleCssPresetNightName = document.getElementById('setting-bubble-preset-night-select').value;
-
+        e.customBubbleCss = document.getElementById('setting-custom-bubble-css').value;
         e.bilingualModeEnabled = document.getElementById('setting-bilingual-mode').checked;
         e.bilingualBubbleStyle = document.getElementById('setting-bilingual-style').value;
         

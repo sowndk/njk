@@ -68,7 +68,7 @@ const switchScreen = (targetId) => {
         if (typeof currentChatId !== 'undefined' && currentChatId) {
             const chat = (currentChatType === 'private') ? db.characters.find(c => c.id === currentChatId) : db.groups.find(g => g.id === currentChatId);
             if (chat) {
-                applyChatBubbleCss(currentChatId, chat);
+                updateCustomBubbleStyle(currentChatId, chat.customBubbleCss, chat.useCustomBubbleCss);
             }
         }
     }
