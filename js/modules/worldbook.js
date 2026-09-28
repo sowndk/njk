@@ -668,4 +668,261 @@ document.addEventListener('DOMContentLoaded', () => {
     if (cancelBtn) {
         cancelBtn.addEventListener('click', closeWorldBookSelector);
     }
+
+setupWbImportDoc();
+
+// === 世界书-从文档导入（docx/txt/json） ===
+
+// === 文档导入辅助:统一返回 {folderName, segments:[{name,content}]} ===
+// 嗅探 SillyTavern 角色卡:obj.entries 是 object + 每项含 content
+function parseWbImportResult(rawText, ext, fileName) {
+    if (!ext) return null;
+    const lowerExt = ext.toLowerCase();
+    // 只在 .json 分支做 ST 嗅探
+    if (lowerExt === '.json') {
+        let obj;
+        try { obj = JSON.parse(rawText); } catch (e) { return null; }
+        if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return null;
+        const ents = obj.entries;
+        if (!ents || typeof ents !== 'object' || Array.isArray(ents)) return null;
+        // 嗅探:至少有一项含 content 字段(避免误把 {entries:{...}} 这种奇怪结构识别为 ST 卡)
+        let probeCount = 0;
+        for (const k in ents) {
+            if (ents[k] && typeof ents[k] === 'object' && typeof ents[k].content === 'string') {
+                probeCount++;
+                if (probeCount >= 1) break;
+            }
+        }
+        if (probeCount === 0) return null;
+        // 确认是 ST 角色卡,开始转换
+        // folderName 用 originalData.name > 文件名去后缀
+        const folderName = (obj.originalData && typeof obj.originalData.name === 'string' && obj.originalData.name.trim())
+            ? obj.originalData.name.trim()
+            : (fileName.replace(/\.[^.]+$/, '').trim() || fileName);
+        const segments = [];
+        for (const k in ents) {
+            const e = ents[k];
+            if (!e || typeof e !== 'object') continue;
+            // disable=true 跳过
+            if (e.disable === true) continue;
+            const content = typeof e.content === 'string' ? e.content : '';
+            if (!content.trim()) continue;
+            // 头部标签:触发词 / 始终开启
+            const headParts = [];
+            if (e.constant === true) headParts.push('【始终开启】');
+            if (Array.isArray(e.key) && e.key.length > 0) {
+                headParts.push('【触发词:' + e.key.join(', ') + '】');
+            }
+            const header = headParts.length ? headParts.join(' ') + '\n' : '';
+            // name: comment > key[0] > '条目 N'
+            let entryName = '';
+            if (typeof e.comment === 'string' && e.comment.trim()) {
+                entryName = e.comment.trim();
+            } else if (Array.isArray(e.key) && e.key.length > 0 && e.key[0]) {
+                entryName = String(e.key[0]).slice(0, 30);
+            } else {
+                entryName = '条目 ' + (segments.length + 1);
+            }
+            entryName = entryName.slice(0, 30);
+            segments.push({ name: entryName, content: header + content });
+        }
+        if (!segments.length) return null;
+        return { folderName: folderName, segments: segments };
+    }
+    return null;  // 其它格式走老逻辑
+}
+
+function setupWbImportDoc() {
+    const menuItem = document.getElementById('wb-menu-import-doc');
+    const modal = document.getElementById('wb-import-doc-modal');
+    const cancelBtn = document.getElementById('wb-import-doc-cancel');
+    const startBtn = document.getElementById('wb-import-doc-start');
+    const fileInput = document.getElementById('wb-import-doc-files');
+    const statusEl = document.getElementById('wb-import-doc-status');
+
+    if (!menuItem || !modal) return;
+
+    function closeModal() {
+        modal.classList.remove('visible');
+        if (fileInput) fileInput.value = '';
+        if (statusEl) statusEl.textContent = '';
+    }
+
+    menuItem.addEventListener('click', function() {
+        const newMenu = document.getElementById('world-book-new-menu');
+        if (newMenu) newMenu.style.display = 'none';
+        if (statusEl) statusEl.textContent = '';
+        modal.classList.add('visible');
+    });
+
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', closeModal);
+    }
+
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) closeModal();
+    });
+
+    if (startBtn) {
+        startBtn.addEventListener('click', async function() {
+            const files = fileInput && fileInput.files ? Array.from(fileInput.files) : [];
+            if (!files.length) {
+                if (statusEl) statusEl.textContent = '⚠ 请先选择至少一个文档';
+                return;
+            }
+            const modeEl = document.querySelector('input[name="wb-import-doc-mode"]:checked');
+            const mode = modeEl ? modeEl.value : 'paragraph';
+
+            startBtn.disabled = true;
+            if (statusEl) statusEl.textContent = '⏳ 正在解析...';
+
+            let totalFolders = 0;
+            let totalEntries = 0;
+            const errors = [];
+
+            const parentId = (typeof wbPathStack !== 'undefined' && wbPathStack.length > 0)
+                ? wbPathStack[wbPathStack.length - 1]
+                : null;
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (statusEl) statusEl.textContent = '⏳ 解析中(' + (i+1) + '/' + files.length + '): ' + file.name;
+
+                try {
+                    let text = '';
+                    const lowerName = file.name.toLowerCase();
+                    if (lowerName.endsWith('.docx')) {
+                        if (typeof window.mammoth === 'undefined') {
+                            throw new Error('mammoth 未加载,无法解析 docx');
+                        }
+                        const arrayBuffer = await file.arrayBuffer();
+                        const result = await window.mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+                        text = result.value || '';
+
+                    // [ST-JSON-SNIFF] detect SillyTavern card and short-circuit
+                    if (lowerName.endsWith('.json')) {
+                        try {
+                            const _rawSt = await file.text();
+                            const _parsedSt = parseWbImportResult(_rawSt, '.json', file.name);
+                            if (_parsedSt) {
+                                const _stFolderId = 'wb_imp_f_' + Date.now() + '_' + i;
+                                if (typeof db !== 'undefined' && Array.isArray(db.worldBooks)) {
+                                    db.worldBooks.push({
+                                        id: _stFolderId,
+                                        parentId: parentId,
+                                        type: 'folder',
+                                        name: _parsedSt.folderName,
+                                        depth: 100
+                                    });
+                                    totalFolders++;
+                                    for (let _si = 0; _si < _parsedSt.segments.length; _si++) {
+                                        const _seg = _parsedSt.segments[_si];
+                                        const _entryName = (_seg.name || ('条目 ' + (_si + 1))).slice(0, 30);
+                                        db.worldBooks.push({
+                                            id: 'wb_imp_e_' + Date.now() + '_' + i + '_' + _si,
+                                            parentId: _stFolderId,
+                                            type: 'entry',
+                                            name: _entryName,
+                                            content: _seg.content,
+                                            position: 'before',
+                                            depth: 100
+                                        });
+                                        totalEntries++;
+                                    }
+                                    continue;
+                                }
+                            }
+                        } catch (_ste) {}
+                    }
+
+                    } else if (lowerName.endsWith('.json')) {
+                        const raw = await file.text();
+                        try {
+                            const obj = JSON.parse(raw);
+                            text = JSON.stringify(obj, null, 2);
+                        } catch (je) {
+                            throw new Error('JSON 解析失败: ' + je.message);
+                        }
+                    } else {
+                        text = await file.text();
+                    }
+
+                    const folderName = file.name.replace(/\.[^.]+$/, '').trim() || file.name;
+
+                    let segments = [];
+                    if (mode === 'paragraph') {
+                        segments = text.split(/\n\s*\n+/).map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 0; });
+                    } else {
+                        segments = [text.trim()].filter(function(s) { return s.length > 0; });
+                    }
+                    if (!segments.length) {
+                        errors.push(file.name + ': 内容为空');
+                        continue;
+                    }
+
+                    const folderId = 'wb_imp_f_' + Date.now() + '_' + i;
+                    if (typeof db !== 'undefined' && Array.isArray(db.worldBooks)) {
+                        db.worldBooks.push({
+                            id: folderId,
+                            parentId: parentId,
+                            type: 'folder',
+                            name: folderName,
+                            depth: 100
+                        });
+                        totalFolders++;
+
+                        for (let j = 0; j < segments.length; j++) {
+                            const seg = segments[j];
+                            let entryName;
+                            if (seg && typeof seg === 'object' && typeof seg.name === 'string' && seg.name) {
+                                entryName = seg.name.slice(0, 30);
+                            } else {
+                                const firstLine = String(seg).split('\n')[0].slice(0, 30).trim();
+                                entryName = firstLine || ('条目 ' + (j+1));
+                            }
+                            db.worldBooks.push({
+                                id: 'wb_imp_e_' + Date.now() + '_' + i + '_' + j,
+                                parentId: folderId,
+                                type: 'entry',
+                                name: entryName,
+                                content: seg,
+                                position: 'before',
+                                depth: 100
+                            });
+                            totalEntries++;
+                        }
+                    } else {
+                        throw new Error('db.worldBooks 不存在');
+                    }
+                } catch (err) {
+                    errors.push(file.name + ': ' + (err.message || err));
+                }
+            }
+
+            if (typeof saveData === 'function') {
+                await saveData();
+            }
+            if (typeof renderWorldBookList === 'function') {
+                renderWorldBookList();
+            }
+
+            startBtn.disabled = false;
+            let msg = '✅ 成功导入 ' + totalFolders + ' 个文件夹 / ' + totalEntries + ' 个条目';
+            if (errors.length) {
+                msg += '\n⚠ 失败 ' + errors.length + ' 个:\n' + errors.join('\n');
+            }
+            if (statusEl) statusEl.textContent = msg;
+
+            if (totalFolders > 0 && typeof showToast === 'function') {
+                showToast('导入完成: ' + totalFolders + ' 夹 / ' + totalEntries + ' 条');
+            }
+
+            if (errors.length === 0) {
+                setTimeout(closeModal, 1200);
+            }
+        });
+    }
+}
+
+
 });
