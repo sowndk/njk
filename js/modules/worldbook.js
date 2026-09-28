@@ -337,7 +337,7 @@ async function setupWorldBookApp() {
                 content = sec;
             }
 
-            return { name, content };
+            return { name, content, category: baseDocName };
         });
     }
 
@@ -357,20 +357,23 @@ async function setupWorldBookApp() {
             // 单个对象
             const entryName = jsonObj.name || jsonObj.title || jsonObj.comment || baseDocName || '导入配置';
             const entryContent = jsonObj.content || jsonObj.text || JSON.stringify(jsonObj, null, 2);
-            return [{ name: String(entryName), content: String(entryContent) }];
+            const entryCategory = (jsonObj.category !== undefined && jsonObj.category !== null) ? String(jsonObj.category).trim() : (baseDocName || '');
+            return [{ name: String(entryName), content: String(entryContent), category: entryCategory }];
         }
 
         return items.map((item, idx) => {
             if (typeof item === 'string') {
-                return { name: `${baseDocName} #${idx + 1}`, content: item };
+                return { name: `${baseDocName} #${idx + 1}`, content: item, category: baseDocName };
             }
             const name = item.name || item.title || item.comment || (item.keys && item.keys[0]) || `${baseDocName} #${idx + 1}`;
             const content = item.content || item.text || item.value || JSON.stringify(item, null, 2);
+            const category = (item.category !== undefined && item.category !== null) ? String(item.category).trim() : (baseDocName || '');
             return {
                 name: String(name).trim() || `${baseDocName} #${idx + 1}`,
                 content: String(content).trim(),
                 position: item.position || undefined,
-                depth: item.depth || undefined
+                depth: item.depth || undefined,
+                category: category
             };
         }).filter(e => e.content);
     }
@@ -412,31 +415,52 @@ async function setupWorldBookApp() {
                     return;
                 }
 
-                if (importStatus) importStatus.textContent = `解析成功，正在创建文件夹与 ${parsedEntries.length} 个条目...`;
+                if (importStatus) importStatus.textContent = `解析成功，正在归纳分类与创建条目...`;
 
                 const currentFolderId = wbPathStack[wbPathStack.length - 1].id;
                 const now = Date.now();
 
-                // 1. 自动创建收纳文件夹
-                const folderId = `wb_f_${now}`;
-                const newFolder = {
-                    id: folderId,
-                    parentId: currentFolderId,
-                    type: 'folder',
-                    name: baseDocName
-                };
-                db.worldBooks.push(newFolder);
+                // 自动归纳：根据条目分类自动在当前层级查找或创建文件夹；分类空白归入「未分类」文件夹
+                const folderMap = new Map();
+                let createdFolderCount = 0;
 
-                // 2. 批量创建条目并放入新建文件夹
                 parsedEntries.forEach((entry, index) => {
+                    const catName = (entry.category && entry.category.trim()) ? entry.category.trim() : '未分类';
+
+                    let targetFolderId = folderMap.get(catName);
+                    if (!targetFolderId) {
+                        // 先在当前目录下查找是否存在同名文件夹
+                        let existingFolder = db.worldBooks.find(b =>
+                            b.type === 'folder' &&
+                            b.parentId === currentFolderId &&
+                            b.name === catName
+                        );
+
+                        if (!existingFolder) {
+                            createdFolderCount++;
+                            const newFolderId = `wb_f_${now}_${createdFolderCount}`;
+                            existingFolder = {
+                                id: newFolderId,
+                                parentId: currentFolderId,
+                                type: 'folder',
+                                name: catName
+                            };
+                            db.worldBooks.push(existingFolder);
+                        }
+
+                        targetFolderId = existingFolder.id;
+                        folderMap.set(catName, targetFolderId);
+                    }
+
+                    // 创建条目并归入目标文件夹
                     db.worldBooks.push({
                         id: `wb_${now}_${index + 1}`,
-                        parentId: folderId,
+                        parentId: targetFolderId,
                         type: 'entry',
                         name: entry.name || `${baseDocName} #${index + 1}`,
                         content: entry.content || '',
                         position: entry.position || 'before',
-                        category: '',
+                        category: (entry.category && entry.category.trim()) ? entry.category.trim() : '',
                         depth: typeof entry.depth === 'number' ? entry.depth : 100
                     });
                 });
@@ -444,7 +468,9 @@ async function setupWorldBookApp() {
                 await saveData();
                 renderWorldBookList();
                 closeWbImportModal();
-                showToast(`成功导入 ${parsedEntries.length} 条世界书至「${baseDocName}」文件夹`);
+
+                const categoryCount = folderMap.size;
+                showToast(`成功导入 ${parsedEntries.length} 条世界书，归入 ${categoryCount} 个分类文件夹`);
             } catch (err) {
                 console.error('[WorldBook Import Error]', err);
                 if (importStatus) importStatus.textContent = '导入失败：' + (err.message || '未知错误');
