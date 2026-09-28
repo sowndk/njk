@@ -316,8 +316,37 @@ function renderBoundWorldBooks(type, worldBookIds) {
         return;
     }
 
+    // 获取所有条目的顶层文件夹（如果自身就是根目录条目，则归入该条目自身）
+    const getRootGroup = (wbId) => {
+        let current = db.worldBooks.find(b => b.id === wbId);
+        if (!current) return null;
+        while (current && current.parentId) {
+            const parent = db.worldBooks.find(b => b.id === current.parentId);
+            if (!parent) break;
+            current = parent;
+        }
+        return current;
+    };
+
+    // 按大文件夹（顶层分类）聚合
+    const folderGroupMap = new Map(); // rootId -> { rootItem, boundEntryIds: [] }
+    worldBookIds.forEach(id => {
+        const root = getRootGroup(id);
+        if (root) {
+            if (!folderGroupMap.has(root.id)) {
+                folderGroupMap.set(root.id, { rootItem: root, boundEntryIds: [] });
+            }
+            folderGroupMap.get(root.id).boundEntryIds.push(id);
+        }
+    });
+
+    if (folderGroupMap.size === 0) {
+        wrapper.style.display = 'none';
+        return;
+    }
+
     wrapper.style.display = 'block';
-    if (countSpan) countSpan.textContent = worldBookIds.length;
+    if (countSpan) countSpan.textContent = folderGroupMap.size;
     list.innerHTML = '';
 
     // 绑定折叠/展开事件 (确保只绑定一次)
@@ -333,39 +362,36 @@ function renderBoundWorldBooks(type, worldBookIds) {
         });
     }
 
-    worldBookIds.forEach(id => {
-        const wb = db.worldBooks.find(b => b.id === id);
-        if (wb) {
-            const card = document.createElement('div');
-            // 使用内联样式实现下划线、紧凑、灰色文字
-            card.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid #eee; font-size: 13px; color: #666;';
-            card.innerHTML = `
-                <span style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${wb.name}</span>
-                <button class="bound-wb-unbind-btn" data-id="${id}" style="background: none; border: none; color: #999; font-size: 12px; padding: 2px 6px; cursor: pointer;">解绑</button>
-            `;
-            
-            card.querySelector('.bound-wb-unbind-btn').addEventListener('click', async (e) => {
-                e.preventDefault();
-                const targetId = e.target.dataset.id;
-                if (type === 'private') {
-                    const char = db.characters.find(c => c.id === currentChatId);
-                    if (char) {
-                        char.worldBookIds = char.worldBookIds.filter(i => i !== targetId);
-                        renderBoundWorldBooks('private', char.worldBookIds);
-                    }
-                } else {
-                    const group = db.groups.find(g => g.id === currentChatId);
-                    if (group) {
-                        group.worldBookIds = group.worldBookIds.filter(i => i !== targetId);
-                        renderBoundWorldBooks('group', group.worldBookIds);
-                    }
+    folderGroupMap.forEach(({ rootItem, boundEntryIds }) => {
+        const card = document.createElement('div');
+        // 使用内联样式实现下划线、紧凑、灰色文字
+        card.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid #eee; font-size: 13px; color: #666;';
+        card.innerHTML = `
+            <span style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${rootItem.name}</span>
+            <button class="bound-wb-unbind-btn" data-root-id="${rootItem.id}" style="background: none; border: none; color: #999; font-size: 12px; padding: 2px 6px; cursor: pointer;">解绑</button>
+        `;
+        
+        card.querySelector('.bound-wb-unbind-btn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            const unbindSet = new Set(boundEntryIds);
+            if (type === 'private') {
+                const char = db.characters.find(c => c.id === currentChatId);
+                if (char) {
+                    char.worldBookIds = char.worldBookIds.filter(i => !unbindSet.has(i));
+                    renderBoundWorldBooks('private', char.worldBookIds);
                 }
-                await saveData();
-                showToast('已解绑世界书');
-            });
-            
-            list.appendChild(card);
-        }
+            } else {
+                const group = db.groups.find(g => g.id === currentChatId);
+                if (group) {
+                    group.worldBookIds = group.worldBookIds.filter(i => !unbindSet.has(i));
+                    renderBoundWorldBooks('group', group.worldBookIds);
+                }
+            }
+            await saveData();
+            showToast('已解绑世界书');
+        });
+        
+        list.appendChild(card);
     });
 }
 
