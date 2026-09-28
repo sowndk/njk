@@ -146,12 +146,39 @@
 
 /* 主屏幕 (Home Screen) */
 #home-screen {
+    position: relative;
     background-size: cover;
     background-position: center;
     transition: background-image 0.5s ease-in-out;
     padding: calc(45px + env(safe-area-inset-top)) 5px 35px;
     flex-direction: column;
     overflow: hidden;
+}
+
+/* 夜晚模式壁纸暗膜层（透明黑膜，不遮挡点击） */
+#home-screen::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.45);
+    opacity: 1;
+    pointer-events: none;
+    z-index: 0;
+    transition: opacity 0.3s ease;
+}
+
+/* 白昼模式下隐藏暗膜 */
+#home-screen.day-mode::before {
+    opacity: 0;
+}
+
+/* 确保主屏幕内容位于暗膜之上 */
+#home-screen > * {
+    position: relative;
+    z-index: 1;
 }
 
 .home-screen-swiper {
@@ -479,7 +506,13 @@
 #home-screen.day-mode .widget-date,
 #home-screen.day-mode .widget-battery,
 #home-screen.day-mode .widget-signature,
-#home-screen.day-mode .app-icon .app-name {
+#home-screen.day-mode .app-icon .app-name,
+#home-screen:not(.day-mode) .satellite-oval,
+#home-screen:not(.day-mode) .widget-time,
+#home-screen:not(.day-mode) .widget-date,
+#home-screen:not(.day-mode) .widget-battery,
+#home-screen:not(.day-mode) .widget-signature,
+#home-screen:not(.day-mode) .app-icon .app-name {
     color: var(--white-color);
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
