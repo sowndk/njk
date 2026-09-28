@@ -68,7 +68,7 @@ const switchScreen = (targetId) => {
         if (typeof currentChatId !== 'undefined' && currentChatId) {
             const chat = (currentChatType === 'private') ? db.characters.find(c => c.id === currentChatId) : db.groups.find(g => g.id === currentChatId);
             if (chat) {
-                updateCustomBubbleStyle(currentChatId, chat.customBubbleCss, chat.useCustomBubbleCss);
+                applyChatBubbleCss(currentChatId, chat);
             }
         }
     }
@@ -315,6 +315,69 @@ function updateCustomBubbleStyle(chatId, css, enabled) {
 
     document.head.appendChild(styleElement);
 }
+
+/**
+ * 根据预设名查找 db.bubbleCssPresets 中的 CSS 并应用到当前会话。
+ * 步骤 18 新增：用于气泡日夜组合预设机制。
+ *
+ * 行为：
+ * - 预设名为空 → 清掉已注入的
+ * - 在 db.bubbleCssPresets 找不到该预设名 → 清掉 + 控制台 warn
+ * - 找到 → 调 updateCustomBubbleStyle 注入对应 CSS
+ * - 不动 chat.customBubbleCss / chat.useCustomBubbleCss（避免污染手动通道）
+ */
+function applyBubblePresetByName(chatId, presetName) {
+    if (!chatId) return;
+    const targetPresetName = (presetName || '').trim();
+    if (!targetPresetName) {
+        const existing = document.getElementById('custom-bubble-style-for-' + chatId);
+        if (existing) existing.remove();
+        return;
+    }
+    const presets = (typeof db !== 'undefined' && db && db.bubbleCssPresets) ? db.bubbleCssPresets : [];
+    const found = presets.find(function(p) { return p && p.name === targetPresetName; });
+    if (!found) {
+        console.warn('[applyBubblePresetByName] 预设未找到:', targetPresetName);
+        const existing = document.getElementById('custom-bubble-style-for-' + chatId);
+        if (existing) existing.remove();
+        return;
+    }
+    updateCustomBubbleStyle(chatId, found.css || '', true);
+}
+
+/**
+ * 气泡日夜组合预设：根据当前系统日夜模式，从 day/night 两个预设名中选一个应用。
+ * 步骤 18 新增。
+ *
+ * 行为：
+ * - 总开关未开（chat.useBubbleDayNightPreset !== true）→ 不动（让手动 CSS 通道走老逻辑）
+ * - 系统是白天 → 用 bubbleCssPresetDayName
+ * - 系统是夜间 → 用 bubbleCssPresetNightName
+ * - 对应预设名为空 → 不切换（保留已有注入或清掉）
+ */
+function applyBubbleDayNightPresetForCurrentMode(chatId, chat) {
+    if (!chatId) return;
+    if (!chat || chat.useBubbleDayNightPreset !== true) return;
+    const isNight = (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    const targetName = isNight ? (chat.bubbleCssPresetNightName || '') : (chat.bubbleCssPresetDayName || '');
+    applyBubblePresetByName(chatId, targetName);
+}
+
+/**
+ * 统一入口：决定当前会话用哪种气泡 CSS 注入方式。
+ * 步骤 18 新增：把“组合预设 vs 手动 CSS”的优先级判定集中到一个函数。
+ *
+ * 优先级：组合预设（useBubbleDayNightPreset === true） > 手动 CSS（useCustomBubbleCss）
+ */
+function applyChatBubbleCss(chatId, chat) {
+    if (!chatId || !chat) return;
+    if (chat.useBubbleDayNightPreset === true) {
+        applyBubbleDayNightPresetForCurrentMode(chatId, chat);
+    } else {
+        updateCustomBubbleStyle(chatId, chat.customBubbleCss || '', chat.useCustomBubbleCss === true);
+    }
+}
+
 
 function updateBubbleCssPreview(previewContainer, css, useDefault, theme) {
     previewContainer.innerHTML = '';

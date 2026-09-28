@@ -125,6 +125,10 @@ function setupGroupChatSystem() {
     const useGroupCustomCssCheckbox = document.getElementById('setting-group-use-custom-css'),
         groupCustomCssTextarea = document.getElementById('setting-group-custom-bubble-css'),
         resetGroupCustomCssBtn = document.getElementById('reset-group-custom-bubble-css-btn'),
+    useDayNightCheckbox = document.getElementById('setting-group-use-bubble-day-night-preset'),
+    bubblePresetDaySelect = document.getElementById('setting-group-bubble-preset-day-select'),
+    bubblePresetNightSelect = document.getElementById('setting-group-bubble-preset-night-select'),
+
         groupPreviewBox = document.getElementById('group-bubble-css-preview');
         
     if (useGroupCustomCssCheckbox) {
@@ -1106,6 +1110,9 @@ function loadGroupSettingsToSidebar() {
         groupPreviewBox = document.getElementById('group-bubble-css-preview');
     useGroupCustomCssCheckbox.checked = group.useCustomBubbleCss || false;
     groupCustomCssTextarea.value = group.customBubbleCss || '';
+        useDayNightCheckbox.checked = group.useBubbleDayNightPreset === true;
+        bubblePresetDaySelect.value = group.bubbleCssPresetDayName || '';
+        bubblePresetNightSelect.value = group.bubbleCssPresetNightName || '';
     groupCustomCssTextarea.disabled = !useGroupCustomCssCheckbox.checked;
 
     // 初始化群聊 CSS 搜索替换工具栏
@@ -1194,6 +1201,9 @@ async function saveGroupSettingsFromSidebar(showToastFlag = true) {
 
     group.useCustomBubbleCss = document.getElementById('setting-group-use-custom-css').checked;
     group.customBubbleCss = document.getElementById('setting-group-custom-bubble-css').value;
+        group.useBubbleDayNightPreset = document.getElementById('setting-group-use-bubble-day-night-preset').checked;
+        group.bubbleCssPresetDayName = document.getElementById('setting-group-bubble-preset-day-select').value;
+        group.bubbleCssPresetNightName = document.getElementById('setting-group-bubble-preset-night-select').value;
     
     group.titleLayout = document.getElementById('setting-group-title-layout').value;
     const header = document.getElementById('chat-room-header-default');
