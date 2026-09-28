@@ -676,4 +676,13 @@
     .kkt-slider {
         background-color: #48484a !important;
     }
+
+
+    /* ---- 17. 气泡日夜组合预设子卡片（步骤 18）---- */
+    /* 子卡片最外层 .kkt-group 的 inline border-top:1px solid #eee 暗色化 */
+    /* 不影响其他 .kkt-group（基类无 border-top 默认，只有这个子卡片 inline 注入了）*/
+    .kkt-group[style*="border-top"] {
+        border-top-color: #3a3a3c !important;
+    }
 }
+
