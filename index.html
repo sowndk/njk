@@ -243,6 +243,23 @@
         </div>
     </div>
 
+    <!-- World Book Import Modal -->
+    <div id="import-worldbook-modal" class="modal-overlay">
+        <div class="modal-window">
+            <h3>从文档导入世界书</h3>
+            <form id="import-worldbook-form">
+                <div class="form-group" style="margin-top: 15px; margin-bottom: 20px; text-align: left;">
+                    <label>支持 txt, docx, json 格式</label>
+                    <input type="file" id="worldbook-doc-file" accept=".txt,.docx,.json" style="display: block; margin-top: 10px;">
+                    <div id="worldbook-doc-status" style="font-size: 12px; color: #888; margin-top: 8px; min-height: 16px;"></div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn secondary-btn" id="cancel-import-worldbook-btn">取消</button>
+                    <button type="submit" class="btn primary-btn">导入</button>
+                </div>
+            </form>
+        </div>
+    </div>
     <div id="world-book-screen" class="screen">
         <header class="app-header">
             <button class="back-btn" id="world-book-back-btn">‹</button>
@@ -274,6 +291,7 @@
                 <div id="world-book-new-menu" class="world-book-new-menu" style="display: none;">
                     <div class="menu-item" id="wb-menu-new-folder">新建文件夹</div>
                     <div class="menu-item" id="wb-menu-new-entry">新建条目</div>
+                    <div class="menu-item" id="wb-menu-import-doc">从文档导入</div>
                 </div>
             </div>
         </header>
