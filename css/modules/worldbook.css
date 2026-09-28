@@ -156,14 +156,15 @@
     overflow-y: auto;
 }
 
-/* 全屏选择器列表项 */
+/* 全屏选择器列表项 (玻璃拟态 + 上下拉宽) */
 .wb-selector-row {
     display: flex;
     align-items: center;
-    padding: 12px 15px;
-    border-bottom: 1px solid #eee;
-    background: #fff;
+    padding: 20px 18px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    background: transparent;
     cursor: pointer;
+    transition: background-color 0.15s ease;
 }
 
 .wb-selector-row:last-child {
@@ -171,20 +172,30 @@
 }
 
 .wb-selector-row:active {
-    background-color: #f5f5f5;
+    background-color: rgba(0, 0, 0, 0.05);
 }
 
 .wb-selector-icon {
-    margin-right: 12px;
+    margin-right: 14px;
     display: flex;
     align-items: center;
-    color: #5a6b7c;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    color: #3a3a3c;
+}
+
+.wb-selector-icon svg {
+    width: 24px;
+    height: 24px;
 }
 
 .wb-selector-name {
     flex: 1;
-    font-size: 15px;
-    color: #333;
+    font-size: 16px;
+    font-weight: 500;
+    color: #1c1c1e;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -194,6 +205,7 @@
     width: 8px;
     height: 14px;
     position: relative;
+    margin-left: 4px;
 }
 
 .wb-selector-arrow::after {
@@ -203,21 +215,23 @@
     left: 0;
     width: 8px;
     height: 8px;
-    border-top: 2px solid #ccc;
-    border-right: 2px solid #ccc;
+    border-top: 2px solid #8e8e93;
+    border-right: 2px solid #8e8e93;
     transform: translateY(-50%) rotate(45deg);
 }
 
 .wb-selector-checkbox {
     appearance: none;
-    width: 22px;
-    height: 22px;
-    border: 1px solid #ccc;
+    width: 24px;
+    height: 24px;
+    border: 1.5px solid #c7c7cc;
     border-radius: 50%;
     outline: none;
     cursor: pointer;
     position: relative;
     background: #fff;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
 }
 
 .wb-selector-checkbox:checked {
@@ -228,8 +242,8 @@
 .wb-selector-checkbox:checked::after {
     content: '';
     position: absolute;
-    top: 4px;
-    left: 7px;
+    top: 5px;
+    left: 8px;
     width: 5px;
     height: 10px;
     border: solid white;
