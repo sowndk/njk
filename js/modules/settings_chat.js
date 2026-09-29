@@ -291,6 +291,15 @@ function setupChatSettings() {
                         panel.classList.remove('open');
                     }
                 }
+            } else if (featureId === 'auto-summary') {
+                const panel = document.getElementById('auto-summary-settings-container');
+                if (panel) {
+                    if (isChecked) {
+                        panel.classList.add('open');
+                    } else {
+                        panel.classList.remove('open');
+                    }
+                }
             }
         });
     });
@@ -560,6 +569,14 @@ function loadSettingsToSidebar() {
         if (autoAirdropCheckbox) {
             autoAirdropCheckbox.checked = e.autoAirDropEnabled || false;
             autoAirdropCheckbox.dispatchEvent(new Event('change'));
+        }
+
+        const autoSummaryCheckbox = document.getElementById('setting-auto-summary-enabled');
+        if (autoSummaryCheckbox) {
+            autoSummaryCheckbox.checked = e.autoSummaryEnabled || false;
+            const thresholdInput = document.getElementById('setting-auto-summary-threshold');
+            if (thresholdInput) thresholdInput.value = e.autoSummaryThreshold || 20;
+            autoSummaryCheckbox.dispatchEvent(new Event('change'));
         }
 
         const galleryCheckbox = document.getElementById('setting-use-real-gallery');
@@ -891,6 +908,14 @@ async function saveSettingsFromSidebar() {
         const autoAirdropCheckbox = document.getElementById('setting-auto-airdrop-enabled');
         if (autoAirdropCheckbox) {
             e.autoAirDropEnabled = autoAirdropCheckbox.checked;
+        }
+
+        const autoSummaryCheckbox = document.getElementById('setting-auto-summary-enabled');
+        if (autoSummaryCheckbox) {
+            e.autoSummaryEnabled = autoSummaryCheckbox.checked;
+            const thresholdInput = document.getElementById('setting-auto-summary-threshold');
+            const val = thresholdInput ? parseInt(thresholdInput.value, 10) : 20;
+            e.autoSummaryThreshold = (isNaN(val) || val < 5) ? 20 : val;
         }
 
         e.useRealGallery = document.getElementById('setting-use-real-gallery').checked;

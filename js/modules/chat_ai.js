@@ -1198,6 +1198,22 @@ async function handleAiReplyContent(fullResponse, chat, targetChatId, targetChat
         if (window.BatteryInteraction && typeof window.BatteryInteraction.triggerIndependentCheck === 'function') {
             window.BatteryInteraction.triggerIndependentCheck(chat);
         }
+
+        // 触发自动总结检查
+        if (chat && chat.autoSummaryEnabled && typeof generateJournal === 'function') {
+            const threshold = chat.autoSummaryThreshold || 20;
+            chat._unsummarizedCount = (chat._unsummarizedCount || 0) + 1;
+            if (chat._unsummarizedCount >= threshold) {
+                chat._unsummarizedCount = 0;
+                const total = chat.history ? chat.history.length : 0;
+                const start = Math.max(1, total - threshold + 1);
+                const end = total;
+                console.log(`[AutoSummary] Triggering auto journal: start=${start}, end=${end}`);
+                setTimeout(() => {
+                    generateJournal(start, end);
+                }, 800);
+            }
+        }
     }
 }
 

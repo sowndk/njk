@@ -286,6 +286,23 @@ const chatSettingsHtml = `
                                         <div class="feature-card-desc">角色发图时自动接收</div>
                                     </div>
                                 </div>
+
+                                <!-- 自动总结 -->
+                                <div class="feature-card" data-feature="auto-summary">
+                                    <div class="feature-card-header">
+                                        <div class="feature-card-icon">
+                                            <svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/><path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/><path d="M4.5 7a.5.5 0 0 0 0 1h7a.5.5 0 0 0 0-1h-7zm0 2.5a.5.5 0 0 0 0 1h7a.5.5 0 0 0 0-1h-7zm0 2.5a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1h-4z"/></svg>
+                                        </div>
+                                        <label class="kkt-switch">
+                                            <input type="checkbox" id="setting-auto-summary-enabled">
+                                            <span class="kkt-slider"></span>
+                                        </label>
+                                    </div>
+                                    <div class="feature-card-body">
+                                        <div class="feature-card-title">自动总结</div>
+                                        <div class="feature-card-desc">累计新消息自动生成回忆</div>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- 状态栏详细设置 (折叠面板) -->
@@ -328,6 +345,18 @@ const chatSettingsHtml = `
                                         <div class="kkt-item-label">无操作检测时间 (分钟)</div>
                                         <div class="kkt-item-control">
                                             <input type="number" id="setting-auto-reply-interval" value="60" min="1" style="width:50px; text-align:right; border:none; background: #f5f5f5; border-radius: 4px; padding: 4px;">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 自动总结详细设置 (折叠面板) -->
+                            <div id="auto-summary-settings-container" class="feature-details-panel">
+                                <div class="kkt-group">
+                                    <div class="kkt-item">
+                                        <div class="kkt-item-label">触发消息条数</div>
+                                        <div class="kkt-item-control">
+                                            <input type="number" id="setting-auto-summary-threshold" value="20" min="5" style="width:50px; text-align:right; border:none; background: #f5f5f5; border-radius: 4px; padding: 4px;">
                                         </div>
                                     </div>
                                 </div>
