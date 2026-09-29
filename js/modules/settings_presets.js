@@ -126,6 +126,12 @@ async function applyBubblePresetToAllCharactersAndGroups() {
     let customCss = '';
     let useCustomCss = false;
 
+    // 读取聊天外观设置：头像显示模式、顶部标题布局、显示时间戳、时间戳位置
+    let avatarMode = 'full';
+    let titleLayout = 'left';
+    let showTimestamp = false;
+    let timestampStyle = 'bubble';
+
     if (currentChatType === 'private') {
         const dayNightCheckbox = document.getElementById('setting-use-day-night-preset');
         isDayNightMode = dayNightCheckbox ? dayNightCheckbox.checked : false;
@@ -133,11 +139,19 @@ async function applyBubblePresetToAllCharactersAndGroups() {
         const nightSelect = document.getElementById('setting-bubble-preset-night-select');
         dayPresetName = daySelect ? (daySelect.value || '') : '';
         nightPresetName = nightSelect ? (nightSelect.value || '') : '';
-
         const customCssCheckbox = document.getElementById('setting-use-custom-css');
         useCustomCss = customCssCheckbox ? customCssCheckbox.checked : false;
         const textarea = document.getElementById('setting-custom-bubble-css');
         customCss = textarea ? textarea.value : '';
+
+        const avatarModeEl = document.getElementById('setting-avatar-mode');
+        if (avatarModeEl) avatarMode = avatarModeEl.value || 'full';
+        const titleLayoutEl = document.getElementById('setting-title-layout');
+        if (titleLayoutEl) titleLayout = titleLayoutEl.value || 'left';
+        const showTimestampEl = document.getElementById('setting-show-timestamp');
+        if (showTimestampEl) showTimestamp = showTimestampEl.checked;
+        const timestampStyleEl = document.getElementById('setting-timestamp-style');
+        if (timestampStyleEl) timestampStyle = timestampStyleEl.value || 'bubble';
     } else {
         const dayNightCheckbox = document.getElementById('setting-group-use-day-night-preset');
         isDayNightMode = dayNightCheckbox ? dayNightCheckbox.checked : false;
@@ -145,11 +159,17 @@ async function applyBubblePresetToAllCharactersAndGroups() {
         const nightSelect = document.getElementById('setting-group-bubble-preset-night-select');
         dayPresetName = daySelect ? (daySelect.value || '') : '';
         nightPresetName = nightSelect ? (nightSelect.value || '') : '';
-
         const customCssCheckbox = document.getElementById('setting-group-use-custom-css');
         useCustomCss = customCssCheckbox ? customCssCheckbox.checked : false;
         const textarea = document.getElementById('setting-group-custom-bubble-css');
         customCss = textarea ? textarea.value : '';
+
+        const titleLayoutEl = document.getElementById('setting-group-title-layout');
+        if (titleLayoutEl) titleLayout = titleLayoutEl.value || 'left';
+        const showTimestampEl = document.getElementById('setting-group-show-timestamp');
+        if (showTimestampEl) showTimestamp = showTimestampEl.checked;
+        const timestampStyleEl = document.getElementById('setting-group-timestamp-style');
+        if (timestampStyleEl) timestampStyle = timestampStyleEl.value || 'bubble';
     }
 
     if (isDayNightMode) {
@@ -158,12 +178,17 @@ async function applyBubblePresetToAllCharactersAndGroups() {
         }
         const confirmMsg = `确定要将当前的日夜组合预设（日间: ${dayPresetName || '无'}, 夜间: ${nightPresetName || '无'}）应用到所有角色和群聊吗？`;
         if (!confirm(confirmMsg)) return;
-
         if (Array.isArray(db.characters)) {
             db.characters.forEach(c => {
                 c.useBubbleDayNightPreset = true;
                 c.bubbleCssPresetDayName = dayPresetName;
                 c.bubbleCssPresetNightName = nightPresetName;
+                if (currentChatType === 'private') {
+                    c.avatarMode = avatarMode;
+                }
+                c.titleLayout = titleLayout;
+                c.showTimestamp = showTimestamp;
+                c.timestampStyle = timestampStyle;
             });
         }
         if (Array.isArray(db.groups)) {
@@ -171,6 +196,9 @@ async function applyBubblePresetToAllCharactersAndGroups() {
                 g.useBubbleDayNightPreset = true;
                 g.bubbleCssPresetDayName = dayPresetName;
                 g.bubbleCssPresetNightName = nightPresetName;
+                g.titleLayout = titleLayout;
+                g.showTimestamp = showTimestamp;
+                g.timestampStyle = timestampStyle;
             });
         }
     } else {
@@ -179,12 +207,17 @@ async function applyBubblePresetToAllCharactersAndGroups() {
         }
         const confirmMsg = '确定要将当前的气泡 CSS 样式应用到所有角色和群聊吗？';
         if (!confirm(confirmMsg)) return;
-
         if (Array.isArray(db.characters)) {
             db.characters.forEach(c => {
                 c.useBubbleDayNightPreset = false;
                 c.customBubbleCss = customCss;
                 c.useCustomBubbleCss = useCustomCss;
+                if (currentChatType === 'private') {
+                    c.avatarMode = avatarMode;
+                }
+                c.titleLayout = titleLayout;
+                c.showTimestamp = showTimestamp;
+                c.timestampStyle = timestampStyle;
             });
         }
         if (Array.isArray(db.groups)) {
@@ -192,10 +225,12 @@ async function applyBubblePresetToAllCharactersAndGroups() {
                 g.useBubbleDayNightPreset = false;
                 g.customBubbleCss = customCss;
                 g.useCustomBubbleCss = useCustomCss;
+                g.titleLayout = titleLayout;
+                g.showTimestamp = showTimestamp;
+                g.timestampStyle = timestampStyle;
             });
         }
     }
-
     try {
         await saveData();
         if (typeof currentChatId !== 'undefined' && currentChatId) {
@@ -206,6 +241,26 @@ async function applyBubblePresetToAllCharactersAndGroups() {
                 applyChatBubbleCss(currentChatId, currentChat);
             }
         }
+
+        // 实时刷新当前聊天界面的排版 class
+        try {
+            const header = document.querySelector('.chat-room-header');
+            if (header) {
+                if (titleLayout === 'center') header.classList.add('title-centered');
+                else header.classList.remove('title-centered');
+            }
+            const chatScreen = document.getElementById('chat-room-screen');
+            if (chatScreen) {
+                if (showTimestamp) chatScreen.classList.add('show-timestamp');
+                else chatScreen.classList.remove('show-timestamp');
+
+                chatScreen.classList.remove('timestamp-style-bubble', 'timestamp-style-avatar');
+                chatScreen.classList.add(`timestamp-style-${timestampStyle || 'bubble'}`);
+            }
+        } catch (uiErr) {
+            console.warn('[PresetSync] 刷新当前界面样式失败:', uiErr);
+        }
+
         showToast('已成功应用到全体角色与群聊');
     } catch (err) {
         console.error('applyBubblePresetToAllCharactersAndGroups error:', err);
