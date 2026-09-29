@@ -752,12 +752,12 @@
         width: 100% !important;
     }
     .bubble-text-btn {
-        background: #2c2c2e !important;
-        border-color: #3a3a3c !important;
-        color: #0a84ff !important;
+        background: #48484a !important;
+        border-color: #5a5a5c !important;
+        color: #ffffff !important;
     }
     .bubble-text-btn:active {
-        background: #3a3a3c !important;
+        background: #5a5a5c !important;
         opacity: 0.9 !important;
     }
 }
