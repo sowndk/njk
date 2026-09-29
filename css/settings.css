@@ -858,8 +858,8 @@ input:checked + .kkt-slider:before {
 }
 .bubble-text-btn {
     flex: 1;
-    background: #ccc !important;
-    border: 1px solid #b3b3b3 !important;
+    background: var(--primary-color) !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
     outline: none !important;
     box-shadow: none !important;
     padding: 9px 12px !important;
@@ -882,7 +882,7 @@ input:checked + .kkt-slider:before {
     -webkit-tap-highlight-color: transparent;
 }
 .bubble-text-btn:active {
-    background: #b3b3b3 !important;
+    background: var(--primary-color) !important; opacity: 0.75;
     opacity: 0.8;
     transform: scale(0.98);
 }
