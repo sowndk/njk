@@ -1487,30 +1487,31 @@ function initKeyboardDetection() {
         }
     });
 
-    // 修复 iOS 键盘弹出导致的页面偏移（光标错位、点击错位）
-    if (isIOS) {
-        document.addEventListener('focusin', (e) => {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-                // 键盘弹出时，强制重置滚动位置，防止 iOS 自动滚动导致的错位
-                setTimeout(() => {
-                    window.scrollTo(0, 0);
-                    document.body.scrollTop = 0;
-                }, 50);
-            }
-        });
+    // 修复移动端（iOS / Android）键盘弹出导致的窗口滚动偏移（防止顶栏被顶出屏幕）
+    const resetWindowScroll = () => {
+        window.scrollTo(0, 0);
+        if (document.body) document.body.scrollTop = 0;
+        if (document.documentElement) document.documentElement.scrollTop = 0;
+    };
 
-        document.addEventListener('focusout', (e) => {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-                // 键盘收起时，再次重置滚动位置
-                setTimeout(() => {
-                    window.scrollTo(0, 0);
-                    document.body.scrollTop = 0;
-                    // 额外触发一次 resize 检查，确保布局恢复
-                    window.dispatchEvent(new Event('resize'));
-                }, 50);
-            }
-        });
-    }
+    document.addEventListener('focusin', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+            // 键盘弹出时，强制重置窗口滚动位置，确保顶栏保持在屏幕顶部
+            setTimeout(resetWindowScroll, 50);
+            setTimeout(resetWindowScroll, 150);
+        }
+    });
+
+    document.addEventListener('focusout', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+            // 键盘收起时，再次重置滚动位置
+            setTimeout(() => {
+                resetWindowScroll();
+                // 额外触发一次 resize 检查，确保布局恢复
+                window.dispatchEvent(new Event('resize'));
+            }, 50);
+        }
+    });
 }
 
 // 底部导航栏逻辑
