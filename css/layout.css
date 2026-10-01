@@ -155,7 +155,7 @@
     overflow: hidden;
 }
 
-/* 夜晚模式壁纸暗膜层（透明黑膜，不遮挡点击） */
+/* 壁纸暗膜层（透明黑膜，不遮挡点击）- 默认亮色模式不启用暗膜 */
 #home-screen::before {
     content: '';
     position: absolute;
@@ -164,15 +164,17 @@
     right: 0;
     bottom: 0;
     background-color: rgba(0, 0, 0, 0.45);
-    opacity: 1;
+    opacity: 0;
     pointer-events: none;
     z-index: 0;
     transition: opacity 0.3s ease;
 }
 
-/* 白昼模式下隐藏暗膜 */
-#home-screen.day-mode::before {
-    opacity: 0;
+/* 跟随系统：暗黑模式下自动启用壁纸暗膜 */
+@media (prefers-color-scheme: dark) {
+    #home-screen::before {
+        opacity: 1;
+    }
 }
 
 /* 确保主屏幕内容位于暗膜之上 */
