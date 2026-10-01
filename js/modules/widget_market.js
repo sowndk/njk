@@ -339,6 +339,42 @@ updateClock_{{id}}();`,
             "brEmoji": "💙", "brText": "Hope",
             "signature": "编辑个性签名..."
         }
+    },
+    {
+        id: "builtin-placeholder-1x1",
+        name: "透明占位块 (1x1)",
+        size: "1x1",
+        html: `<div id="{{id}}" class="home-widget-placeholder"></div>`,
+        css: ``,
+        js: ``,
+        defaultVars: {}
+    },
+    {
+        id: "builtin-placeholder-2x2",
+        name: "透明占位块 (2x2)",
+        size: "2x2",
+        html: `<div id="{{id}}" class="home-widget-placeholder"></div>`,
+        css: ``,
+        js: ``,
+        defaultVars: {}
+    },
+    {
+        id: "builtin-placeholder-4x2",
+        name: "透明占位块 (4x2)",
+        size: "4x2",
+        html: `<div id="{{id}}" class="home-widget-placeholder"></div>`,
+        css: ``,
+        js: ``,
+        defaultVars: {}
+    },
+    {
+        id: "builtin-placeholder-4x4",
+        name: "透明占位块 (4x4)",
+        size: "4x4",
+        html: `<div id="{{id}}" class="home-widget-placeholder"></div>`,
+        css: ``,
+        js: ``,
+        defaultVars: {}
     }
 ];
 
@@ -436,6 +472,13 @@ function renderWidgetAddModal() {
     const categoryTabs = document.getElementById('widget-add-category-tabs');
     
     if (!listContainer) return;
+
+    // 确保内置组件模板已同步注入到 db.widgetTemplates
+    if (typeof initBuiltInWidgets === 'function') {
+        initBuiltInWidgets().then(() => {
+            updateList();
+        });
+    }
 
     let currentFilter = 'all';
     let currentSearch = '';
