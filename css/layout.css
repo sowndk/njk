@@ -210,12 +210,7 @@
 }
 
 .page-indicator {
-    position: absolute;
-    bottom: 140px; /* Adjust based on dock height */
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 8px;
+    display: none !important;
 }
 
 .page-indicator .dot {
