@@ -231,7 +231,7 @@
     padding: 5px 15px;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(6, minmax(70px, auto)); /* 限制为 6 行 */
+    grid-template-rows: repeat(8, minmax(70px, auto)); /* 扩展为 8 行 */
     gap: 15px;
     justify-content: center;
     align-content: flex-start;
