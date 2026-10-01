@@ -763,9 +763,6 @@ function setupHomeScreen() {
     <div class="home-screen-swiper" id="home-screen-swiper">
         ${swiperHtml}
     </div>
-    <div class="page-indicator">
-        ${indicatorHtml}
-    </div>
     <div class="dock-container">
         <div class="dock dock-normal">
             <a href="#" class="app-icon" data-target="wallpaper-screen"><img src="${getIcon('wallpaper-screen')}" alt="壁纸" class="icon-img"></a>
