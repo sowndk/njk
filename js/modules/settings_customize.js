@@ -448,6 +448,16 @@ function renderCustomizeForm() {
             </div>
             <span class="kkt-arrow">›</span>
         </div>
+        <div class="kkt-item" onclick="openHomeLayoutPresetModal()" style="cursor: pointer;">
+            <div class="kkt-item-icon" style="background: transparent; color: #007AFF;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+            </div>
+            <div class="kkt-item-content">
+                <div class="kkt-item-title">主页面预设</div>
+                <div class="kkt-item-subtitle">保存与切换桌面布局、壁纸与图标排列</div>
+            </div>
+            <span class="kkt-arrow">›</span>
+        </div>
     </div>
     `;
 
@@ -582,6 +592,24 @@ function renderCustomizeForm() {
                 </div>
             </div>
         </div>
+
+        <!-- 主页面预设模态框 -->
+        <div id="home-layout-preset-modal" class="modal-overlay">
+            <div class="modal-window" style="max-height: 80vh; overflow-y: auto; display: flex; flex-direction: column;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin: 0;">主页面预设</h3>
+                    <button class="icon-btn-simple" onclick="document.getElementById('home-layout-preset-modal').classList.remove('visible')">✕</button>
+                </div>
+                <div style="margin-bottom: 15px; display: flex; gap: 8px;">
+                    <button type="button" class="btn btn-primary" onclick="saveCurrentHomeLayoutPreset()" style="flex: 1; padding: 10px; font-size: 14px; border-radius: 8px;">
+                        + 保存当前桌面为预设
+                    </button>
+                </div>
+                <div id="home-layout-presets-list" style="overflow-y: auto; max-height: 55vh; border-top: 1px solid #eee; padding-top: 10px;">
+                    <!-- 预设列表动态渲染 -->
+                </div>
+            </div>
+        </div>
         `;
         document.body.insertAdjacentHTML('beforeend', modalsHTML);
     } else {
@@ -617,4 +645,152 @@ function renderCustomizeForm() {
     if (globalCssTextarea) {
         globalCssTextarea.value = db.globalCss || '';
     }
+}
+
+// ================= 主页面预设管理 =================
+
+function openHomeLayoutPresetModal() {
+    const modal = document.getElementById('home-layout-preset-modal');
+    if (!modal) return;
+    renderHomeLayoutPresets();
+    modal.classList.add('visible');
+}
+
+async function saveCurrentHomeLayoutPreset() {
+    const name = prompt('请输入预设名称（同名预设将覆盖）：');
+    if (!name || !name.trim()) return;
+    const trimmedName = name.trim();
+    if (!db.homeLayoutPresets) db.homeLayoutPresets = [];
+    const snapshot = {
+        name: trimmedName,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        homeLayoutPages: JSON.parse(JSON.stringify(db.homeLayoutPages || [])),
+        addedWidgets: JSON.parse(JSON.stringify(db.addedWidgets || [])),
+        customIcons: JSON.parse(JSON.stringify(db.customIcons || {})),
+        wallpaper: db.wallpaper || '',
+        homeLayoutOrder: JSON.parse(JSON.stringify(db.homeLayoutOrder || [])),
+        homeWidgetSettings: JSON.parse(JSON.stringify(db.homeWidgetSettings || {})),
+        insWidgetSettings: JSON.parse(JSON.stringify(db.insWidgetSettings || {}))
+    };
+    const existingIndex = db.homeLayoutPresets.findIndex(p => p.name === trimmedName);
+    if (existingIndex > -1) {
+        snapshot.createdAt = db.homeLayoutPresets[existingIndex].createdAt;
+        db.homeLayoutPresets[existingIndex] = snapshot;
+        showToast(`已覆盖预设「${trimmedName}」`);
+    } else {
+        db.homeLayoutPresets.push(snapshot);
+        showToast(`已保存预设「${trimmedName}」`);
+    }
+    await saveData();
+    renderHomeLayoutPresets();
+}
+
+function renderHomeLayoutPresets() {
+    const list = document.getElementById('home-layout-presets-list');
+    if (!list) return;
+    list.innerHTML = '';
+    const presets = db.homeLayoutPresets || [];
+    if (!presets.length) {
+        list.innerHTML = '<p style="color:#888;margin:12px 0;text-align:center;font-size:13px;">暂无预设，点击上方按钮保存当前桌面。</p>';
+        return;
+    }
+    presets.forEach((p, idx) => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f0;gap:8px;';
+        
+        const info = document.createElement('div');
+        info.style.cssText = 'flex:1;min-width:0;';
+        
+        const nameDiv = document.createElement('div');
+        nameDiv.style.cssText = 'font-size:14px;font-weight:500;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+        nameDiv.textContent = p.name;
+        
+        const dateDiv = document.createElement('div');
+        dateDiv.style.cssText = 'font-size:12px;color:#999;margin-top:2px;';
+        const date = new Date(p.createdAt || Date.now());
+        const timeStr = `${date.getFullYear()}/${String(date.getMonth()+1).padStart(2,'0')}/${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+        const pageCount = (p.homeLayoutPages || []).length;
+        const widgetCount = (p.addedWidgets || []).length;
+        dateDiv.textContent = `${timeStr} · ${pageCount} 页 · ${widgetCount} 小组件`;
+        
+        info.appendChild(nameDiv);
+        info.appendChild(dateDiv);
+        row.appendChild(info);
+
+        const btnWrap = document.createElement('div');
+        btnWrap.style.cssText = 'display:flex;gap:4px;flex-shrink:0;';
+
+        const applyBtn = document.createElement('button');
+        applyBtn.className = 'btn btn-primary';
+        applyBtn.style.cssText = 'padding:5px 8px;font-size:12px;border-radius:6px;';
+        applyBtn.textContent = '应用';
+        applyBtn.onclick = () => applyHomeLayoutPreset(idx);
+        btnWrap.appendChild(applyBtn);
+
+        const renameBtn = document.createElement('button');
+        renameBtn.className = 'btn';
+        renameBtn.style.cssText = 'padding:5px 8px;font-size:12px;border-radius:6px;';
+        renameBtn.textContent = '重命名';
+        renameBtn.onclick = () => renameHomeLayoutPreset(idx);
+        btnWrap.appendChild(renameBtn);
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'btn btn-danger';
+        delBtn.style.cssText = 'padding:5px 8px;font-size:12px;border-radius:6px;';
+        delBtn.textContent = '删除';
+        delBtn.onclick = () => deleteHomeLayoutPreset(idx);
+        btnWrap.appendChild(delBtn);
+
+        row.appendChild(btnWrap);
+        list.appendChild(row);
+    });
+}
+
+async function applyHomeLayoutPreset(idx) {
+    const preset = db.homeLayoutPresets && db.homeLayoutPresets[idx];
+    if (!preset) return;
+    if (!confirm(`确定要应用预设「${preset.name}」吗？\n当前桌面布局与壁纸将被覆盖。`)) return;
+    db.homeLayoutPages = JSON.parse(JSON.stringify(preset.homeLayoutPages || []));
+    db.addedWidgets = JSON.parse(JSON.stringify(preset.addedWidgets || []));
+    db.customIcons = JSON.parse(JSON.stringify(preset.customIcons || {}));
+    db.wallpaper = preset.wallpaper || '';
+    if (preset.homeLayoutOrder) db.homeLayoutOrder = JSON.parse(JSON.stringify(preset.homeLayoutOrder));
+    if (preset.homeWidgetSettings) db.homeWidgetSettings = JSON.parse(JSON.stringify(preset.homeWidgetSettings));
+    if (preset.insWidgetSettings) db.insWidgetSettings = JSON.parse(JSON.stringify(preset.insWidgetSettings));
+    await saveData();
+
+    if (typeof applyWallpaper === 'function') applyWallpaper(db.wallpaper);
+    if (typeof setupHomeScreen === 'function') setupHomeScreen();
+
+    const modal = document.getElementById('home-layout-preset-modal');
+    if (modal) modal.classList.remove('visible');
+    showToast(`已应用预设「${preset.name}」`);
+}
+
+async function renameHomeLayoutPreset(idx) {
+    const preset = db.homeLayoutPresets && db.homeLayoutPresets[idx];
+    if (!preset) return;
+    const newName = prompt('输入新名称：', preset.name);
+    if (!newName || !newName.trim() || newName.trim() === preset.name) return;
+    const trimmed = newName.trim();
+    const existingIndex = db.homeLayoutPresets.findIndex(p => p.name === trimmed);
+    if (existingIndex > -1 && existingIndex !== idx) {
+        return showToast('已存在同名预设');
+    }
+    db.homeLayoutPresets[idx].name = trimmed;
+    db.homeLayoutPresets[idx].updatedAt = Date.now();
+    await saveData();
+    renderHomeLayoutPresets();
+    showToast('已重命名');
+}
+
+async function deleteHomeLayoutPreset(idx) {
+    const preset = db.homeLayoutPresets && db.homeLayoutPresets[idx];
+    if (!preset) return;
+    if (!confirm(`确定要删除预设「${preset.name}」吗？`)) return;
+    db.homeLayoutPresets.splice(idx, 1);
+    await saveData();
+    renderHomeLayoutPresets();
+    showToast('已删除');
 }
