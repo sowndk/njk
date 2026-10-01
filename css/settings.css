@@ -298,9 +298,10 @@ input:checked + .kkt-slider:before {
 #customize-screen .icon-preview {
     width: 50px;
     height: 50px;
-    border-radius: 12px;
-    object-fit: cover;
+    border-radius: 0;
+    object-fit: contain;
     flex-shrink: 0;
+    background: repeating-conic-gradient(#eee 0% 25%, transparent 0% 50%) 50% / 12px 12px;
 }
 
 #customize-screen .icon-details {

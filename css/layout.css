@@ -681,11 +681,12 @@
 .icon-img {
     width: 54px;
     height: 54px;
-    border-radius: 15px;
+    border-radius: 0;
     margin-bottom: 6px;
     box-shadow: none;
     transition: transform 0.2s ease;
-    object-fit: cover;
+    object-fit: contain;
+    background-color: transparent;
 }
 
 .app-icon:hover .icon-img {
