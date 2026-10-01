@@ -89,13 +89,15 @@ async function compressImage(file, options = {}) {
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
 
-                if (file.type === 'image/png') {
+                const isPngOrWebp = file.type === 'image/png' || file.type === 'image/webp';
+                if (!isPngOrWebp) {
                     ctx.fillStyle = '#FFFFFF';
                     ctx.fillRect(0, 0, width, height);
                 }
 
                 ctx.drawImage(img, 0, 0, width, height);
-                const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                const outputFormat = isPngOrWebp ? (file.type === 'image/png' ? 'image/png' : 'image/webp') : 'image/jpeg';
+                const compressedDataUrl = canvas.toDataURL(outputFormat, quality);
                 resolve(compressedDataUrl);
             };
         };
