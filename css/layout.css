@@ -319,6 +319,27 @@
     cursor: grabbing;
 }
 
+/* 透明占位块样式 (平时完全穿透无边框，编辑模式下显现淡虚线框) */
+.home-widget-placeholder {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    pointer-events: none;
+    border-radius: 16px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.home-grid-layout.edit-mode .home-widget-placeholder {
+    border: 1.5px dashed rgba(255, 255, 255, 0.45);
+    background: rgba(255, 255, 255, 0.08);
+    pointer-events: auto;
+}
+
 /* 拖拽时的样式 */
 .sortable-drag {
     opacity: 0.9 !important;
