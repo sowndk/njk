@@ -162,7 +162,7 @@ const globalSettingKeys = [
     'cotSettings', 'cotPresets', 'hasSeenVideoCallDisclaimer', 'hasSeenVideoCallAvatarHint',
     'workshopSettings', 'workshopLlmPresets', 'workshopPromptPresets', 'homeLayoutOrder',
     'homeLayoutPages', 'widgetTemplates', 'addedWidgets', 'backupReminderSettings',
-    'stUnlocked'
+    'stUnlocked', 'homeLayoutPresets'
 ];
 
 
@@ -685,6 +685,7 @@ const loadData = async () => {
             workshopPromptPresets: [],
             homeLayoutOrder: ['widget-top', 'widget-ins', 'app-chat', 'app-api', 'app-wallpaper', 'app-worldbook', 'app-customize', 'app-tutorial', 'app-reader', 'widget-heart', 'app-placeholder'],
             homeLayoutPages: null,
+            homeLayoutPresets: [],
             backupReminderSettings: { enabled: true, interval: 3, lastReminderTime: 0 },
             stUnlocked: false
         };
