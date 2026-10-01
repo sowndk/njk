@@ -231,13 +231,19 @@
     padding: 5px 15px;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(8, minmax(70px, auto)); /* 扩展为 8 行 */
+    grid-template-rows: repeat(8, 1fr); /* 8 行自适应等分剩余可用高度 */
     gap: 15px;
     justify-content: center;
     align-content: flex-start;
     flex: 1; /* 撑满剩余空间，修复 Dock 栏下方空白 */
-    overflow-y: auto;
+    overflow-y: hidden;
     overflow-x: hidden;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+.home-grid-layout::-webkit-scrollbar {
+    display: none;
 }
 
 /* Grid Item Sizes */
