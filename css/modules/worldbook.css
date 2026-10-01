@@ -42,35 +42,39 @@
     background-color: #f0f0f0;
 }
 
-/* 列表视图 - 玻璃拟态风格 */
+/* 列表视图 - 独立卡片流风格 */
 .list-view {
     display: flex;
     flex-direction: column;
-    background: rgba(255, 255, 255, 0.65);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-radius: 14px;
-    overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    gap: 12px;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    overflow: visible;
 }
 
 .list-view .wb-item-card {
     display: flex;
     align-items: center;
-    padding: 18px 16px;
+    padding: 22px 18px;
     gap: 14px;
     cursor: pointer;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    transition: background-color 0.15s ease;
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .list-view .wb-item-card:last-child {
-    border-bottom: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 .list-view .wb-item-card:active {
-    background-color: rgba(0, 0, 0, 0.05);
+    transform: scale(0.98);
+    background-color: rgba(255, 255, 255, 0.85);
 }
 
 .list-view .wb-icon-wrapper {
