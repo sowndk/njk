@@ -756,8 +756,6 @@ function setupHomeScreen() {
     </div>
     <div class="dock-container">
         <div class="dock dock-normal">
-            <a href="#" class="app-icon" id="day-mode-btn"><img src="${getIcon('day-mode-btn')}" alt="日间" class="icon-img"></a>
-            <a href="#" class="app-icon" id="night-mode-btn"><img src="${getIcon('night-mode-btn')}" alt="夜间" class="icon-img"></a>
             <a href="#" class="app-icon" data-target="storage-analysis-screen"><img src="${getIcon('storage-analysis-screen')}" alt="存储" class="icon-img"></a>
         </div>
         <div class="dock dock-edit" style="display: none;">
@@ -884,16 +882,6 @@ function setupHomeScreen() {
 
     updateClock();
     applyWallpaper(db.wallpaper);
-    applyHomeScreenMode(db.homeScreenMode);
-    
-    document.getElementById('day-mode-btn')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        applyHomeScreenMode('day');
-    });
-    document.getElementById('night-mode-btn')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        applyHomeScreenMode('night');
-    });
     
     // 绑定应用点击事件
     homeScreen.querySelectorAll('.app-icon[data-target]').forEach(icon => {
@@ -1320,15 +1308,7 @@ function applyWallpaper(url) {
     if (homeScreen) homeScreen.style.backgroundImage = `url(${url})`;
 }
 
-async function applyHomeScreenMode(mode) {
-    if (mode === 'day') {
-        homeScreen.classList.add('day-mode');
-    } else {
-        homeScreen.classList.remove('day-mode');
-    }
-    db.homeScreenMode = mode;
-    await saveData();
-}
+
 
 async function injectCustomFont(preset) {
     if (!preset || !preset.isCustom || !preset.fontFamily || !preset.id) return;
