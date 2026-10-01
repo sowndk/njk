@@ -347,17 +347,19 @@
         border-color: #48484a !important;
     }
 
-    /* 世界书列表视图暗色玻璃拟态适配 */
+    /* 世界书列表视图暗色独立卡片适配 */
     .list-view {
-        background: rgba(44, 44, 46, 0.7) !important;
-        border-color: rgba(255, 255, 255, 0.1) !important;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
     }
     .list-view .wb-item-card {
-        border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+        background: #2c2c2e !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
     }
     .list-view .wb-item-card:active {
-        background-color: rgba(255, 255, 255, 0.08) !important;
+        background-color: #3a3a3c !important;
     }
     .list-view .wb-item-name {
         color: #f2f2f7 !important;
