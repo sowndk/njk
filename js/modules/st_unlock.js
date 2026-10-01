@@ -161,17 +161,20 @@ function generateUwUKey() {
     // 4. 注入 tEXt 块
     const finalBuffer = injectCharaToPng(pngBuffer, charData);
 
-    // 5. 下载文件
+        // 5. 下载文件（兼容 AndroidBridge 与普通浏览器）
     const blob = new Blob([finalBuffer], { type: 'image/png' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `UwU_Unlocker.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
+    if (typeof window.downloadFile === 'function') {
+        await window.downloadFile(blob, 'UwU_Unlocker.png', 'image/png');
+    } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'UwU_Unlocker.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
 
 /**
  * 验证密钥
