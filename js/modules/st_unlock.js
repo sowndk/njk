@@ -161,7 +161,7 @@ function generateUwUKey() {
     // 4. 注入 tEXt 块
     const finalBuffer = injectCharaToPng(pngBuffer, charData);
 
-        // 5. 下载文件（兼容 AndroidBridge 与普通浏览器）
+     // 5. 下载文件（兼容 AndroidBridge 与普通浏览器）
     const blob = new Blob([finalBuffer], { type: 'image/png' });
     if (typeof window.downloadFile === 'function') {
         await window.downloadFile(blob, 'UwU_Unlocker.png', 'image/png');
@@ -175,7 +175,7 @@ function generateUwUKey() {
         document.body.removeChild(a);
         setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
-
+}
 /**
  * 验证密钥
  */
