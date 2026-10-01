@@ -363,7 +363,7 @@ function renderCustomizeForm() {
         iconsContentHTML += `
         <div class="kkt-item">
             <div class="kkt-item-label">
-                <img src="${currentIcon}" alt="${name}" class="kkt-small-avatar" id="icon-preview-${id}" style="width: 40px; height: 40px; border-radius: 10px; margin-right: 10px; object-fit: cover;">
+                <img src="${currentIcon}" alt="${name}" class="kkt-small-avatar" id="icon-preview-${id}" style="width: 40px; height: 40px; border-radius: 0; margin-right: 10px; object-fit: contain; background: repeating-conic-gradient(#eee 0% 25%, transparent 0% 50%) 50% / 10px 10px;">
                 <span>${name || '模式切换'}</span>
             </div>
             <div class="kkt-item-control" style="gap: 8px;">
