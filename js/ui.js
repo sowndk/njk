@@ -472,7 +472,7 @@ let homePressTimer = null;
  */
 function calculatePagesFromIds(ids, allItemsHtmlMap) {
     const PAGE_COLS = 4;
-    const PAGE_ROWS = 6;
+    const PAGE_ROWS = 8;
     let pages = [];
     let currentPageIds = [];
     let grid = Array(PAGE_ROWS).fill(null).map(() => Array(PAGE_COLS).fill(false));
@@ -673,13 +673,13 @@ function setupHomeScreen() {
         pagesChanged = true;
     }
 
-    // 溢出处理逻辑：如果某一页超过 6 行，将多余的组件推送到下一页
+    // 溢出处理逻辑：如果某一页超过 8 行，将多余的组件推送到下一页
     for (let p = 0; p < db.homeLayoutPages.length; p++) {
         let pageIds = db.homeLayoutPages[p];
         let validIds = [];
         let overflowIds = [];
         
-        let grid = Array(6).fill(null).map(() => Array(4).fill(false));
+        let grid = Array(8).fill(null).map(() => Array(4).fill(false));
         let currR = 0, currC = 0;
         let overflowStarted = false;
         
@@ -696,7 +696,7 @@ function setupHomeScreen() {
             if (match) { rows = parseInt(match[1]); cols = parseInt(match[2]); }
             
             let placed = false;
-            while (currR <= 6 - rows) {
+            while (currR <= 8 - rows) {
                 let canFit = true;
                 if (currC + cols > 4) canFit = false;
                 else {
