@@ -718,6 +718,8 @@ const loadData = async () => {
             c.autoReply = {
                 enabled: false,
                 interval: 60,
+                intervalMin: 1,
+                intervalMax: 60,
                 lastTriggerTime: 0
             };
         }

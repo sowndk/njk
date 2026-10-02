@@ -190,24 +190,35 @@ async function checkAutoReply() {
     const now = Date.now();
     for (const char of db.characters) {
         if (char.autoReply && char.autoReply.enabled) {
-            const intervalMs = (char.autoReply.interval || 60) * 60 * 1000;
+            // 支持随机时间段：如果未设定当前周期随机时长，则在 [intervalMin, intervalMax] 之间生成
+            let minMin = char.autoReply.intervalMin !== undefined ? char.autoReply.intervalMin : (char.autoReply.interval || 60);
+            let maxMin = char.autoReply.intervalMax !== undefined ? char.autoReply.intervalMax : (char.autoReply.interval || 60);
+            if (minMin > maxMin) {
+                const temp = minMin;
+                minMin = maxMin;
+                maxMin = temp;
+            }
+            if (!char.autoReply.currentRandomInterval || char.autoReply.currentRandomInterval < minMin || char.autoReply.currentRandomInterval > maxMin) {
+                char.autoReply.currentRandomInterval = Math.floor(Math.random() * (maxMin - minMin + 1)) + minMin;
+            }
+            const intervalMs = (char.autoReply.currentRandomInterval || 60) * 60 * 1000;
             const lastTriggerTime = char.autoReply.lastTriggerTime || 0;
             
             // 检查上次触发时间
             if (now - lastTriggerTime < intervalMs) continue;
-
             let lastMsgTime = 0;
             if (char.history && char.history.length > 0) {
                 lastMsgTime = char.history[char.history.length - 1].timestamp;
             } else {
                 continue;
             }
-
             // 检查无操作时间 (最后一条消息到现在的时间)
             if (now - lastMsgTime > intervalMs) {
-                console.log(`Auto-reply triggered for ${char.remarkName}`);
+                console.log(`Auto-reply triggered for ${char.remarkName} (interval: ${char.autoReply.currentRandomInterval}m)`);
                 char.autoReply.lastTriggerTime = now;
-                await saveData(); // 先保存触发时间，防止重复触发
+                // 重置当前周期的随机时长，为下一轮抽取新的随机值
+                char.autoReply.currentRandomInterval = Math.floor(Math.random() * (maxMin - minMin + 1)) + minMin;
+                await saveData(); // 先保存触发时间与新周期时长，防止重复触发
                 
                 const historyLenBefore = char.history ? char.history.length : 0;
                 await getAiReply(char.id, 'private', true);
