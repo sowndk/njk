@@ -44,6 +44,8 @@ function setupAddCharModal() {
             autoReply: {
                 enabled: false,
                 interval: 60,
+                intervalMin: 1,
+                intervalMax: 60,
                 lastTriggerTime: 0
             }
        };
@@ -214,10 +216,11 @@ async function createCharacterFromData(data, avatar) {
         autoReply: {
             enabled: false,
             interval: 60,
+            intervalMin: 1,
+            intervalMax: 60,
             lastTriggerTime: 0
         }
     };
-
     const importedWorldBookIds = [];
     
     if (charData.character_book && Array.isArray(charData.character_book.entries)) {
