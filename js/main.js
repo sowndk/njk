@@ -190,6 +190,28 @@ async function checkAutoReply() {
     const now = Date.now();
     for (const char of db.characters) {
         if (char.autoReply && char.autoReply.enabled) {
+            // 免打扰模式检查：如果在设定的免打扰时间段内，跳过自动发消息
+            if (char.autoReply.dndEnabled) {
+                const nowDate = new Date();
+                const nowMinutes = nowDate.getHours() * 60 + nowDate.getMinutes();
+                const [startH, startM] = (char.autoReply.dndStart || '23:00').split(':').map(Number);
+                const [endH, endM] = (char.autoReply.dndEnd || '08:00').split(':').map(Number);
+                const startMinutes = (isNaN(startH) ? 23 : startH) * 60 + (isNaN(startM) ? 0 : startM);
+                const endMinutes = (isNaN(endH) ? 8 : endH) * 60 + (isNaN(endM) ? 0 : endM);
+
+                let inDnd = false;
+                if (startMinutes <= endMinutes) {
+                    // 同一天内（如 09:00 至 18:00）
+                    inDnd = nowMinutes >= startMinutes && nowMinutes < endMinutes;
+                } else {
+                    // 跨天（如 23:00 至 次日 08:00）
+                    inDnd = nowMinutes >= startMinutes || nowMinutes < endMinutes;
+                }
+                if (inDnd) {
+                    continue;
+                }
+            }
+
             // 支持随机时间段：如果未设定当前周期随机时长，则在 [intervalMin, intervalMax] 之间生成
             let minMin = char.autoReply.intervalMin !== undefined ? char.autoReply.intervalMin : (char.autoReply.interval || 60);
             let maxMin = char.autoReply.intervalMax !== undefined ? char.autoReply.intervalMax : (char.autoReply.interval || 60);
