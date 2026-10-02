@@ -566,6 +566,15 @@ function loadSettingsToSidebar() {
         const intervalMaxEl = document.getElementById('setting-auto-reply-interval-max');
         if (intervalMinEl) intervalMinEl.value = ar.intervalMin !== undefined ? ar.intervalMin : (ar.interval || 1);
         if (intervalMaxEl) intervalMaxEl.value = ar.intervalMax !== undefined ? ar.intervalMax : (ar.interval || 60);
+        const dndCheckbox = document.getElementById('setting-auto-reply-dnd-enabled');
+        if (dndCheckbox) {
+            dndCheckbox.checked = ar.dndEnabled || false;
+            dndCheckbox.dispatchEvent(new Event('change'));
+        }
+        const dndStartEl = document.getElementById('setting-auto-reply-dnd-start');
+        const dndEndEl = document.getElementById('setting-auto-reply-dnd-end');
+        if (dndStartEl) dndStartEl.value = ar.dndStart || '23:00';
+        if (dndEndEl) dndEndEl.value = ar.dndEnd || '08:00';
         autoReplyCheckbox.dispatchEvent(new Event('change'));
 
         const autoAirdropCheckbox = document.getElementById('setting-auto-airdrop-enabled');
@@ -919,6 +928,12 @@ async function saveSettingsFromSidebar() {
         e.autoReply.intervalMin = parsedMin;
         e.autoReply.intervalMax = parsedMax;
         e.autoReply.interval = parsedMax; // 向后兼容旧字段
+        const dndCheckbox = document.getElementById('setting-auto-reply-dnd-enabled');
+        e.autoReply.dndEnabled = dndCheckbox ? dndCheckbox.checked : false;
+        const dndStartInput = document.getElementById('setting-auto-reply-dnd-start');
+        const dndEndInput = document.getElementById('setting-auto-reply-dnd-end');
+        e.autoReply.dndStart = dndStartInput && dndStartInput.value ? dndStartInput.value : '23:00';
+        e.autoReply.dndEnd = dndEndInput && dndEndInput.value ? dndEndInput.value : '08:00';
 
         const autoAirdropCheckbox = document.getElementById('setting-auto-airdrop-enabled');
         if (autoAirdropCheckbox) {

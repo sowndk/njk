@@ -349,6 +349,23 @@ const chatSettingsHtml = `
                                             <input type="number" id="setting-auto-reply-interval-max" value="60" min="1" style="width:48px; text-align:center; border:none; background: #f5f5f5; border-radius: 4px; padding: 4px;">
                                         </div>
                                     </div>
+                                    <div class="kkt-item">
+                                        <div class="kkt-item-label">免打扰模式</div>
+                                        <div class="kkt-item-control">
+                                            <label class="kkt-switch">
+                                                <input type="checkbox" id="setting-auto-reply-dnd-enabled">
+                                                <span class="kkt-slider"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="kkt-item" id="setting-auto-reply-dnd-time-row">
+                                        <div class="kkt-item-label">免打扰时间段</div>
+                                        <div class="kkt-item-control" style="display: flex; align-items: center; gap: 4px;">
+                                            <input type="time" id="setting-auto-reply-dnd-start" value="23:00" style="border:none; background: #f5f5f5; border-radius: 4px; padding: 4px; font-family: inherit; font-size: inherit;">
+                                            <span>-</span>
+                                            <input type="time" id="setting-auto-reply-dnd-end" value="08:00" style="border:none; background: #f5f5f5; border-radius: 4px; padding: 4px; font-family: inherit; font-size: inherit;">
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 

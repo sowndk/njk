@@ -46,6 +46,9 @@ function setupAddCharModal() {
                 interval: 60,
                 intervalMin: 1,
                 intervalMax: 60,
+                dndEnabled: false,
+                dndStart: '23:00',
+                dndEnd: '08:00',
                 lastTriggerTime: 0
             }
        };
@@ -218,6 +221,9 @@ async function createCharacterFromData(data, avatar) {
             interval: 60,
             intervalMin: 1,
             intervalMax: 60,
+            dndEnabled: false,
+            dndStart: '23:00',
+            dndEnd: '08:00',
             lastTriggerTime: 0
         }
     };
