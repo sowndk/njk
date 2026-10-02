@@ -146,11 +146,27 @@ function setupChatRoom() {
                     iframe.style.cssText = "width: 100%; height: 100%; min-height: 80vh; border: none; background: transparent; display: block;";
                     let templated = processTemplate(htmlContent, char);
                     const darkStyleInject = `<style>
+html, body {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+html::-webkit-scrollbar, body::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
 @media (prefers-color-scheme: dark) {
     html, body {
         background-color: transparent !important;
         color-scheme: dark;
         color: #e0e0e0;
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+    }
+    html::-webkit-scrollbar, body::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
     }
 }
 </style>`;
