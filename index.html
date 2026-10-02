@@ -1430,21 +1430,13 @@
     <div id="world-book-selection-modal" class="modal-overlay full-screen-modal">
         <div class="modal-window" style="width: 100%; height: 100%; max-width: none; border-radius: 0; display: flex; flex-direction: column; padding: 0; background: #f5f5f5;">
             <header class="app-header" style="flex-shrink: 0;">
-                <button class="back-btn" id="cancel-world-book-selection-btn" style="font-size: 16px; width: auto; padding: 0 10px;">取消</button>
+                <button class="back-btn" id="cancel-world-book-selection-btn" style="font-size: 16px; width: auto; padding: 0 10px; display: flex; align-items: center;">取消</button>
                 <div class="title-container">
-                    <h1 class="title">选择世界书</h1>
+                    <h1 class="title" id="wb-selector-header-title">选择世界书</h1>
                 </div>
-                <button class="action-btn" id="save-world-book-selection-btn" style="font-size: 16px; width: auto; padding: 0 10px; color: #ffffff; font-weight: bold;">完成</button>
+                <button class="action-btn" id="save-world-book-selection-btn" style="font-size: 16px; width: auto; padding: 0 10px; color: #000000; font-weight: bold;">完成</button>
             </header>
             
-            <div id="wb-selector-breadcrumb" style="background: #fff; padding: 10px 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; font-size: 14px; color: #666; flex-shrink: 0;">
-                <button id="wb-selector-back-folder-btn" style="background: none; border: none; color: var(--primary-color); display: none; align-items: center; padding: 0; margin-right: 10px; cursor: pointer;">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-                    返回上一级
-                </button>
-                <span id="wb-selector-current-folder-name" style="font-weight: bold; color: #333;">根目录</span>
-            </div>
-
             <div style="flex: 1; overflow-y: auto; padding: 15px;">
                 <div id="world-book-selection-list" class="list-view">
                     <!-- JS populated -->
