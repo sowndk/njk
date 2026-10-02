@@ -652,11 +652,11 @@ function renderWorldBookList() {
 
         const isFolder = item.type === 'folder';
         const iconHTML = isFolder 
-            ? `<svg class="wb-folder-icon" viewBox="0 0 24 24" width="24" height="24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>`
-            : `<svg class="wb-entry-icon" viewBox="0 0 24 24" width="24" height="24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>`;
+            ? `<div class="wb-icon-wrapper"><svg class="wb-folder-icon" viewBox="0 0 24 24" width="24" height="24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg></div>`
+            : '';
 
         card.innerHTML = `
-            <div class="wb-icon-wrapper">${iconHTML}</div>
+            ${iconHTML}
             <div class="wb-item-name">${item.name}</div>
         `;
         
@@ -766,17 +766,28 @@ function renderWorldBookSelectorList() {
     const container = document.getElementById('world-book-selection-list');
     const currentFolder = selectorPathStack[selectorPathStack.length - 1];
     
-    // 更新面包屑
-    const breadcrumb = document.getElementById('wb-selector-breadcrumb');
-    const backBtn = document.getElementById('wb-selector-back-folder-btn');
-    const currentName = document.getElementById('wb-selector-current-folder-name');
+    // 更新顶部导航栏：根目录显示"取消"与"选择世界书"；子文件夹显示"返回"与文件夹名称
+    const cancelBtn = document.getElementById('cancel-world-book-selection-btn');
+    const headerTitle = document.getElementById('wb-selector-header-title');
     
     if (selectorPathStack.length > 1) {
-        backBtn.style.display = 'flex';
-        currentName.textContent = currentFolder.name;
+        if (cancelBtn) {
+            cancelBtn.innerHTML = `
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                    <path d="M15 18l-6-6 6-6"/>
+                </svg>返回
+            `;
+        }
+        if (headerTitle) {
+            headerTitle.textContent = currentFolder.name;
+        }
     } else {
-        backBtn.style.display = 'none';
-        currentName.textContent = '根目录';
+        if (cancelBtn) {
+            cancelBtn.innerHTML = '取消';
+        }
+        if (headerTitle) {
+            headerTitle.textContent = '选择世界书';
+        }
     }
 
     // 过滤当前层级内容
@@ -888,18 +899,17 @@ function renderWorldBookSelectorList() {
 
 // 绑定选择器事件
 document.addEventListener('DOMContentLoaded', () => {
-    const backBtn = document.getElementById('wb-selector-back-folder-btn');
-    if (backBtn) {
-        backBtn.addEventListener('click', () => {
-            if (selectorPathStack.length > 1) {
-                selectorPathStack.pop();
-                renderWorldBookSelectorList();
-            }
-        });
-    }
-
     const cancelBtn = document.getElementById('cancel-world-book-selection-btn');
     if (cancelBtn) {
-        cancelBtn.addEventListener('click', closeWorldBookSelector);
+        cancelBtn.addEventListener('click', () => {
+            if (selectorPathStack.length > 1) {
+                // 如果在子文件夹内，则行为是返回上一级
+                selectorPathStack.pop();
+                renderWorldBookSelectorList();
+            } else {
+                // 如果在根目录，则行为是关闭/取消选择器
+                closeWorldBookSelector();
+            }
+        });
     }
 });
