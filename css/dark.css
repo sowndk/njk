@@ -315,17 +315,6 @@
     #world-book-selection-modal .modal-window {
         background: #1c1c1e !important;
     }
-    #wb-selector-breadcrumb {
-        background: #2c2c2e !important;
-        border-bottom-color: #3a3a3c !important;
-        color: #8e8e93 !important;
-    }
-    #wb-selector-current-folder-name {
-        color: #e0e0e0 !important;
-    }
-    #wb-selector-back-folder-btn {
-        color: #0a84ff !important;
-    }
     #save-world-book-selection-btn {
         color: #ffffff !important;
     }
