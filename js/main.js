@@ -200,7 +200,6 @@ async function checkAutoReply() {
             if (char.history && char.history.length > 0) {
                 lastMsgTime = char.history[char.history.length - 1].timestamp;
             } else {
-                // 如果没有历史记录，暂不触发，或者可以设置为创建时间
                 continue;
             }
 
@@ -209,11 +208,36 @@ async function checkAutoReply() {
                 console.log(`Auto-reply triggered for ${char.remarkName}`);
                 char.autoReply.lastTriggerTime = now;
                 await saveData(); // 先保存触发时间，防止重复触发
+                
+                const historyLenBefore = char.history ? char.history.length : 0;
                 await getAiReply(char.id, 'private', true);
+                
+                // 自动唤醒屏幕并发送系统通知
+                try {
+                    const charNow = db.characters.find(c => c.id === char.id) || char;
+                    if (charNow.history && charNow.history.length > historyLenBefore) {
+                        const newMsg = charNow.history[charNow.history.length - 1];
+                        let notifyContent = newMsg.content || "发来了一条新消息";
+                        // 清洗内部包装标签
+                        notifyContent = notifyContent.replace(/\[.*?的消息[：:]([\s\S]*?)\]/, "$1")
+                                                     .replace(/\[.*?\]/g, "").trim();
+                        if (!notifyContent) notifyContent = "发来了一条新消息";
+                        
+                        const senderName = charNow.remarkName || charNow.realName || "角色";
+                        if (window.AndroidBridge && typeof window.AndroidBridge.wakeScreenAndNotify === "function") {
+                            window.AndroidBridge.wakeScreenAndNotify(senderName, notifyContent);
+                        } else if (typeof window.sendSystemNotification === "function") {
+                            window.sendSystemNotification(senderName, notifyContent);
+                        }
+                    }
+                } catch (notifyErr) {
+                    console.error("[AutoReply] 发送系统通知失败:", notifyErr);
+                }
             }
         }
     }
 }
+window.checkAutoReply = checkAutoReply;
 
 // === 主入口 ===
 document.addEventListener('DOMContentLoaded', () => {
