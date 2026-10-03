@@ -311,8 +311,8 @@ function setupChatSettings() {
             const isRandom = e.target.value === 'random';
             const fixedContainer = document.getElementById('auto-reply-fixed-container');
             const randomContainer = document.getElementById('auto-reply-random-container');
-            if (fixedContainer) fixedContainer.style.display = isRandom ? 'none' : 'block';
-            if (randomContainer) randomContainer.style.display = isRandom ? 'block' : 'none';
+            if (fixedContainer) fixedContainer.style.display = isRandom ? 'none' : 'flex';
+            if (randomContainer) randomContainer.style.display = isRandom ? 'flex' : 'none';
         });
     }
 
@@ -321,7 +321,7 @@ function setupChatSettings() {
         quietHoursCheckbox.addEventListener('change', (e) => {
             const rangeContainer = document.getElementById('quiet-hours-range-container');
             if (rangeContainer) {
-                rangeContainer.style.display = e.target.checked ? 'block' : 'none';
+                rangeContainer.style.display = e.target.checked ? 'flex' : 'none';
             }
         });
     }

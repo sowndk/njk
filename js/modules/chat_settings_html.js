@@ -350,7 +350,7 @@ const chatSettingsHtml = `
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="kkt-item" id="auto-reply-fixed-container">
+                                    <div class="kkt-item" id="auto-reply-fixed-container" style="display: flex;">
                                         <div class="kkt-item-label">无操作检测时间 (分钟)</div>
                                         <div class="kkt-item-control">
                                             <input type="number" id="setting-auto-reply-interval" value="60" min="1" style="width:55px; text-align:right; border:none; background: #f5f5f5; border-radius: 4px; padding: 4px;">
@@ -358,10 +358,10 @@ const chatSettingsHtml = `
                                     </div>
                                     <div class="kkt-item" id="auto-reply-random-container" style="display: none;">
                                         <div class="kkt-item-label">随机间隔区间 (分钟)</div>
-                                        <div class="kkt-item-control" style="display: flex; align-items: center; gap: 4px;">
-                                            <input type="number" id="setting-auto-reply-min" value="60" min="1" style="width:45px; text-align:right; border:none; background: #f5f5f5; border-radius: 4px; padding: 4px;">
-                                            <span>-</span>
-                                            <input type="number" id="setting-auto-reply-max" value="180" min="1" style="width:45px; text-align:right; border:none; background: #f5f5f5; border-radius: 4px; padding: 4px;">
+                                        <div class="kkt-item-control" style="display: flex; align-items: center; gap: 6px;">
+                                            <input type="number" id="setting-auto-reply-min" value="60" min="1" style="width:45px; text-align:center; border:none; background: #f5f5f5; border-radius: 4px; padding: 4px;">
+                                            <span style="color:#888;">-</span>
+                                            <input type="number" id="setting-auto-reply-max" value="180" min="1" style="width:45px; text-align:center; border:none; background: #f5f5f5; border-radius: 4px; padding: 4px;">
                                         </div>
                                     </div>
                                     <div class="kkt-item">
@@ -375,9 +375,9 @@ const chatSettingsHtml = `
                                     </div>
                                     <div class="kkt-item" id="quiet-hours-range-container" style="display: none;">
                                         <div class="kkt-item-label">免打扰时间范围</div>
-                                        <div class="kkt-item-control" style="display: flex; align-items: center; gap: 4px;">
+                                        <div class="kkt-item-control" style="display: flex; align-items: center; gap: 6px;">
                                             <input type="time" id="setting-quiet-hours-start" value="23:00" style="border:none; background: #f5f5f5; border-radius: 4px; padding: 3px 6px; font-size: 13px;">
-                                            <span>至</span>
+                                            <span style="color:#888;">至</span>
                                             <input type="time" id="setting-quiet-hours-end" value="07:00" style="border:none; background: #f5f5f5; border-radius: 4px; padding: 3px 6px; font-size: 13px;">
                                         </div>
                                     </div>
