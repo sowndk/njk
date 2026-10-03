@@ -907,27 +907,4 @@
         border-color: #3a3a3c !important;
         color: #e0e0e0 !important;
     }
-
-    /* ---- 20. 角色状态栏 (Status Panel) 暗色适配 ---- */
-    .status-panel-overlay {
-        background-color: rgba(0, 0, 0, 0.5) !important;
-    }
-    .status-panel-content,
-    .status-swiper,
-    .status-slide,
-    .status-slide-inner {
-        background: transparent !important;
-    }
-    .status-slide-inner iframe {
-        background: transparent !important;
-        color-scheme: dark !important;
-    }
-    .close-status-panel {
-        background: rgba(44, 44, 46, 0.9) !important;
-        color: #ffffff !important;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important;
-    }
-    .close-status-panel:hover {
-        background: #3a3a3c !important;
-    }
 }
