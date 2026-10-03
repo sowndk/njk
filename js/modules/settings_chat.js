@@ -321,7 +321,7 @@ function setupChatSettings() {
         quietHoursCheckbox.addEventListener('change', (e) => {
             const rangeContainer = document.getElementById('quiet-hours-range-container');
             if (rangeContainer) {
-                rangeContainer.style.display = e.target.checked ? 'flex' : 'none';
+                rangeContainer.style.display = e.target.checked ? 'block' : 'none';
             }
         });
     }
