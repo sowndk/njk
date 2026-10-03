@@ -186,40 +186,77 @@ async function checkBackupReminder() {
     }
 }
 
+/**
+ * 检查指定角色当前是否处于免打扰时间段内（纯函数，支持传入模拟时间戳）
+ */
+function isInQuietHours(char, nowMs = Date.now()) {
+    if (!char.autoReply || !char.autoReply.dndEnabled) return false;
+    const nowDate = new Date(nowMs);
+    const nowMinutes = nowDate.getHours() * 60 + nowDate.getMinutes();
+    const [startH, startM] = (char.autoReply.dndStart || '23:00').split(':').map(Number);
+    const [endH, endM] = (char.autoReply.dndEnd || '08:00').split(':').map(Number);
+    const startMinutes = (isNaN(startH) ? 23 : startH) * 60 + (isNaN(startM) ? 0 : startM);
+    const endMinutes = (isNaN(endH) ? 8 : endH) * 60 + (isNaN(endM) ? 0 : endM);
+    if (startMinutes <= endMinutes) {
+        return nowMinutes >= startMinutes && nowMinutes < endMinutes;
+    } else {
+        return nowMinutes >= startMinutes || nowMinutes < endMinutes;
+    }
+}
+
+/**
+ * 计算当前免打扰时间段的结束时间绝对毫秒戳（若当前不在免打扰内则返回 0）
+ */
+function nextQuietEnd(char, nowMs = Date.now()) {
+    if (!char.autoReply || !char.autoReply.dndEnabled) return 0;
+    const [startH, startM] = (char.autoReply.dndStart || '23:00').split(':').map(Number);
+    const [endH, endM] = (char.autoReply.dndEnd || '08:00').split(':').map(Number);
+    const startMinutes = (isNaN(startH) ? 23 : startH) * 60 + (isNaN(startM) ? 0 : startM);
+    const endMinutes = (isNaN(endH) ? 8 : endH) * 60 + (isNaN(endM) ? 0 : endM);
+    if (startMinutes === endMinutes) return 0;
+    const now = new Date(nowMs);
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const inDnd = startMinutes <= endMinutes
+        ? currentMinutes >= startMinutes && currentMinutes < endMinutes
+        : currentMinutes >= startMinutes || currentMinutes < endMinutes;
+    if (!inDnd) return 0;
+    const end = new Date(nowMs);
+    end.setHours(Math.floor(endMinutes / 60), endMinutes % 60, 0, 0);
+    if (startMinutes > endMinutes && currentMinutes >= startMinutes) {
+        end.setDate(end.getDate() + 1);
+    }
+    return end.getTime();
+}
+
 async function checkAutoReply() {
     const now = Date.now();
     for (const char of db.characters) {
         try {
             if (!char.autoReply || !char.autoReply.enabled) continue;
 
-            // 免打扰模式检查：如果在设定的免打扰时间段内，跳过自动发消息
+            // 免打扰模式检查：如果在设定的免打扰时间段内，延后唤醒时间并在晨起自然唤醒
             if (char.autoReply.dndEnabled) {
-                const nowDate = new Date();
-                const nowMinutes = nowDate.getHours() * 60 + nowDate.getMinutes();
-                const [startH, startM] = (char.autoReply.dndStart || '23:00').split(':').map(Number);
-                const [endH, endM] = (char.autoReply.dndEnd || '08:00').split(':').map(Number);
-                const startMinutes = (isNaN(startH) ? 23 : startH) * 60 + (isNaN(startM) ? 0 : startM);
-                const endMinutes = (isNaN(endH) ? 8 : endH) * 60 + (isNaN(endM) ? 0 : endM);
-
-                let inDnd = false;
-                if (startMinutes <= endMinutes) {
-                    // 同一天内（如 09:00 至 18:00）
-                    inDnd = nowMinutes >= startMinutes && nowMinutes < endMinutes;
-                } else {
-                    // 跨天（如 23:00 至 次日 08:00 或 12:00 至 次日 08:00）
-                    inDnd = nowMinutes >= startMinutes || nowMinutes < endMinutes;
-                }
+                const inDnd = isInQuietHours(char, now);
                 if (inDnd) {
-                    // 免打扰生效中：记录标记，并持续顺延 lastTriggerTime，确保免打扰结束后重新完整倒计时
+                    // 免打扰生效中：记录标记，并计算晨起自然唤醒目标时间（DND 结束点 + 5~20 分钟晨起抖动）
                     char.autoReply._wasInDnd = true;
+                    const quietEnd = nextQuietEnd(char, now);
+                    if (quietEnd > 0) {
+                        if (!char.autoReply.scheduledWakeUpAt || char.autoReply.scheduledWakeUpAt <= now) {
+                            const wakeUpDelayMin = 5 + Math.floor(Math.random() * 16);
+                            char.autoReply.scheduledWakeUpAt = quietEnd + wakeUpDelayMin * 60 * 1000;
+                        }
+                    } else {
+                        char.autoReply.scheduledWakeUpAt = null;
+                    }
                     char.autoReply.lastTriggerTime = now;
+                    await saveData();
                     continue;
                 }
 
                 // 刚退出免打扰状态：重置新周期的随机时长并对齐倒计时起点
                 if (char.autoReply._wasInDnd) {
                     char.autoReply._wasInDnd = false;
-                    char.autoReply.lastTriggerTime = now;
                     let minMin = char.autoReply.intervalMin !== undefined ? char.autoReply.intervalMin : (char.autoReply.interval || 60);
                     let maxMin = char.autoReply.intervalMax !== undefined ? char.autoReply.intervalMax : (char.autoReply.interval || 60);
                     if (minMin > maxMin) {
@@ -228,6 +265,14 @@ async function checkAutoReply() {
                         maxMin = temp;
                     }
                     char.autoReply.currentRandomInterval = Math.floor(Math.random() * (maxMin - minMin + 1)) + minMin;
+                    if (char.autoReply.scheduledWakeUpAt) {
+                        const targetTime = char.autoReply.scheduledWakeUpAt;
+                        char.autoReply.lastTriggerTime = targetTime - char.autoReply.currentRandomInterval * 60 * 1000;
+                        char.autoReply.scheduledWakeUpAt = null;
+                        console.log(`[AutoReply] DND 结束后自然唤醒设定 (${char.remarkName || char.realName}): 目标时间 ${new Date(targetTime).toLocaleTimeString()}`);
+                    } else {
+                        char.autoReply.lastTriggerTime = now;
+                    }
                     await saveData();
                 }
             }
@@ -265,7 +310,18 @@ async function checkAutoReply() {
                 await saveData(); // 先保存触发时间与新周期时长，防止重复触发
                 
                 const historyLenBefore = char.history ? char.history.length : 0;
+                const lastMsgIdBefore = char.history && char.history.length > 0
+                    ? char.history[char.history.length - 1].id
+                    : null;
                 try {
+                    const charBefore = db.characters.find(c => c.id === char.id) || char;
+                    const lastMsgNow = charBefore.history && charBefore.history.length > 0
+                        ? charBefore.history[charBefore.history.length - 1]
+                        : null;
+                    if (lastMsgNow && lastMsgIdBefore && lastMsgNow.id !== lastMsgIdBefore) {
+                        console.log(`[AutoReply] 跳过 ${char.remarkName || char.realName}：检测到新消息插入，避免状态冲突与复读`);
+                        continue;
+                    }
                     await getAiReply(char.id, 'private', true);
                 } catch (aiErr) {
                     console.error(`[AutoReply] AI 生成回复失败 (${char.remarkName || char.realName}):`, aiErr);
