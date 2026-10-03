@@ -141,30 +141,13 @@ function setupChatRoom() {
 
                 const item = slidesData[index];
                 const htmlContent = item.html;
-                let templated = processTemplate(htmlContent, char);
-
-                // 暗黑模式适配：为 iframe 注入透明背景与暗色配色支持，避免因缺失背景设置而显示为默认白底
-                const darkStyleInject = `<style>
-@media (prefers-color-scheme: dark) {
-    html, body {
-        background-color: transparent !important;
-        color: #e0e0e0;
-    }
-}
-</style>`;
-                if (templated.includes('</head>')) {
-                    templated = templated.replace('</head>', darkStyleInject + '</head>');
-                } else {
-                    templated = darkStyleInject + templated;
-                }
-
                 if (htmlContent.includes('<!DOCTYPE html>') || htmlContent.includes('<html') || htmlContent.includes('<style')) {
                     const iframe = document.createElement('iframe');
                     iframe.style.cssText = "width: 100%; height: 100%; min-height: 80vh; border: none; background: transparent; display: block;";
-                    iframe.srcdoc = templated;
+                    iframe.srcdoc = processTemplate(htmlContent, char);
                     slideInner.appendChild(iframe);
                 } else {
-                    slideInner.innerHTML = templated;
+                    slideInner.innerHTML = processTemplate(htmlContent, char);
                 }
             };
 
