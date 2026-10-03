@@ -751,4 +751,160 @@
         background: #1c1c1e !important;
         opacity: 0.8 !important;
     }
+
+    /* ---- 18. 聊天设置页及全局表单控件暗色兜底（解决白色小框、输入框残白） ---- */
+    .kkt-item-control input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+    .kkt-item-control select,
+    .kkt-item-control textarea,
+    .kkt-item input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+    .kkt-item select,
+    .kkt-item textarea,
+    #chat-settings-screen input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+    #chat-settings-screen select,
+    #chat-settings-screen textarea,
+    #group-settings-screen input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+    #group-settings-screen select,
+    #group-settings-screen textarea {
+        background-color: #1c1c1e !important;
+        color: #e0e0e0 !important;
+        border-color: #3a3a3c !important;
+    }
+    .kkt-item-control select option,
+    .kkt-item select option,
+    #chat-settings-screen select option,
+    #group-settings-screen select option {
+        background-color: #1c1c1e !important;
+        color: #e0e0e0 !important;
+    }
+    .kkt-item-control input::placeholder,
+    .kkt-item-control textarea::placeholder,
+    #chat-settings-screen input::placeholder,
+    #chat-settings-screen textarea::placeholder {
+        color: #8e8e93 !important;
+    }
+    .bubble-preset-toolbar select {
+        background-color: #1c1c1e !important;
+        color: #e0e0e0 !important;
+        border-color: #3a3a3c !important;
+    }
+    .bubble-preset-toolbar select option {
+        background-color: #1c1c1e !important;
+        color: #e0e0e0 !important;
+    }
+
+    /* ---- 19. 全模块高频白底容器暗色适配 ---- */
+    /* 基础折叠面板 */
+    .collapsible-section {
+        background-color: #2c2c2e !important;
+        border-color: #3a3a3c !important;
+        color: #e0e0e0 !important;
+    }
+    .collapsible-header {
+        color: #ffffff !important;
+    }
+    /* 更多/功能大厅屏 (#more-screen) */
+    #more-screen {
+        background-color: #1c1c1e !important;
+    }
+    .preset-card,
+    .search-bar-decoration,
+    .avatar-wrapper {
+        background-color: #2c2c2e !important;
+        border-color: #3a3a3c !important;
+        color: #e0e0e0 !important;
+    }
+    .preset-name {
+        color: #ffffff !important;
+    }
+    /* 商城屏 (#shop-screen) */
+    #shop-screen {
+        background-color: #1c1c1e !important;
+    }
+    .shop-tabs {
+        background-color: #2c2c2e !important;
+        border-color: #3a3a3c !important;
+    }
+    .shop-tab-item {
+        color: #8e8e93 !important;
+    }
+    .shop-tab-item.active {
+        color: #ffffff !important;
+    }
+    .shop-item-card {
+        background-color: #2c2c2e !important;
+        border-color: #3a3a3c !important;
+        color: #e0e0e0 !important;
+    }
+    .shop-item-card.ad-item {
+        background-color: #2c2c2e !important;
+    }
+    .shop-item-image-box {
+        background-color: #1c1c1e !important;
+    }
+    .action-sheet,
+    .action-sheet-button {
+        background-color: #2c2c2e !important;
+        color: #e0e0e0 !important;
+        border-color: #3a3a3c !important;
+    }
+    /* 论坛屏 (#forum-screen) */
+    #forum-screen {
+        background-color: #1c1c1e !important;
+    }
+    .forum-post-card,
+    .post-detail-container,
+    .forum-share-card {
+        background-color: #2c2c2e !important;
+        border-color: #3a3a3c !important;
+        color: #e0e0e0 !important;
+    }
+    .post-detail-actions .action-item:hover {
+        background-color: #3a3a3c !important;
+    }
+    /* Peek 相关 (解锁屏、设置、备忘) */
+    #peek-unlock-screen,
+    .peek-settings-list,
+    .peek-settings-footer,
+    .unlock-post-card,
+    .ins-widget-bubble {
+        background-color: #2c2c2e !important;
+        color: #e0e0e0 !important;
+        border-color: #3a3a3c !important;
+    }
+    .unlock-post-feed {
+        background-color: #1c1c1e !important;
+    }
+    .transfer-station-input-area .fake-input {
+        background-color: #1c1c1e !important;
+        border-color: #3a3a3c !important;
+        color: #e0e0e0 !important;
+    }
+    /* 搜索聊天记录界面 (#search-history-screen) */
+    #search-history-screen,
+    .search-header,
+    .search-filter-bar,
+    .search-content {
+        background-color: #1c1c1e !important;
+        color: #e0e0e0 !important;
+    }
+    #search-history-input {
+        background-color: #2c2c2e !important;
+        color: #e0e0e0 !important;
+        border-color: #3a3a3c !important;
+    }
+    /* 聊天转账卡片、气泡卡片等 */
+    .transfer-card,
+    .pv-card-content {
+        background-color: #2c2c2e !important;
+        color: #e0e0e0 !important;
+        border-color: #3a3a3c !important;
+    }
+    /* 工坊 / 组件市场 */
+    #drawing-workshop-screen,
+    .workshop-section,
+    .widget-market-card {
+        background-color: #2c2c2e !important;
+        border-color: #3a3a3c !important;
+        color: #e0e0e0 !important;
+    }
 }
