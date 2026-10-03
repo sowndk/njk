@@ -274,6 +274,52 @@ function setupCustomizeApp() {
             }
         }
 
+        if (e.target.id === 'global-css-doc-file') {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            const statusEl = document.getElementById('global-css-doc-status');
+            const textarea = document.getElementById('global-beautification-css');
+            if (statusEl) {
+                statusEl.textContent = `正在解析 ${file.name}...`;
+                statusEl.style.color = '#888';
+            }
+            try {
+                const lowerName = (file.name || '').toLowerCase();
+                let text = '';
+                if (lowerName.endsWith('.docx')) {
+                    if (typeof mammoth === 'undefined' || !mammoth || !mammoth.extractRawText) {
+                        throw new Error('mammoth 未加载，无法解析 docx');
+                    }
+                    const buf = await file.arrayBuffer();
+                    const res = await mammoth.extractRawText({ arrayBuffer: buf });
+                    text = res && res.value ? res.value : '';
+                } else if (lowerName.endsWith('.css') || lowerName.endsWith('.txt') || lowerName.endsWith('.md') || file.type.startsWith('text/')) {
+                    text = await file.text();
+                } else {
+                    text = await file.text();
+                }
+                if (textarea) {
+                    textarea.value = text;
+                }
+                const lineCount = text.split('\n').filter(l => l.trim()).length;
+                if (statusEl) {
+                    statusEl.textContent = `✓ 已导入 ${file.name}（${lineCount} 行有效文本）`;
+                    statusEl.style.color = '#34c759';
+                }
+                showToast(`已成功从文档导入 CSS (${lineCount} 行)`);
+            } catch (err) {
+                console.error('文档导入 CSS 失败:', err);
+                if (statusEl) {
+                    statusEl.textContent = `✗ 导入失败：${err.message || err}`;
+                    statusEl.style.color = '#ff3b30';
+                }
+                showToast('文档导入失败');
+            } finally {
+                e.target.value = '';
+            }
+            return;
+        }
+
         if (e.target.matches('.icon-upload-input')) {
             const file = e.target.files[0];
             if (!file) return;
@@ -514,6 +560,11 @@ function renderCustomizeForm() {
                         <button type="button" id="apply-global-css-now-btn" class="btn btn-primary btn-small" style="width:auto;">立即应用</button>
                     </div>
                     <textarea id="global-beautification-css" class="form-group" rows="8" placeholder="在此输入CSS代码..." style="width:100%; border:1px solid #eee; border-radius:8px; padding:10px; font-family: monospace; font-size: 12px;"></textarea>
+                </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label for="global-css-doc-file" style="display:block; font-size: 13px; color: #666; margin-bottom: 6px;">或从文档导入 (.css / .txt / .md / .docx)</label>
+                    <input type="file" id="global-css-doc-file" accept=".css,.txt,.md,.docx,text/css,text/plain,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="width:100%; font-size: 12px;">
+                    <small id="global-css-doc-status" style="display:block; margin-top:6px; color:#888;"></small>
                 </div>
                 <div style="background:#f9f9f9; padding:10px; border-radius:8px; border: 1px solid #f0f0f0;">
                     <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
