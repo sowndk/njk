@@ -54,12 +54,16 @@ function generatePrivateSystemPrompt(character) {
         prompt += `11.状态更新: [${character.realName}更新状态为：新状态]\n`;
         prompt += `12.转发聊天记录: <${character.realName}转发的聊天记录>a:xxx\\nb:xxx\\n...</${character.realName}转发的聊天记录>\n  - 当${character.realName}想要分享八卦/趣事/吃瓜/分享和朋友的搞笑聊天记录/生活时，试试转发聊天记录给${character.myName}吧。\n`;
         
+                if (character.videoCallEnabled) {
+            prompt += `13.发起通话: [${character.realName}向${character.myName}发起了视频通话] 或 [${character.realName}向${character.myName}发起了语音通话]\n`;
+        }
+        
         if (character.momentsEnabled !== false) {
-            prompt += `13.朋友圈动态: [${character.realName}发布了一条动态：xxx] 或 [${character.realName}发布了一条带图动态：图片画面描述|动态文字内容]\n`;
+            prompt += `14.朋友圈动态: [${character.realName}发布了一条动态：xxx] 或 [${character.realName}发布了一条带图动态：图片画面描述|动态文字内容]\n`;
             prompt += `  - 评论互动：模拟${character.realName}或${character.realName}的其他好友在动态下的评论或回复。格式：[{评论者姓名}评论了{被评论者姓名}的动态“{动态内容缩略}”：xxx] 或 [{回复者姓名}回复了{被回复者姓名}在动态“{动态内容缩略}”下的评论：xxx]。\n  - 更新签名：更新你的朋友圈个性签名。格式：[${character.realName}更新了个性签名：xxx]。\n`;
         }
         
-        prompt += `14.隐藏指令(不显示给用户，但必须回复以触发状态变化):\n  - 接收礼物: [${character.realName}已接收礼物]\n  - 接收/退回转账: [${character.realName}接收${character.myName}的转账] 或 [${character.realName}退回${character.myName}的转账]\n  - 同意/拒绝代付: [${character.realName}同意了${character.myName}的代付请求] 或 [${character.realName}拒绝了${character.myName}的代付请求]\n`;
+        prompt += `15.隐藏指令(不显示给用户，但必须回复以触发状态变化):\n  - 接收礼物: [${character.realName}已接收礼物]\n  - 接收/退回转账: [${character.realName}接收${character.myName}的转账] 或 [${character.realName}退回${character.myName}的转账]\n  - 同意/拒绝代付: [${character.realName}同意了${character.myName}的代付请求] 或 [${character.realName}拒绝了${character.myName}的代付请求]\n`;
         
         prompt += `</消息格式库>\n\n`;
         
