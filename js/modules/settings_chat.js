@@ -562,10 +562,7 @@ function loadSettingsToSidebar() {
         const ar = e.autoReply || {};
         const autoReplyCheckbox = document.getElementById('setting-auto-reply-enabled');
         autoReplyCheckbox.checked = ar.enabled || false;
-        const intervalMinEl = document.getElementById('setting-auto-reply-interval-min');
-        const intervalMaxEl = document.getElementById('setting-auto-reply-interval-max');
-        if (intervalMinEl) intervalMinEl.value = ar.intervalMin !== undefined ? ar.intervalMin : (ar.interval || 1);
-        if (intervalMaxEl) intervalMaxEl.value = ar.intervalMax !== undefined ? ar.intervalMax : (ar.interval || 60);
+        document.getElementById('setting-auto-reply-interval').value = ar.interval || 60;
         autoReplyCheckbox.dispatchEvent(new Event('change'));
 
         const autoAirdropCheckbox = document.getElementById('setting-auto-airdrop-enabled');
@@ -905,20 +902,8 @@ async function saveSettingsFromSidebar() {
 
         if (!e.autoReply) e.autoReply = {};
         e.autoReply.enabled = document.getElementById('setting-auto-reply-enabled').checked;
-        const minInput = document.getElementById('setting-auto-reply-interval-min');
-        const maxInput = document.getElementById('setting-auto-reply-interval-max');
-        let parsedMin = minInput ? parseInt(minInput.value, 10) : 1;
-        let parsedMax = maxInput ? parseInt(maxInput.value, 10) : 60;
-        if (isNaN(parsedMin) || parsedMin < 1) parsedMin = 1;
-        if (isNaN(parsedMax) || parsedMax < 1) parsedMax = 60;
-        if (parsedMin > parsedMax) {
-            const temp = parsedMin;
-            parsedMin = parsedMax;
-            parsedMax = temp;
-        }
-        e.autoReply.intervalMin = parsedMin;
-        e.autoReply.intervalMax = parsedMax;
-        e.autoReply.interval = parsedMax; // 向后兼容旧字段
+        const autoReplyIntervalInput = parseInt(document.getElementById('setting-auto-reply-interval').value, 10);
+        e.autoReply.interval = isNaN(autoReplyIntervalInput) ? 60 : autoReplyIntervalInput;
 
         const autoAirdropCheckbox = document.getElementById('setting-auto-airdrop-enabled');
         if (autoAirdropCheckbox) {

@@ -342,11 +342,9 @@ const chatSettingsHtml = `
                             <div id="auto-reply-settings-container" class="feature-details-panel">
                                 <div class="kkt-group">
                                     <div class="kkt-item">
-                                        <div class="kkt-item-label">无操作检测时间（分钟）</div>
-                                        <div class="kkt-item-control" style="display: flex; align-items: center; gap: 4px;">
-                                            <input type="number" id="setting-auto-reply-interval-min" value="1" min="1" style="width:48px; text-align:center; border:none; background: #f5f5f5; border-radius: 4px; padding: 4px;">
-                                            <span>-</span>
-                                            <input type="number" id="setting-auto-reply-interval-max" value="60" min="1" style="width:48px; text-align:center; border:none; background: #f5f5f5; border-radius: 4px; padding: 4px;">
+                                        <div class="kkt-item-label">无操作检测时间 (分钟)</div>
+                                        <div class="kkt-item-control">
+                                            <input type="number" id="setting-auto-reply-interval" value="60" min="1" style="width:50px; text-align:right; border:none; background: #f5f5f5; border-radius: 4px; padding: 4px;">
                                         </div>
                                     </div>
                                 </div>
