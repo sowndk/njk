@@ -43,7 +43,18 @@ function setupAddCharModal() {
             },
             autoReply: {
                 enabled: false,
+                mode: 'fixed',
                 interval: 60,
+                minInterval: 60,
+                maxInterval: 180,
+                nextRandomIntervalMs: null,
+                quietHours: {
+                    enabled: false,
+                    start: '23:00',
+                    end: '07:00'
+                },
+                failureCount: 0,
+                retryAt: 0,
                 lastTriggerTime: 0
             }
        };

@@ -717,9 +717,23 @@ const loadData = async () => {
         if (!c.autoReply) {
             c.autoReply = {
                 enabled: false,
+                mode: "fixed",
                 interval: 60,
-                lastTriggerTime: 0
+                minInterval: 60,
+                maxInterval: 180,
+                nextRandomIntervalMs: null,
+                quietHours: { enabled: false, start: "23:00", end: "07:00" },
+                lastTriggerTime: 0,
+                failureCount: 0,
+                retryAt: 0
             };
+        } else {
+            if (!c.autoReply.mode) c.autoReply.mode = "fixed";
+            if (c.autoReply.minInterval === undefined) c.autoReply.minInterval = 60;
+            if (c.autoReply.maxInterval === undefined) c.autoReply.maxInterval = 180;
+            if (!c.autoReply.quietHours) c.autoReply.quietHours = { enabled: false, start: "23:00", end: "07:00" };
+            if (c.autoReply.failureCount === undefined) c.autoReply.failureCount = 0;
+            if (c.autoReply.retryAt === undefined) c.autoReply.retryAt = 0;
         }
         if (!c.gallery) c.gallery = [];
         if (c.useRealGallery === undefined) c.useRealGallery = false;

@@ -303,6 +303,28 @@ function setupChatSettings() {
             }
         });
     });
+
+    // 自动消息子项联动：模式切换（固定 vs 随机）与免打扰时间区间
+    const autoReplyModeSelect = document.getElementById('setting-auto-reply-mode');
+    if (autoReplyModeSelect) {
+        autoReplyModeSelect.addEventListener('change', (e) => {
+            const isRandom = e.target.value === 'random';
+            const fixedContainer = document.getElementById('auto-reply-fixed-container');
+            const randomContainer = document.getElementById('auto-reply-random-container');
+            if (fixedContainer) fixedContainer.style.display = isRandom ? 'none' : 'block';
+            if (randomContainer) randomContainer.style.display = isRandom ? 'block' : 'none';
+        });
+    }
+
+    const quietHoursCheckbox = document.getElementById('setting-quiet-hours-enabled');
+    if (quietHoursCheckbox) {
+        quietHoursCheckbox.addEventListener('change', (e) => {
+            const rangeContainer = document.getElementById('quiet-hours-range-container');
+            if (rangeContainer) {
+                rangeContainer.style.display = e.target.checked ? 'block' : 'none';
+            }
+        });
+    }
 }
 
 function renderBoundWorldBooks(type, worldBookIds) {
@@ -563,6 +585,25 @@ function loadSettingsToSidebar() {
         const autoReplyCheckbox = document.getElementById('setting-auto-reply-enabled');
         autoReplyCheckbox.checked = ar.enabled || false;
         document.getElementById('setting-auto-reply-interval').value = ar.interval || 60;
+        const autoReplyModeEl = document.getElementById('setting-auto-reply-mode');
+        if (autoReplyModeEl) {
+            autoReplyModeEl.value = ar.mode || 'fixed';
+            autoReplyModeEl.dispatchEvent(new Event('change'));
+        }
+        const minEl = document.getElementById('setting-auto-reply-min');
+        if (minEl) minEl.value = ar.minInterval || 60;
+        const maxEl = document.getElementById('setting-auto-reply-max');
+        if (maxEl) maxEl.value = ar.maxInterval || 180;
+        const qh = ar.quietHours || {};
+        const quietHoursEl = document.getElementById('setting-quiet-hours-enabled');
+        if (quietHoursEl) {
+            quietHoursEl.checked = !!qh.enabled;
+            quietHoursEl.dispatchEvent(new Event('change'));
+        }
+        const qhStartEl = document.getElementById('setting-quiet-hours-start');
+        if (qhStartEl) qhStartEl.value = qh.start || '23:00';
+        const qhEndEl = document.getElementById('setting-quiet-hours-end');
+        if (qhEndEl) qhEndEl.value = qh.end || '07:00';
         autoReplyCheckbox.dispatchEvent(new Event('change'));
 
         const autoAirdropCheckbox = document.getElementById('setting-auto-airdrop-enabled');
@@ -904,6 +945,24 @@ async function saveSettingsFromSidebar() {
         e.autoReply.enabled = document.getElementById('setting-auto-reply-enabled').checked;
         const autoReplyIntervalInput = parseInt(document.getElementById('setting-auto-reply-interval').value, 10);
         e.autoReply.interval = isNaN(autoReplyIntervalInput) ? 60 : autoReplyIntervalInput;
+        const autoReplyModeElSave = document.getElementById('setting-auto-reply-mode');
+        e.autoReply.mode = autoReplyModeElSave ? autoReplyModeElSave.value : (e.autoReply.mode || 'fixed');
+        const minVal = parseInt(document.getElementById('setting-auto-reply-min')?.value, 10);
+        const maxVal = parseInt(document.getElementById('setting-auto-reply-max')?.value, 10);
+        let safeMin = isNaN(minVal) ? 60 : Math.max(1, minVal);
+        let safeMax = isNaN(maxVal) ? 180 : Math.max(1, maxVal);
+        if (safeMin > safeMax) {
+            const tmp = safeMin; safeMin = safeMax; safeMax = tmp;
+        }
+        e.autoReply.minInterval = safeMin;
+        e.autoReply.maxInterval = safeMax;
+        if (!e.autoReply.quietHours) e.autoReply.quietHours = {};
+        const qhSwitch = document.getElementById('setting-quiet-hours-enabled');
+        e.autoReply.quietHours.enabled = qhSwitch ? qhSwitch.checked : false;
+        const qhStartVal = document.getElementById('setting-quiet-hours-start')?.value;
+        const qhEndVal = document.getElementById('setting-quiet-hours-end')?.value;
+        e.autoReply.quietHours.start = qhStartVal || '23:00';
+        e.autoReply.quietHours.end = qhEndVal || '07:00';
 
         const autoAirdropCheckbox = document.getElementById('setting-auto-airdrop-enabled');
         if (autoAirdropCheckbox) {

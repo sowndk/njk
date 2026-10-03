@@ -186,58 +186,133 @@ async function checkBackupReminder() {
     }
 }
 
+// 判断角色当前是否处于免打扰时段
+function isInQuietHours(char) {
+    if (!char || !char.autoReply || !char.autoReply.quietHours || !char.autoReply.quietHours.enabled) {
+        return false;
+    }
+    const qh = char.autoReply.quietHours;
+    const start = qh.start || '23:00';
+    const end = qh.end || '07:00';
+
+    const now = new Date();
+    const currentMin = now.getHours() * 60 + now.getMinutes();
+
+    const [sH, sM] = start.split(':').map(Number);
+    const [eH, eM] = end.split(':').map(Number);
+    const startMin = (isNaN(sH) ? 23 : sH) * 60 + (isNaN(sM) ? 0 : sM);
+    const endMin = (isNaN(eH) ? 7 : eH) * 60 + (isNaN(eM) ? 0 : eM);
+
+    if (startMin <= endMin) {
+        // 同一天内（例如 01:00 ~ 06:00）
+        return currentMin >= startMin && currentMin < endMin;
+    } else {
+        // 跨午夜（例如 23:00 ~ 07:00）
+        return currentMin >= startMin || currentMin < endMin;
+    }
+}
+
 async function checkAutoReply() {
     const now = Date.now();
     for (const char of db.characters) {
-        if (char.autoReply && char.autoReply.enabled) {
-            const intervalMs = (char.autoReply.interval || 60) * 60 * 1000;
-            const lastTriggerTime = char.autoReply.lastTriggerTime || 0;
-            
-            // 检查上次触发时间
-            if (now - lastTriggerTime < intervalMs) continue;
+        if (!char.autoReply || !char.autoReply.enabled) continue;
 
-            let lastMsgTime = 0;
-            if (char.history && char.history.length > 0) {
-                lastMsgTime = char.history[char.history.length - 1].timestamp;
-            } else {
-                continue;
+        // 1. 免打扰时段检查
+        if (isInQuietHours(char)) {
+            continue;
+        }
+
+        // 2. 失败退避重试时间检查
+        if (char.autoReply.retryAt && now < char.autoReply.retryAt) {
+            continue;
+        }
+
+        // 3. 计算生效时间间隔 intervalMs
+        const mode = char.autoReply.mode || 'fixed';
+        let intervalMs = 60 * 60 * 1000;
+
+        if (mode === 'random') {
+            const minMin = Math.max(1, char.autoReply.minInterval || 60);
+            const maxMin = Math.max(minMin, char.autoReply.maxInterval || 180);
+            if (!char.autoReply.nextRandomIntervalMs) {
+                const rolledMinutes = Math.floor(Math.random() * (maxMin - minMin + 1)) + minMin;
+                char.autoReply.nextRandomIntervalMs = rolledMinutes * 60 * 1000;
+                await saveData();
             }
+            intervalMs = char.autoReply.nextRandomIntervalMs;
+        } else {
+            intervalMs = (char.autoReply.interval || 60) * 60 * 1000;
+        }
 
-            // 检查无操作时间 (最后一条消息到现在的时间)
-            if (now - lastMsgTime > intervalMs) {
-                console.log(`Auto-reply triggered for ${char.remarkName}`);
-                char.autoReply.lastTriggerTime = now;
-                await saveData(); // 先保存触发时间，防止重复触发
-                
-                const historyLenBefore = char.history ? char.history.length : 0;
+        const lastTriggerTime = char.autoReply.lastTriggerTime || 0;
+        // 检查上次触发时间
+        if (now - lastTriggerTime < intervalMs) continue;
+
+        let lastMsgTime = 0;
+        if (char.history && char.history.length > 0) {
+            lastMsgTime = char.history[char.history.length - 1].timestamp;
+        } else {
+            continue;
+        }
+
+        // 检查无操作时间 (最后一条消息到现在的时间)
+        if (now - lastMsgTime > intervalMs) {
+            console.log(`[AutoReply] Triggered for ${char.remarkName || char.realName} (mode: ${mode}, interval: ${Math.round(intervalMs / 60000)}m)`);
+            char.autoReply.lastTriggerTime = now;
+            if (mode === 'random') {
+                // 触发后清空随机缓存，下次重新 roll
+                char.autoReply.nextRandomIntervalMs = null;
+            }
+            await saveData(); // 先保存触发时间，防止重复触发
+
+            const historyLenBefore = char.history ? char.history.length : 0;
+            let success = false;
+            try {
                 await getAiReply(char.id, 'private', true);
-                
-                // 自动唤醒屏幕并发送系统通知
-                try {
-                    const charNow = db.characters.find(c => c.id === char.id) || char;
-                    if (charNow.history && charNow.history.length > historyLenBefore) {
+                const charNow = db.characters.find(c => c.id === char.id) || char;
+                if (charNow.history && charNow.history.length > historyLenBefore) {
+                    success = true;
+                    char.autoReply.failureCount = 0;
+                    char.autoReply.retryAt = 0;
+                    await saveData();
+
+                    // 自动唤醒屏幕并发送系统通知
+                    try {
                         const newMsg = charNow.history[charNow.history.length - 1];
                         let notifyContent = newMsg.content || "发来了一条新消息";
                         // 清洗内部包装标签
-                        notifyContent = notifyContent.replace(/\[.*?的消息[：:]([\s\S]*?)\]/, "$1")
+                        notifyContent = notifyContent.replace(/\[.*?[：:]([\s\S]*?)\]/, "$1")
                                                      .replace(/\[.*?\]/g, "").trim();
                         if (!notifyContent) notifyContent = "发来了一条新消息";
-                        
+
                         const senderName = charNow.remarkName || charNow.realName || "角色";
                         if (window.AndroidBridge && typeof window.AndroidBridge.wakeScreenAndNotify === "function") {
                             window.AndroidBridge.wakeScreenAndNotify(senderName, notifyContent);
                         } else if (typeof window.sendSystemNotification === "function") {
                             window.sendSystemNotification(senderName, notifyContent);
                         }
+                    } catch (notifyErr) {
+                        console.error("[AutoReply] 发送系统通知失败:", notifyErr);
                     }
-                } catch (notifyErr) {
-                    console.error("[AutoReply] 发送系统通知失败:", notifyErr);
                 }
+            } catch (err) {
+                console.error(`[AutoReply] Failed for ${char.remarkName || char.realName}:`, err);
+            }
+
+            // 4. 失败退避策略 (1m -> 3m -> 15m)
+            if (!success) {
+                const failCount = (char.autoReply.failureCount || 0) + 1;
+                char.autoReply.failureCount = failCount;
+                const backoffMinutes = failCount === 1 ? 1 : (failCount === 2 ? 3 : 15);
+                char.autoReply.retryAt = Date.now() + backoffMinutes * 60 * 1000;
+                console.warn(`[AutoReply] ${char.remarkName || char.realName} trigger failed (${failCount}), backing off for ${backoffMinutes}m`);
+                await saveData();
             }
         }
     }
 }
 window.checkAutoReply = checkAutoReply;
+window.isInQuietHours = isInQuietHours;
 
 // === 主入口 ===
 document.addEventListener('DOMContentLoaded', () => {
