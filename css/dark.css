@@ -1,0 +1,1017 @@
+/* =========================================================================
+   UwU 章鱼喷墨机 · 暗黑模式
+   -------------------------------------------------------------------------
+   设计原则（2026-09-28 步骤 13）：
+   1. 跟随系统深色主题：@media (prefers-color-scheme: dark) 包裹，加载即生效，
+      零 JS、零白屏闪烁、PWA 离线/SW 重启用同样工作。
+   2. 不提供独立切换按钮（用户明确要求）。
+   3. 不覆盖 .message-bubble 全局：项目里 .message-bubble 无 CSS 默认色，
+      完全靠 JS 动态 inline style 或用户自定义气泡 CSS（customBubbleCss
+      注入 <style id="custom-bubble-style-for-{chatId}">）。全局覆盖会破坏
+      自定义气泡。
+   4. 覆盖策略：先重声明 :root 里的 CSS 变量（自动作用于所有 var(--xxx) 调用），
+      再对硬编码颜色（phone-screen / bottom-nav / app-header / chat-list-header
+      等少量组件）精确覆盖，最后给 peek 区气泡硬编码色提供兜底。
+   5. 颜色取值采用 iOS 13+ 标准暗黑层级（#000/#1c1c1e/#2c2c2e/#3a3a3c/#e0e0e0）。
+   ========================================================================= */
+
+/* === 第一层：重声明 CSS 变量（覆盖 base.css :root 浅色默认值） === */
+@media (prefers-color-scheme: dark) {
+    :root {
+        /* 基础背景与文字 */
+        --bg-color: #1c1c1e;             /* 主背景 */
+        --primary-color: #2c2c2e;       /* 主色调（背景型控件） */
+        --secondary-color: #3a3a3c;     /* 次要色 */
+        --accent-color: #1c1c1e;
+        --text-color: #e0e0e0;          /* 主文字 */
+        --white-color: #e0e0e0;
+        --top-pinned-bg: #2c2c2e;       /* 置顶背景 */
+        /* 导航与图标 */
+        --nav-icon-color: #8e8e93;
+        --nav-active-icon-color: #ffffff;
+        --func-icon-color: #e0e0e0;     /* 功能图标色（黑→白） */
+        --kkt-icon-color: #ffffff;      /* KKT 图标白 */
+        --global-title-color: #ffffff;
+        /* 底部栏/卡片/面板 */
+        --chat-bottom-bar-bg: #2c2c2e;
+        --folder-pill-bg: #2c2c2e;
+        --folder-pill-text: #d0d0d2;
+        --folder-pill-active-bg: #2c2c2e;        /* 修复：原写 #ffffff 导致 active 态白底黑字，现改为深灰保持"深底高亮"一致 */
+        --folder-pill-active-text: #ffffff;       /* 修复：原写 #1c1c1e 与 active-bg 反向 */
+        /* 切换系统 form 控件风格 */
+        color-scheme: dark;
+    }
+}
+
+/* === 第二层：硬编码背景色的主容器（layout.css 里直接写 #ffffff） === */
+@media (prefers-color-scheme: dark) {
+    body {
+        background: #1c1c1e;
+        color: var(--text-color);
+    }
+    .phone-screen {
+        background-color: #1c1c1e !important;
+    }
+    .screen {
+        background-color: #1c1c1e;
+    }
+    .content {
+        background-color: #1c1c1e;
+        color: var(--text-color);
+    }
+}
+
+/* === 第三层：顶部导航栏与底部导航栏（半透明白→半透明黑） === */
+@media (prefers-color-scheme: dark) {
+    .app-header {
+        background-color: rgba(28, 28, 30, 0.85) !important;
+        border-bottom-color: #2c2c2e !important;
+        color: var(--text-color);
+    }
+    .bottom-nav {
+        background-color: #2c2c2e !important;
+        border-top-color: #3a3a3c !important;
+    }
+}
+
+/* === 第四层：聊天列表与列表项（硬编码 #fff / #fdf6f8） === */
+@media (prefers-color-scheme: dark) {
+    .chat-list-header {
+        background-color: #1c1c1e !important;
+        color: var(--global-title-color) !important;
+    }
+    .chat-list-header .title {
+        color: #ffffff !important;
+    }
+    .list-item {
+        background-color: #1c1c1e;
+        border-bottom-color: #2c2c2e !important;
+    }
+    .list-item:hover {
+        background-color: #2c2c2e;
+    }
+    .chat-item.pinned {
+        background-color: #2c2c2e !important;
+    }
+}
+
+/* === 第五层：消息输入区（chat.css 用 #fff / #f5f5f5） === */
+@media (prefers-color-scheme: dark) {
+    #chat-room-screen .message-input-area,
+    .message-input-area {
+        background-color: #2c2c2e !important;
+        border-top-color: #3a3a3c !important;
+        color: var(--text-color);
+    }
+    .message-input-area textarea {
+        background-color: #1c1c1e !important;
+        color: #e0e0e0 !important;
+        border-color: #3a3a3c !important;
+    }
+}
+
+/* === 第六层：聊天背景区（chat.css L407-415 #chat-room-screen .content 是浅灰） === */
+@media (prefers-color-scheme: dark) {
+    #chat-room-screen .content {
+        background-color: #1c1c1e;
+    }
+}
+
+/* === 第七层：peek 区气泡硬编码色兜底（peek.css L455-466 强制 #e9ecef / #007bff）
+   注意：此规则只覆盖 ID 限定的 .message-bubble，不影响其他屏的气泡，也不影响
+   用户自定义气泡 CSS（用户 CSS 注入位置晚于本文件，但用 #peek-conversation-screen
+   + .message-bubble 已是最强 ID 特异性，如仍需调整请用更高特异性如 [style*=]）。 === */
+@media (prefers-color-scheme: dark) {
+    #peek-conversation-screen .message-bubble.received {
+        background-color: #2c2c2e !important;
+        color: #e0e0e0 !important;
+    }
+    #peek-conversation-screen .message-bubble.sent {
+        background-color: #0a84ff !important;
+        color: #ffffff !important;
+    }
+}
+
+/* === 第八层：滚动条与表单元素（跟随系统） === */
+@media (prefers-color-scheme: dark) {
+    ::-webkit-scrollbar {
+        background: #1c1c1e;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #3a3a3c;
+        border-radius: 4px;
+    }
+    input, textarea, select {
+        background-color: #1c1c1e;
+        color: #e0e0e0;
+        border-color: #3a3a3c;
+    }
+}
+
+/* === 第九层：设置页卡片组（kkt-group / kkt-item / feature-card / bubble-css-preview） === */
+@media (prefers-color-scheme: dark) {
+    /* 设置主卡片容器 */
+    .kkt-group {
+        background-color: #2c2c2e !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    }
+    /* 设置列表项（基础 + last-child 去掉白底） */
+    .kkt-item {
+        background-color: #2c2c2e !important;
+        border-bottom-color: #3a3a3c !important;
+    }
+    .kkt-item:active {
+        background-color: #3a3a3c !important;
+    }
+    /* 气泡 CSS 预览卡片（个性化设置里的实时预览块） */
+    .bubble-css-preview {
+        background-color: #2c2c2e !important;
+        border-color: #3a3a3c !important;
+    }
+    /* 个性化设置「功能开关」网格卡片 */
+    .feature-control-center {
+        background-color: #1c1c1e !important;
+    }
+    .feature-card {
+        background-color: #2c2c2e !important;
+        color: #e0e0e0 !important;
+    }
+    .feature-card.is-on {
+        background-color: rgba(10, 132, 255, 0.18) !important; /* 暗色版淡蓝高亮 */
+    }
+    .feature-card-icon,
+    .feature-card-title {
+        color: #e0e0e0 !important;
+    }
+    .feature-card-desc {
+        color: #8e8e93 !important;
+    }
+    /* 折叠详情面板 */
+    .feature-details-panel {
+        background-color: transparent !important;
+    }
+    .feature-details-panel .kkt-group {
+        background-color: #2c2c2e !important;
+    }
+    /* 设置里贴纸/标签组 */
+    .sticker-group-tag {
+        background-color: #2c2c2e !important;
+        color: #e0e0e0 !important;
+    }
+    .sticker-group-tag.selected {
+        background-color: #0a84ff !important;
+        color: #ffffff !important;
+    }
+    /* API 设置里的成员/收件人选择行 */
+    .group-recipient-select-item,
+    .member-selection-item,
+    .invite-member-select-item,
+    .storage-detail-item {
+        background-color: #2c2c2e !important;
+        border-bottom-color: #3a3a3c !important;
+        color: #e0e0e0 !important;
+    }
+    .storage-detail-name {
+        color: #e0e0e0 !important;
+    }
+    .storage-detail-size,
+    .storage-detail-percentage {
+        color: #8e8e93 !important;
+    }
+}
+
+/* === 第十层：编辑工具栏（textarea-edit-toolbar） === */
+@media (prefers-color-scheme: dark) {
+    .toolbar-main-box {
+        background: #2c2c2e !important;
+        border-color: #3a3a3c !important;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4) !important;
+    }
+    .toolbar-toggle-btn {
+        background: #2c2c2e !important;
+        color: #e0e0e0 !important;
+    }
+    .toolbar-toggle-btn:active {
+        background: #3a3a3c !important;
+    }
+    .toolbar-search-input,
+    .toolbar-replace-input {
+        background-color: #1c1c1e !important;
+        border-color: #3a3a3c !important;
+        color: #e0e0e0 !important;
+    }
+    .toolbar-match-count {
+        color: #8e8e93 !important;
+    }
+    .textarea-edit-toolbar button:not(.toolbar-toggle-btn) {
+        color: #d0d0d2 !important;
+    }
+    .textarea-edit-toolbar button:not(.toolbar-toggle-btn):active {
+        background: #3a3a3c !important;
+    }
+    .toolbar-replace-row {
+        border-top-color: #3a3a3c !important;
+    }
+    /* 自定义壁纸预览 */
+    .wallpaper-preview {
+        background-color: #2c2c2e !important;
+    }
+}
+
+/* === 第十一层：世界书 popover 菜单（新建文件夹/新建条目） === */
+@media (prefers-color-scheme: dark) {
+    /* 世界书页背景容器 */
+    #world-book-screen,
+    #edit-world-book-screen {
+        background-color: #1c1c1e !important;
+    }
+
+    /* 世界书条目编辑页暗色适配 */
+    #edit-world-book-screen .form-group label {
+        color: #e0e0e0 !important;
+    }
+    #edit-world-book-screen .form-group input,
+    #edit-world-book-screen .form-group textarea {
+        background-color: #2c2c2e !important;
+        color: #ffffff !important;
+        border-color: #3a3a3c !important;
+    }
+    #edit-world-book-screen .form-group input::placeholder,
+    #edit-world-book-screen .form-group textarea::placeholder {
+        color: #8e8e93 !important;
+    }
+    #edit-world-book-screen .form-group input:focus,
+    #edit-world-book-screen .form-group textarea:focus {
+        border-color: #0a84ff !important;
+    }
+    #edit-world-book-screen .radio-group label {
+        color: #e0e0e0 !important;
+    }
+    #edit-world-book-screen .btn-primary {
+        background-color: #2c2c2e !important;
+        color: #ffffff !important;
+        border: 1px solid #3a3a3c !important;
+    }
+    #edit-world-book-screen .btn-primary:active {
+        background-color: #3a3a3c !important;
+    }
+    /* 世界书「新建文件夹/新建条目」下拉 popover */
+    .world-book-new-menu {
+        background: #2c2c2e !important;
+        border-color: #3a3a3c !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important;
+    }
+    .world-book-new-menu .menu-item {
+        color: #e0e0e0 !important;
+        border-bottom-color: #3a3a3c !important;
+    }
+    .world-book-new-menu .menu-item:last-child {
+        border-bottom: none !important;
+    }
+    .world-book-new-menu .menu-item:active {
+        background-color: #3a3a3c !important;
+    }
+    /* 世界书全屏选择器列表 */
+    #world-book-selection-modal .modal-window {
+        background: #1c1c1e !important;
+    }
+    #save-world-book-selection-btn {
+        color: #ffffff !important;
+    }
+    .wb-selector-row {
+        background: transparent !important;
+        border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+    }
+    .wb-selector-row:active {
+        background-color: rgba(255, 255, 255, 0.08) !important;
+    }
+    .wb-selector-icon {
+        color: #e0e0e0 !important;
+    }
+    .wb-selector-name {
+        color: #e0e0e0 !important;
+    }
+    .wb-selector-checkbox {
+        background: #1c1c1e !important;
+        border-color: #48484a !important;
+    }
+
+    /* 世界书列表视图暗色独立卡片适配 */
+    .list-view {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    .list-view .wb-item-card {
+        background: #2c2c2e !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+    }
+    .list-view .wb-item-card:active {
+        background-color: #3a3a3c !important;
+    }
+    .list-view .wb-item-name {
+        color: #f2f2f7 !important;
+    }
+    .list-view .wb-folder-icon {
+        color: #8e8e93 !important;
+        fill: #8e8e93 !important;
+    }
+}
+
+/* === 第十二层：全局 ActionSheet / ContextMenu（弹层） === */
+@media (prefers-color-scheme: dark) {
+    /* 右键/长按上下文菜单 */
+    .context-menu {
+        background: rgba(44, 44, 46, 0.96) !important;
+        border-color: rgba(255, 255, 255, 0.08) !important;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6) !important;
+    }
+    .context-menu-item {
+        color: #e0e0e0 !important;
+    }
+    .context-menu-item:hover {
+        background-color: rgba(255, 255, 255, 0.08) !important;
+    }
+    .context-menu-item:active {
+        background-color: rgba(255, 255, 255, 0.14) !important;
+    }
+    /* 底部 ActionSheet（聊天设置/世界书/API 设置共用） */
+    .action-sheet {
+        background: #2c2c2e !important;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5) !important;
+    }
+    .action-sheet-button {
+        background: #3a3a3c !important;
+        color: #0a84ff !important;
+    }
+    .action-sheet-button:active {
+        background: #48484a !important;
+    }
+    .action-sheet-button.danger {
+        color: #ff453a !important;
+    }
+}
+/* === 第十三层：联系人列表页白底闭环（步骤 15） ===
+   问题：#chat-list-screen 顶部"文件夹 pill 行"刺眼白底 + 联系人行白底
+   根因：①.chat-category-tabs 整行 background:#fff（chat.css L189）
+         ②.tab-item.pill-white 单标签白底（chat.css L226）
+         ③.tab-item.tab-manage 单标签白底（chat.css L232）
+         ④.tab-item.active.pill-black 在暗色下 #1e1e1e 与 #1c1c1e 背景融为一体看不见
+         ⑤#chat-list-container .list-item 是 ID 限定选择器（特异性 0,1,1），
+            上一版用 .list-item（0,1,0）压不住，必须升级到同等/更高特异性
+*/
+@media (prefers-color-scheme: dark) {
+    /* 顶部文件夹标签行整行背景 */
+    .chat-category-tabs {
+        background-color: #1c1c1e !important;
+    }
+    /* 非 active 态标签（pill-white / tab-manage）→ 深灰卡片色 */
+    .tab-item.pill-white,
+    .tab-item.tab-manage {
+        background-color: #2c2c2e !important;
+        border-color: #3a3a3c !important;
+        color: #e0e0e0 !important;
+    }
+    /* active 态标签（pill-black）：原 #1e1e1e 与背景 #1c1c1e 融为一体看不见，
+       改为 #0a84ff 蓝色高亮 + 白字（保留"选中态"语义又能在暗色背景上明显区分） */
+    .tab-item.active.pill-black {
+        background-color: #0a84ff !important;
+        color: #ffffff !important;
+        border-color: #0a84ff !important;
+    }
+    /* 联系人行：升级到 #chat-list-container .list-item 限定选择器
+       （与 chat.css L246-252 原选择器特异性 0,1,1 等同） */
+    #chat-list-container .list-item {
+        background-color: #1c1c1e !important;
+        border-bottom: 1px solid #2c2c2e !important;
+    }
+    #chat-list-container .list-item:hover {
+        background-color: #2c2c2e !important;
+    }
+    /* 联系人列表头像边框在暗色下改色 */
+    #chat-list-container .chat-avatar {
+        border-color: #3a3a3c !important;
+    }
+    /* 联系人名字/详情文字色（防止深色背景上还是黑字看不见） */
+    #chat-list-container .item-details .name,
+    #chat-list-container .item-details .preview,
+    #chat-list-container .item-details .time {
+        color: #e0e0e0;
+    }
+    #chat-list-container .item-details .preview {
+        color: #8e8e93;
+    }
+    /* 顶部 + 按钮（新建文件夹）图标在暗色下提亮 */
+    .chat-category-tabs .tab-item svg,
+    .chat-category-tabs .tab-item svg path {
+        stroke: #e0e0e0;
+    }
+}
+
+/* ============================================================
+ * 第 14 层：设置页卡片文字色 + 全局 modal 弹窗暗色化
+ * 触发源：
+ *   - 用户反馈：个性化/API 设置页 .kkt-item-title / .feature-card-title 在深色卡片上看不清（黑字/灰字）
+ *   - 用户反馈：联系人页面“创建角色 / 创建群聊 / SillyTavern 玩家认证”三个 dialog 弹窗是白底
+ * 根因：
+ *   - settings.css L99-110 → .kkt-item-title color:#333 / .kkt-item-subtitle color:#888
+ *   - settings.css L678-686 → .feature-card-title color:#333 / .feature-card-desc color:#777
+ *   - base.css L78-87 → .modal-window background:#ffffff（白底硬编码）
+ *   - base.css L88-92 → .modal-window h3 color:var(--primary-color)（浅蓝，暗色下勉强可见）
+ *   - base.css L105-130 → .form-group 内 label/input/select/textarea 颜色硬编码
+ * 目标 modal（全部 class="modal-overlay" + class="modal-window" 结构）：
+ *   - #add-char-modal (L1158) - 创建角色
+ *   - #create-group-modal (L1453) - 创建群聊
+ *   - #st-unlock-modal (L1198) - SillyTavern 玩家认证
+ * 设计原则：
+ *   - 用类选择器（特异性 0,1,0）覆盖 .kkt-item-title / .feature-card-title / .modal-window 等
+ *   - 对 3 个目标 modal 用 ID 限定（特异性 0,1,1）兜底，防止 chat.css / settings.css 中 ID+类 组合覆盖
+ *   - 严格不动 .message-bubble 全局（保护自定义气泡 CSS）
+ * ============================================================ */
+@media (prefers-color-scheme: dark) {
+
+    /* ====== 1. 个性化/API 设置页卡片文字色 ====== */
+    .kkt-item-title {
+        color: #ffffff;
+    }
+    .kkt-item-subtitle {
+        color: #d0d0d2;
+    }
+    .feature-card-title {
+        color: #ffffff;
+    }
+    .feature-card-desc {
+        color: #d0d0d2;
+    }
+
+    /* ====== 2. 全局 .modal-window 暗色化（覆盖 base.css L78 白底） ====== */
+    .modal-window {
+        background-color: #2c2c2e !important;
+        color: #e0e0e0;
+    }
+    .modal-window h3 {
+        color: #ffffff;
+    }
+    .modal-window .form-group label {
+        color: #e0e0e0;
+    }
+    .modal-window .form-group input[type="text"],
+    .modal-window .form-group input[type="password"],
+    .modal-window .form-group input[type="number"],
+    .modal-window .form-group input[type="email"],
+    .modal-window .form-group input:not([type]),
+    .modal-window .form-group textarea {
+        background-color: #1c1c1e;
+        color: #e0e0e0;
+        border-color: #3a3a3c;
+    }
+    .modal-window .form-group select {
+        background-color: #1c1c1e;
+        color: #e0e0e0;
+        border-color: #3a3a3c;
+    }
+    .modal-window button {
+        color: #e0e0e0;
+    }
+
+    /* ====== 3. 三个目标 modal ID 限定兜底（特异性 0,1,1） ====== */
+    #add-char-modal .modal-window,
+    #create-group-modal .modal-window,
+    #st-unlock-modal .modal-window {
+        background-color: #2c2c2e !important;
+        color: #e0e0e0;
+    }
+    #add-char-modal .modal-window h3,
+    #create-group-modal .modal-window h3,
+    #st-unlock-modal .modal-window h3 {
+        color: #ffffff;
+    }
+    #add-char-modal .modal-window .form-group label,
+    #create-group-modal .modal-window .form-group label,
+    #st-unlock-modal .modal-window .form-group label {
+        color: #e0e0e0;
+    }
+    #add-char-modal .modal-window input,
+    #add-char-modal .modal-window select,
+    #add-char-modal .modal-window textarea,
+    #create-group-modal .modal-window input,
+    #create-group-modal .modal-window select,
+    #create-group-modal .modal-window textarea,
+    #st-unlock-modal .modal-window input,
+    #st-unlock-modal .modal-window select,
+    #st-unlock-modal .modal-window textarea {
+        background-color: #1c1c1e !important;
+        color: #e0e0e0 !important;
+        border-color: #3a3a3c !important;
+    }
+}
+
+/* ============================================================
+ * 第 15 层：聊天设置屏文字色 + All 图标反向改白底黑字 + 联系人 name/preview 改白 + 弹出菜单盲区扫描覆盖
+ * 触发源：用户 #2 反馈「聊天设置里文字改白」「All 蓝底改白底黑字」「联系人名字预览都改白」「扫描弹出菜单盲区」
+ * 设计要点：
+ *   - 聊天设置屏 3 screen（#chat-settings-screen / #group-settings-screen / #customize-screen）背景是硬编码 #f2f2f2，
+ *     设置页主卡片（.kkt-group / .kkt-item）和 modal 一样也需要暗背景；
+ *   - 文字色统一按「主要→纯白 / 次要→#d0d0d2 / 辅助→#8e8e93」三档分布；
+ *   - All 图标（.tab-item.active.pill-black）从步骤 15 的「蓝底白字」反向改回「白底黑字」；
+ *   - 联系人名字/预览必须用真实存在的类名（.item-name / .item-preview，
+ *     第 13 层用了简写 .name/.preview 实际匹配不到 — 这是反向 bug，本层修复）；
+ *   - 扫描盲区覆盖：.settings-tabs / .settings-tab-item / .feature-card.is-on / .sticker-group-tag / 
+ *     .wallpaper-preview / .bubble-css-preview / .toolbar-toggle-btn / .toolbar-search-input / 
+ *     .icon-custom-item / .kkt-danger-btn / 群成员头像边框等
+ * ============================================================ */
+@media (prefers-color-scheme: dark) {
+    /* ---- 1. 聊天设置屏 3 screen 背景（聊天设置 / 群设置 / 个性化） ---- */
+    #chat-settings-screen,
+    #group-settings-screen,
+    #customize-screen {
+        background-color: #1c1c1e !important;
+    }
+
+    /* ---- 2. 聊天设置屏文字色全谱（设置页顶部 + 项列表） ---- */
+    .kkt-profile-name {
+        color: #ffffff !important;
+    }
+    .kkt-profile-status {
+        color: #d0d0d2 !important;
+    }
+    .kkt-item-title {
+        color: #ffffff !important;
+    }
+    .kkt-item-subtitle {
+        color: #d0d0d2 !important;
+    }
+    .kkt-item-label {
+        color: #ffffff !important;
+    }
+    .kkt-item-control {
+        color: #d0d0d2 !important;
+    }
+    .kkt-arrow {
+        color: #8e8e93 !important;
+    }
+
+    /* ---- 3. All 图标（.tab-item.active.pill-black）反向：白底黑字 ---- */
+    /* 步骤 15 改过「蓝底白字 #0a84ff」，用户 #2 要求改回「白底黑字」 */
+    .tab-item.active.pill-black {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        border-color: #ffffff !important;
+    }
+
+    /* ---- 4. 联系人名字/预览文字升级：name + preview 都改纯白 ---- */
+    /* 修复步骤 13 层的反向 bug：当时用了 .name/.preview 简写，
+       实际 chat.css 里真实类名是 .item-name 和 .item-preview（不在 .item-details 父类下），
+       所以从未生效 —— 本层用真实类名修正 */
+    #chat-list-container .item-name {
+        color: #ffffff !important;
+    }
+    #chat-list-container .item-preview {
+        color: #ffffff !important;  /* 升级：#8e8e93 → #ffffff */
+    }
+    #chat-list-container .item-time {
+        color: #e0e0e0 !important;   /* 时间保留浅灰，避免三列全白太刺眼 */
+    }
+    /* 顺便保留 .item-details 内的 .name/.preview 兼容分支（用户截图可能会命中） */
+    #chat-list-container .item-details .name {
+        color: #ffffff !important;
+    }
+
+    /* ---- 5. 设置页面板容器（settings tabs）文字色 ---- */
+    .settings-tabs {
+        background-color: #2c2c2e !important;
+        border-bottom: 1px solid #3a3a3c !important;
+    }
+    .settings-tab-item {
+        color: #d0d0d2 !important;
+    }
+    .settings-tab-item.active {
+        background-color: #48484a !important;
+        color: #ffffff !important;
+    }
+
+    /* ---- 6. 功能卡片 .feature-card 激活态（重要：浅蓝高亮太刺眼） ---- */
+    .feature-card {
+        background-color: #2c2c2e !important;
+        border: 1px solid #3a3a3c !important;
+    }
+    .feature-card.is-on {
+        background-color: #1c3a5e !important;  /* 深蓝激活态，不刺眼 */
+        border-color: #0a84ff !important;
+    }
+    .feature-card-icon {
+        color: #ffffff !important;
+    }
+
+    /* ---- 7. 表情贴纸分组标签 .sticker-group-tag ---- */
+    .sticker-group-tag {
+        background-color: #2c2c2e !important;
+        color: #e0e0e0 !important;
+        border: 1px solid #3a3a3c !important;
+    }
+    .sticker-group-tag.selected {
+        background-color: var(--primary-color) !important;
+        color: #ffffff !important;
+    }
+
+    /* ---- 8. 壁纸预览 .wallpaper-preview ---- */
+    .wallpaper-preview {
+        background-color: #1c1c1e !important;
+        border-color: var(--primary-color) !important;
+    }
+    .wallpaper-preview .wallpaper-placeholder {
+        color: #8e8e93 !important;
+    }
+
+    /* ---- 9. 气泡 CSS 预览 .bubble-css-preview ---- */
+    .bubble-css-preview {
+        background-color: #1c1c1e !important;
+        border-color: #3a3a3c !important;
+    }
+
+    /* ---- 10. 编辑工具栏系列 ---- */
+    .toolbar-toggle-btn {
+        background-color: #2c2c2e !important;
+        border-color: #3a3a3c !important;
+        color: #e0e0e0 !important;
+    }
+    .toolbar-search-input,
+    .toolbar-replace-input {
+        background-color: #1c1c1e !important;
+        border-color: #3a3a3c !important;
+        color: #ffffff !important;
+    }
+
+    /* ---- 11. 图标自定义项 ---- */
+    .icon-custom-item {
+        background-color: #2c2c2e !important;
+        border-color: #3a3a3c !important;
+    }
+    .icon-details p {
+        color: #d0d0d2 !important;
+    }
+
+    /* ---- 12. 危险按钮（退出群聊/删除聊天）背景 ---- */
+    .kkt-danger-btn {
+        background-color: #2c2c2e !important;
+        color: #ff453a !important;
+    }
+
+    /* ---- 13. 群设置成员头像边框/添加按钮 ---- */
+    #group-settings-screen .group-member img {
+        border-color: #3a3a3c !important;
+    }
+    #group-settings-screen .add-member-btn {
+        background-color: #2c2c2e !important;
+        border-color: #3a3a3c !important;
+    }
+    #group-settings-screen .add-member-btn .add-icon {
+        color: #8e8e93 !important;
+    }
+
+    /* ---- 14. 群成员选择/邀请选择项 ---- */
+    .group-recipient-select-item,
+    .member-selection-item,
+    .invite-member-select-item {
+        background-color: #2c2c2e !important;
+        border-color: #3a3a3c !important;
+    }
+    .group-recipient-select-item.selected,
+    .member-selection-item.selected,
+    .invite-member-select-item.selected {
+        background-color: var(--primary-color) !important;
+        color: #ffffff !important;
+    }
+
+    /* ---- 15. 气泡 CSS 相关编辑行 ---- */
+    .bubble-css-edit-row {
+        border-bottom-color: #3a3a3c !important;
+    }
+    .bubble-css-actions .bubble-css-btn {
+        background-color: #3a3a3c !important;
+        color: #e0e0e0 !important;
+    }
+
+    /* ---- 16. 开关滑动条（slider）暗色 ---- */
+    .kkt-slider {
+        background-color: #48484a !important;
+    }
+
+    /* ---- 17. 气泡预设操作胶囊按钮暗色适配 ---- */
+    .bubble-action-text-row {
+        width: 100% !important;
+    }
+    .bubble-text-btn {
+        background: #000000 !important;
+        border: 1px solid #2c2c2e !important;
+        color: #ffffff !important;
+    }
+    .bubble-text-btn:active {
+        background: #1c1c1e !important;
+        opacity: 0.8 !important;
+    }
+
+    /* ---- 18. 聊天设置页及全局表单控件暗色兜底（解决白色小框、输入框残白） ---- */
+    .kkt-item-control input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+    .kkt-item-control select,
+    .kkt-item-control textarea,
+    .kkt-item input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+    .kkt-item select,
+    .kkt-item textarea,
+    #chat-settings-screen input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+    #chat-settings-screen select,
+    #chat-settings-screen textarea,
+    #group-settings-screen input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+    #group-settings-screen select,
+    #group-settings-screen textarea {
+        background-color: #1c1c1e !important;
+        color: #e0e0e0 !important;
+        border-color: #3a3a3c !important;
+    }
+    .kkt-item-control select option,
+    .kkt-item select option,
+    #chat-settings-screen select option,
+    #group-settings-screen select option {
+        background-color: #1c1c1e !important;
+        color: #e0e0e0 !important;
+    }
+    .kkt-item-control input::placeholder,
+    .kkt-item-control textarea::placeholder,
+    #chat-settings-screen input::placeholder,
+    #chat-settings-screen textarea::placeholder {
+        color: #8e8e93 !important;
+    }
+    .bubble-preset-toolbar select {
+        background-color: #1c1c1e !important;
+        color: #e0e0e0 !important;
+        border-color: #3a3a3c !important;
+    }
+    .bubble-preset-toolbar select option {
+        background-color: #1c1c1e !important;
+        color: #e0e0e0 !important;
+    }
+
+    /* ---- 19. 全模块高频白底容器暗色适配 ---- */
+    /* 基础折叠面板 */
+    .collapsible-section {
+        background-color: #2c2c2e !important;
+        border-color: #3a3a3c !important;
+        color: #e0e0e0 !important;
+    }
+    .collapsible-header {
+        color: #ffffff !important;
+    }
+    /* 更多/功能大厅屏 (#more-screen) */
+    #more-screen {
+        background-color: #1c1c1e !important;
+    }
+    .preset-card,
+    .search-bar-decoration,
+    .avatar-wrapper {
+        background-color: #2c2c2e !important;
+        border-color: #3a3a3c !important;
+        color: #e0e0e0 !important;
+    }
+    .preset-name {
+        color: #ffffff !important;
+    }
+    /* 商城屏 (#shop-screen) */
+    #shop-screen {
+        background-color: #1c1c1e !important;
+    }
+    .shop-tabs {
+        background-color: #2c2c2e !important;
+        border-color: #3a3a3c !important;
+    }
+    .shop-tab-item {
+        color: #8e8e93 !important;
+    }
+    .shop-tab-item.active {
+        color: #ffffff !important;
+    }
+    .shop-item-card {
+        background-color: #2c2c2e !important;
+        border-color: #3a3a3c !important;
+        color: #e0e0e0 !important;
+    }
+    .shop-item-card.ad-item {
+        background-color: #2c2c2e !important;
+    }
+    .shop-item-image-box {
+        background-color: #1c1c1e !important;
+    }
+    .action-sheet,
+    .action-sheet-button {
+        background-color: #2c2c2e !important;
+        color: #e0e0e0 !important;
+        border-color: #3a3a3c !important;
+    }
+    /* 论坛屏 (#forum-screen) */
+    #forum-screen {
+        background-color: #1c1c1e !important;
+    }
+    .forum-post-card,
+    .post-detail-container,
+    .forum-share-card {
+        background-color: #2c2c2e !important;
+        border-color: #3a3a3c !important;
+        color: #e0e0e0 !important;
+    }
+    .post-detail-actions .action-item:hover {
+        background-color: #3a3a3c !important;
+    }
+    /* Peek 相关 (解锁屏、设置、备忘) */
+    #peek-unlock-screen,
+    .peek-settings-list,
+    .peek-settings-footer,
+    .unlock-post-card,
+    .ins-widget-bubble {
+        background-color: #2c2c2e !important;
+        color: #e0e0e0 !important;
+        border-color: #3a3a3c !important;
+    }
+    .unlock-post-feed {
+        background-color: #1c1c1e !important;
+    }
+    .transfer-station-input-area .fake-input {
+        background-color: #1c1c1e !important;
+        border-color: #3a3a3c !important;
+        color: #e0e0e0 !important;
+    }
+    /* 搜索聊天记录界面 (#search-history-screen) */
+    #search-history-screen,
+    .search-header,
+    .search-filter-bar,
+    .search-content {
+        background-color: #1c1c1e !important;
+        color: #e0e0e0 !important;
+    }
+    #search-history-input {
+        background-color: #2c2c2e !important;
+        color: #e0e0e0 !important;
+        border-color: #3a3a3c !important;
+    }
+    /* 聊天转账卡片、气泡卡片等 */
+    .transfer-card,
+    .pv-card-content {
+        background-color: #2c2c2e !important;
+        color: #e0e0e0 !important;
+        border-color: #3a3a3c !important;
+    }
+    /* 工坊 / 组件市场 */
+    #drawing-workshop-screen,
+    .workshop-section,
+    .widget-market-card {
+        background-color: #2c2c2e !important;
+        border-color: #3a3a3c !important;
+        color: #e0e0e0 !important;
+    }
+        /* ---- 角色状态栏 (Status Panel) 暗色适配 ---- */
+    .status-panel-overlay {
+        background-color: rgba(0, 0, 0, 0.25) !important;
+    }
+    .status-panel-content,
+    .status-swiper,
+    .status-slide,
+    .status-slide-inner {
+        background: transparent !important;
+    }
+    .status-slide-inner iframe {
+        background: transparent !important;
+        color-scheme: dark !important;
+    }
+    .status-swiper,
+    .status-slide-inner {
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+    }
+    .status-swiper::-webkit-scrollbar,
+    .status-slide-inner::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
+
+    /* ============================================================
+     * 表情包面板及相关组件 (Sticker Panel & Actions) 暗色模式适配
+     * ============================================================ */
+    #panel-sticker-area {
+        background-color: #1c1c1e !important;
+    }
+    #panel-sticker-area .header {
+        background-color: #1c1c1e !important;
+    }
+    .sticker-nav-row {
+        background-color: #1c1c1e !important;
+        border-bottom: 1px solid #2c2c2e !important;
+    }
+    #sticker-category-bar {
+        background-color: transparent !important;
+    }
+    .sticker-category-item {
+        background-color: #2c2c2e !important;
+        color: #8e8e93 !important;
+    }
+    .sticker-category-item.active {
+        background-color: var(--primary-color) !important;
+        color: #ffffff !important;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3) !important;
+    }
+    #sticker-menu-btn {
+        color: #8e8e93 !important;
+    }
+    #sticker-menu-btn:active {
+        background-color: #2c2c2e !important;
+    }
+    .sticker-group-header {
+        color: var(--primary-color) !important;
+        border-bottom: 1px solid #2c2c2e !important;
+    }
+    #sticker-manage-bar {
+        background-color: #2c2c2e !important;
+        border-top: 1px solid #3a3a3c !important;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.25) !important;
+        color: #e0e0e0 !important;
+    }
+    .sticker-item.is-managing:not(.is-selected)::before {
+        border-color: #545458 !important;
+        background-color: #2c2c2e !important;
+    }
+    .sticker-item.is-selected::after {
+        border: 2px solid #1c1c1e !important;
+        background-color: var(--primary-color) !important;
+        color: #ffffff !important;
+    }
+    #sticker-preview {
+        border: 2px dashed #48484a !important;
+        background-color: #2c2c2e !important;
+        color: #8e8e93 !important;
+    }
+    .sticker-search-row {
+        background-color: #1c1c1e !important;
+        border-bottom: 1px solid #2c2c2e !important;
+    }
+    .sticker-search-box {
+        background-color: #2c2c2e !important;
+    }
+    .sticker-search-box:focus-within {
+        background-color: #3a3a3c !important;
+    }
+    .sticker-search-icon {
+        color: #8e8e93 !important;
+    }
+    #sticker-search-input {
+        color: #ffffff !important;
+    }
+    #sticker-search-input::placeholder {
+        color: #8e8e93 !important;
+    }
+    #sticker-search-clear-btn {
+        background-color: #545458 !important;
+        color: #e0e0e0 !important;
+    }
+    #sticker-search-clear-btn:active {
+        background-color: #636366 !important;
+    }
+}
