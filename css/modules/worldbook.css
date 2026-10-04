@@ -1,0 +1,287 @@
+/* --- 世界书 (World Book) 样式 --- */
+
+#world-book-screen, 
+#edit-world-book-screen {
+    background-color: #fff;
+}
+
+#world-book-screen .content {
+    padding: 16px;
+    height: calc(100% - 44px - var(--safe-top));
+    overflow-y: auto;
+}
+
+/* 新建菜单样式 */
+.world-book-new-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 8px;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    width: 140px;
+    z-index: 100;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    border: 1px solid #eee;
+}
+
+.world-book-new-menu .menu-item {
+    padding: 12px 16px;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.world-book-new-menu .menu-item:last-child {
+    border-bottom: none;
+}
+
+.world-book-new-menu .menu-item:active {
+    background-color: #f0f0f0;
+}
+
+/* 列表视图 - 独立卡片流风格 */
+.list-view {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    overflow: visible;
+}
+
+.list-view .wb-item-card {
+    display: flex;
+    align-items: center;
+    padding: 22px 18px;
+    gap: 14px;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.list-view .wb-item-card:last-child {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.list-view .wb-item-card:active {
+    transform: scale(0.98);
+    background-color: rgba(255, 255, 255, 0.85);
+}
+
+.list-view .wb-icon-wrapper {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.list-view .wb-folder-icon {
+    color: #3a3a3c;
+    fill: #3a3a3c;
+}
+
+.list-view .wb-item-name {
+    font-size: 15px;
+    font-weight: 500;
+    color: #1c1c1e;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 多选模式适配 */
+.wb-item-card.is-selecting {
+    position: relative;
+}
+
+.wb-item-card.selected {
+    background-color: rgba(0, 122, 255, 0.12) !important;
+}
+
+.wb-item-card.selected .wb-icon-wrapper {
+    background: var(--primary-color) !important;
+    border-radius: 6px;
+}
+
+.wb-item-card.selected .wb-icon-wrapper svg {
+    color: white !important;
+    fill: white !important;
+}
+
+/* 世界书多选工具栏 */
+#world-book-multi-select-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    padding-bottom: 10px;
+    border-top: 1px solid #eee;
+    z-index: 20;
+    animation: slideUp 0.3s ease-out;
+}
+
+/* 世界书选择模态框 (全屏) */
+#world-book-selection-modal {
+    z-index: 300;
+}
+
+#journal-worldbook-selection-modal {
+    z-index: 201;
+}
+
+#journal-worldbook-selection-modal .modal-window {
+    width: 90%;
+    max-width: 380px;
+}
+
+#journal-worldbook-selection-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 40vh;
+    overflow-y: auto;
+}
+
+/* 全屏选择器列表项 (玻璃拟态 + 上下拉宽) */
+.wb-selector-row {
+    display: flex;
+    align-items: center;
+    padding: 20px 18px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    background: transparent;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.wb-selector-row:last-child {
+    border-bottom: none;
+}
+
+.wb-selector-row:active {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.wb-selector-icon {
+    margin-right: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    color: #3a3a3c;
+}
+
+.wb-selector-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.wb-selector-name {
+    flex: 1;
+    font-size: 16px;
+    font-weight: 500;
+    color: #1c1c1e;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.wb-selector-arrow {
+    width: 8px;
+    height: 14px;
+    position: relative;
+    margin-left: 4px;
+}
+
+.wb-selector-arrow::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 8px;
+    height: 8px;
+    border-top: 2px solid #8e8e93;
+    border-right: 2px solid #8e8e93;
+    transform: translateY(-50%) rotate(45deg);
+}
+
+.wb-selector-checkbox {
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    border: 1.5px solid #c7c7cc;
+    border-radius: 50%;
+    outline: none;
+    cursor: pointer;
+    position: relative;
+    background: #fff;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+}
+
+.wb-selector-checkbox:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.wb-selector-checkbox:checked::after {
+    content: '';
+    position: absolute;
+    top: 5px;
+    left: 8px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+/* 已绑定世界书卡片 (旧样式已弃用，新样式在 js/settings.js 中内联定义) */
+.bound-wb-card {
+    display: none;
+}
+
+.world-book-select-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 5px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.world-book-select-item:last-child {
+    border-bottom: none;
+}
+
+.world-book-select-item input[type="checkbox"] {
+    margin-right: 15px;
+    width: 20px;
+    height: 20px;
+}
+
+.world-book-select-item label {
+    font-weight: 500;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
