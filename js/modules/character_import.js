@@ -2,69 +2,207 @@
 
 let pendingImportData = null;
 
-function setupAddCharModal() {
-    document.getElementById('add-char-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const newChar = {
-            peekData: {}, 
-            id: `char_${Date.now()}`,
-            realName: document.getElementById('char-real-name').value,
-            remarkName: document.getElementById('char-remark-name').value,
-            persona: '',
-            avatar: 'https://i.postimg.cc/Y96LPskq/o-o-2.jpg',
-            myName: document.getElementById('my-name-for-char').value || 'user',
-            myRemarkName: '',
-            myPersona: '',
-            myAvatar: 'https://i.postimg.cc/GtbTnxhP/o-o-1.jpg',
-            theme: 'white_pink',
-            maxMemory: 100,
-            chatBg: '',
-            history: [],
-            isPinned: false,
-            status: '在线',
-            worldBookIds: [],
-            useCustomBubbleCss: false,
-            customBubbleCss: '',
-            bilingualBubbleStyle: 'under',
-            unreadCount: 0,
-            memoryJournals: [],
-            journalWorldBookIds: [],
-            peekScreenSettings: { wallpaper: '', customIcons: {}, unlockAvatar: '' },
-            lastUserMessageTimestamp: null,
-            statusPanel: {
-                enabled: false,
-                promptSuffix: '',
-                regexPattern: '',
-                replacePattern: '',
-                historyLimit: 3,
-                currentStatusRaw: '',
-                currentStatusHtml: '',
-                history: []
-            },
-            autoReply: {
-                enabled: false,
-                mode: 'fixed',
-                interval: 60,
-                minInterval: 60,
-                maxInterval: 180,
-                nextRandomIntervalMs: null,
-                quietHours: {
-                    enabled: false,
-                    start: '23:00',
-                    end: '07:00'
-                },
-                failureCount: 0,
-                retryAt: 0,
-                lastTriggerTime: 0
+async function readDocxTextForChar(arrayBuffer) {
+    if (typeof mammoth === 'undefined' || !mammoth || !mammoth.extractRawText) {
+        throw new Error('mammoth 库未加载，无法解析 .docx 文件');
+    }
+    const result = await mammoth.extractRawText({ arrayBuffer });
+    return result && result.value ? result.value : '';
+}
+
+function parseCharPersonaFromJson(jsonObj) {
+    if (!jsonObj) return '';
+    // 1. 如果是外层带 data 的结构（如 SillyTavern 导出）
+    const target = jsonObj.data || jsonObj;
+
+    // 2. 常见角色卡 persona / description 字段优先
+    if (typeof target.persona === 'string' && target.persona.trim()) {
+        return target.persona.trim();
+    }
+    if (typeof target.description === 'string' && target.description.trim()) {
+        return target.description.trim();
+    }
+    if (typeof target.content === 'string' && target.content.trim()) {
+        return target.content.trim();
+    }
+
+    // 3. 条目数组结构（世界书 / 设定集等）
+    let entries = null;
+    if (Array.isArray(target)) {
+        entries = target;
+    } else if (Array.isArray(target.entries)) {
+        entries = target.entries;
+    } else if (target.entries && typeof target.entries === 'object') {
+        entries = Object.values(target.entries);
+    } else if (target.character_book && target.character_book.entries) {
+        const cb = target.character_book.entries;
+        entries = Array.isArray(cb) ? cb : Object.values(cb);
+    }
+
+    if (entries && entries.length > 0) {
+        const parts = entries.map((item, idx) => {
+            if (typeof item === 'string') return item;
+            if (!item || typeof item !== 'object') return '';
+            const title = item.name || item.title || item.comment || (item.keys && item.keys[0]) || `条目 #${idx + 1}`;
+            const body = item.content || item.text || item.value || '';
+            if (body && title) {
+                return `### ${title}\n${body}`;
             }
-       };
-        db.characters.push(newChar);
-        await saveData();
-        renderChatList();
-        document.getElementById('add-char-modal').classList.remove('visible');
-        showToast(`角色“${newChar.remarkName}”创建成功！`);
-        promptForBackupIfNeeded('new_char');
-    });
+            return body || title || '';
+        }).filter(p => p && p.trim());
+        if (parts.length > 0) {
+            return parts.join('\n\n');
+        }
+    }
+
+    // 4. 普通 JSON 对象 fallback 为格式化文本
+    return JSON.stringify(jsonObj, null, 2);
+}
+
+function setupAddCharModal() {
+    const addCharModal = document.getElementById('add-char-modal');
+    const addCharForm = document.getElementById('add-char-form');
+    const charDocFileInput = document.getElementById('char-doc-file');
+    const charDocStatus = document.getElementById('char-doc-status');
+    const charPersonaTextarea = document.getElementById('char-persona');
+
+    // 监听文档导入
+    if (charDocFileInput) {
+        charDocFileInput.addEventListener('change', async (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+
+            if (charDocStatus) {
+                charDocStatus.textContent = `正在解析 ${file.name}...`;
+                charDocStatus.style.color = '#888';
+            }
+
+            try {
+                const lowerName = (file.name || '').toLowerCase();
+                let personaText = '';
+
+                if (lowerName.endsWith('.docx')) {
+                    const buf = await file.arrayBuffer();
+                    personaText = await readDocxTextForChar(buf);
+                } else if (lowerName.endsWith('.json')) {
+                    const rawJson = await file.text();
+                    try {
+                        const parsed = JSON.parse(rawJson);
+                        personaText = parseCharPersonaFromJson(parsed);
+                    } catch (jsonErr) {
+                        // 若不是合法的 JSON 则直接保留纯文本
+                        personaText = rawJson;
+                    }
+                } else if (lowerName.endsWith('.txt') || lowerName.endsWith('.md') || file.type.startsWith('text/')) {
+                    personaText = await file.text();
+                } else {
+                    throw new Error('仅支持 .docx / .txt / .json / .md 格式');
+                }
+
+                if (charPersonaTextarea) {
+                    charPersonaTextarea.value = personaText;
+                }
+
+                if (charDocStatus) {
+                    charDocStatus.textContent = `✓ 已成功导入 ${file.name}（${personaText.length} 字符）`;
+                    charDocStatus.style.color = '#34c759';
+                }
+            } catch (err) {
+                console.error('人设文档解析失败:', err);
+                if (charDocStatus) {
+                    charDocStatus.textContent = `✗ 解析失败：${err.message || err}`;
+                    charDocStatus.style.color = '#ff3b30';
+                }
+                showToast('人设文档解析失败');
+            }
+        });
+    }
+
+    // modal 关闭或提交后重置文件选择与状态
+    if (addCharModal) {
+        const observer = new MutationObserver(() => {
+            if (!addCharModal.classList.contains('visible')) {
+                if (charDocFileInput) charDocFileInput.value = '';
+                if (charDocStatus) {
+                    charDocStatus.textContent = '';
+                    charDocStatus.style.color = '#888';
+                }
+                if (charPersonaTextarea) {
+                    charPersonaTextarea.value = '';
+                }
+            }
+        });
+        observer.observe(addCharModal, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    if (addCharForm) {
+        addCharForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const personaValue = charPersonaTextarea ? charPersonaTextarea.value.trim() : '';
+            const newChar = {
+                peekData: {}, 
+                id: `char_${Date.now()}`,
+                realName: document.getElementById('char-real-name').value,
+                remarkName: document.getElementById('char-remark-name').value,
+                persona: personaValue,
+                avatar: 'https://i.postimg.cc/Y96LPskq/o-o-2.jpg',
+                myName: document.getElementById('my-name-for-char').value || 'user',
+                myRemarkName: '',
+                myPersona: '',
+                myAvatar: 'https://i.postimg.cc/GtbTnxhP/o-o-1.jpg',
+                theme: 'white_pink',
+                maxMemory: 100,
+                chatBg: '',
+                history: [],
+                isPinned: false,
+                status: '在线',
+                worldBookIds: [],
+                useCustomBubbleCss: false,
+                customBubbleCss: '',
+                bilingualBubbleStyle: 'under',
+                unreadCount: 0,
+                memoryJournals: [],
+                journalWorldBookIds: [],
+                peekScreenSettings: { wallpaper: '', customIcons: {}, unlockAvatar: '' },
+                lastUserMessageTimestamp: null,
+                statusPanel: {
+                    enabled: false,
+                    promptSuffix: '',
+                    regexPattern: '',
+                    replacePattern: '',
+                    historyLimit: 3,
+                    currentStatusRaw: '',
+                    currentStatusHtml: '',
+                    history: []
+                },
+                autoReply: {
+                    enabled: false,
+                    mode: 'fixed',
+                    interval: 60,
+                    minInterval: 60,
+                    maxInterval: 180,
+                    nextRandomIntervalMs: null,
+                    quietHours: {
+                        enabled: false,
+                        start: '23:00',
+                        end: '07:00'
+                    },
+                    failureCount: 0,
+                    retryAt: 0,
+                    lastTriggerTime: 0
+                }
+            };
+            db.characters.push(newChar);
+            await saveData();
+            renderChatList();
+            addCharModal.classList.remove('visible');
+            if (charDocFileInput) charDocFileInput.value = '';
+            if (charDocStatus) charDocStatus.textContent = '';
+            if (charPersonaTextarea) charPersonaTextarea.value = '';
+            showToast(`角色“${newChar.remarkName}”创建成功！`);
+            promptForBackupIfNeeded('new_char');
+        });
+    }
 }
 
 async function handleCharacterImport(file) {
