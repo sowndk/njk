@@ -1171,6 +1171,15 @@
                     <label for="my-name-for-char">我的姓名</label><input type="text" id="my-name-for-char"
                                                                          placeholder="你希望Ta如何称呼你" required>
                 </div>
+                <div class="form-group">
+                    <label for="char-persona">角色人设</label>
+                    <textarea id="char-persona" rows="5" placeholder="可手动输入角色人设，或通过下方文档导入..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="char-doc-file">从文档导入人设 (.docx / .txt / .json / .md)</label>
+                    <input type="file" id="char-doc-file" accept=".docx,.txt,.json,.md,text/plain,text/markdown,application/json,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+                    <small id="char-doc-status" style="display:block; margin-top:6px; color:#888;"></small>
+                </div>
                 <button type="submit" class="btn btn-primary">创建</button>
             </form>
         </div>
