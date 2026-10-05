@@ -600,10 +600,16 @@ function loadSettingsToSidebar() {
             quietHoursEl.checked = !!qh.enabled;
             quietHoursEl.dispatchEvent(new Event('change'));
         }
-        const qhStartEl = document.getElementById('setting-quiet-hours-start');
-        if (qhStartEl) qhStartEl.value = qh.start || '23:00';
-        const qhEndEl = document.getElementById('setting-quiet-hours-end');
-        if (qhEndEl) qhEndEl.value = qh.end || '07:00';
+        const [sH, sM] = (qh.start || '23:00').split(':');
+        const [eH, eM] = (qh.end || '07:00').split(':');
+        const qhStartHEl = document.getElementById('setting-quiet-hours-start-h');
+        const qhStartMEl = document.getElementById('setting-quiet-hours-start-m');
+        const qhEndHEl = document.getElementById('setting-quiet-hours-end-h');
+        const qhEndMEl = document.getElementById('setting-quiet-hours-end-m');
+        if (qhStartHEl) qhStartHEl.value = (sH || '23').padStart(2, '0');
+        if (qhStartMEl) qhStartMEl.value = (sM || '00').padStart(2, '0');
+        if (qhEndHEl) qhEndHEl.value = (eH || '07').padStart(2, '0');
+        if (qhEndMEl) qhEndMEl.value = (eM || '00').padStart(2, '0');
         autoReplyCheckbox.dispatchEvent(new Event('change'));
 
         const autoAirdropCheckbox = document.getElementById('setting-auto-airdrop-enabled');
@@ -961,10 +967,12 @@ async function saveSettingsFromSidebar() {
         if (!e.autoReply.quietHours) e.autoReply.quietHours = {};
         const qhSwitch = document.getElementById('setting-quiet-hours-enabled');
         e.autoReply.quietHours.enabled = qhSwitch ? qhSwitch.checked : false;
-        const qhStartVal = document.getElementById('setting-quiet-hours-start')?.value;
-        const qhEndVal = document.getElementById('setting-quiet-hours-end')?.value;
-        e.autoReply.quietHours.start = qhStartVal || '23:00';
-        e.autoReply.quietHours.end = qhEndVal || '07:00';
+        const qhStartH = document.getElementById('setting-quiet-hours-start-h')?.value ?? '23';
+        const qhStartM = document.getElementById('setting-quiet-hours-start-m')?.value ?? '00';
+        const qhEndH = document.getElementById('setting-quiet-hours-end-h')?.value ?? '07';
+        const qhEndM = document.getElementById('setting-quiet-hours-end-m')?.value ?? '00';
+        e.autoReply.quietHours.start = `${qhStartH}:${qhStartM}`;
+        e.autoReply.quietHours.end = `${qhEndH}:${qhEndM}`;
 
         const autoAirdropCheckbox = document.getElementById('setting-auto-airdrop-enabled');
         if (autoAirdropCheckbox) {
