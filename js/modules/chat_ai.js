@@ -1199,16 +1199,27 @@ async function handleAiReplyContent(fullResponse, chat, targetChatId, targetChat
             window.BatteryInteraction.triggerIndependentCheck(chat);
         }
 
-        // 触发自动总结检查
+        // 触发自动总结检查（方案 A：游标模型）
         if (chat && chat.autoSummaryEnabled && typeof generateJournal === 'function') {
             const threshold = chat.autoSummaryThreshold || 20;
-            chat._unsummarizedCount = (chat._unsummarizedCount || 0) + 1;
-            if (chat._unsummarizedCount >= threshold) {
-                chat._unsummarizedCount = 0;
-                const total = chat.history ? chat.history.length : 0;
-                const start = Math.max(1, total - threshold + 1);
+            const history = chat.history || [];
+            const total = history.length;
+            let lastId = chat.lastSummarizedMsgId;
+            let lastIndex = -1;
+            if (lastId) {
+                lastIndex = history.findIndex(m => m && m.id === lastId);
+            }
+            if (lastIndex === -1 && !chat.lastSummarizedMsgId && chat.memoryJournals && chat.memoryJournals.length > 0) {
+                const lastJournal = chat.memoryJournals[chat.memoryJournals.length - 1];
+                if (lastJournal && lastJournal.endMessageId) {
+                    lastIndex = history.findIndex(m => m && m.id === lastJournal.endMessageId);
+                }
+            }
+            const unsummarizedCount = total - (lastIndex + 1);
+            if (unsummarizedCount >= threshold) {
+                const start = lastIndex + 2;
                 const end = total;
-                console.log(`[AutoSummary] Triggering auto journal: start=${start}, end=${end}`);
+                console.log(`[AutoSummary] Triggering auto journal: unsummarized=${unsummarizedCount}, threshold=${threshold}, start=${start}, end=${end}`);
                 setTimeout(() => {
                     generateJournal(start, end);
                 }, 800);

@@ -793,6 +793,10 @@ async function generateJournal(start, end, includeFavorited = false) {
             chat.memoryJournals = [];
         }
         chat.memoryJournals.push(newJournal);
+        if (newJournal.endMessageId) {
+            chat.lastSummarizedMsgId = newJournal.endMessageId;
+        }
+        chat.autoJournalState = 'idle';
         await saveData();
 
         renderJournalList();
@@ -810,6 +814,9 @@ async function generateJournal(start, end, includeFavorited = false) {
              if (placeholder) placeholder.style.display = 'block';
         }
 
+        if (chat) {
+            chat.autoJournalState = 'failed';
+        }
         showApiError(error);
     } finally {
         isGenerating = false; 
