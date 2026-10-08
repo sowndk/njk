@@ -407,6 +407,22 @@ function renderChatList() {
                         text = plainTextMatch[1].trim();
                     }
                     text = text.replace(/\[发送时间:.*?\]$/, '').trim(); 
+                    // 过滤状态栏内容（保持与聊天气泡一致的隐藏逻辑）
+                    if (chat.statusPanel && chat.statusPanel.enabled && chat.statusPanel.regexPattern) {
+                        try {
+                            let pattern = chat.statusPanel.regexPattern;
+                            let flags = 'gs';
+                            const matchParts = pattern.match(/^\/(.*?)\/([a-z]*)$/);
+                            if (matchParts) {
+                                pattern = matchParts[1];
+                                flags = matchParts[2] || 'gs';
+                                if (!flags.includes('g')) flags += 'g';
+                            }
+                            text = text.replace(new RegExp(pattern, flags), '').trim();
+                        } catch (e) {
+                            console.error("对话预览过滤状态栏失败:", e);
+                        }
+                    }
                     const htmlRegex = /<[a-z][\s\S]*>/i;
                     if (htmlRegex.test(text)) {
                         lastMessageText = '[互动]';
