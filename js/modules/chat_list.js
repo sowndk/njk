@@ -377,71 +377,41 @@ function renderChatList() {
             }
             const visibleHistory = chat.history.filter(msg => !invisibleRegex.test(msg.content));
             if (visibleHistory.length > 0) {
+                const lastMsg = visibleHistory[visibleHistory.length - 1];
                 const urlRegex = /^(https?:\/\/[^\s]+\.(?:jpg|jpeg|png|gif|webp|bmp|svg)|data:image\/[a-z]+;base64,)/i;
-                const imageRecogRegex = /\[.*?发来了一张图片：\]/;
+                const imageRecogRegex = /\[.*?发来了一张图片：\]/
                 const voiceRegex = /\[.*?的语音：.*?\]/;
                 const photoVideoRegex = /\[.*?发来的照片\/视频：.*?\]/;
                 const transferRegex = /\[.*?的转账：.*?元.*?\]|\[.*?给你转账：.*?元.*?\]|\[.*?向.*?转账：.*?元.*?\]/;
                 const stickerRegex = /\[.*?的表情包：.*?\]|\[.*?发送的表情包：.*?\]/;
                 const giftRegex = /\[.*?送来的礼物：.*?\]|\[.*?向.*?送来了礼物：.*?\]/;
 
-                for (let i = visibleHistory.length - 1; i >= 0; i--) {
-                    const candidateMsg = visibleHistory[i];
-                    if (giftRegex.test(candidateMsg.content)) {
-                        lastMessageText = '[礼物]';
-                        break;
-                    } else if (stickerRegex.test(candidateMsg.content)) {
-                        lastMessageText = '[表情包]';
-                        break;
-                    } else if (voiceRegex.test(candidateMsg.content)) {
-                        lastMessageText = '[语音]';
-                        break;
-                    } else if (photoVideoRegex.test(candidateMsg.content)) {
-                        lastMessageText = '[照片/视频]';
-                        break;
-                    } else if (transferRegex.test(candidateMsg.content)) {
-                        lastMessageText = '[转账]';
-                        break;
-                    } else if (imageRecogRegex.test(candidateMsg.content) || (candidateMsg.parts && candidateMsg.parts.some(p => p.type === 'image'))) {
-                        lastMessageText = '[图片]';
-                        break;
-                    } else if (candidateMsg.parts && candidateMsg.parts.some(p => p.type === 'html')) {
+                if (giftRegex.test(lastMsg.content)) {
+                    lastMessageText = '[礼物]';
+                } else if (stickerRegex.test(lastMsg.content)) {
+                    lastMessageText = '[表情包]';
+                } else if (voiceRegex.test(lastMsg.content)) {
+                    lastMessageText = '[语音]';
+                } else if (photoVideoRegex.test(lastMsg.content)) {
+                    lastMessageText = '[照片/视频]';
+                } else if (transferRegex.test(lastMsg.content)) {
+                    lastMessageText = '[转账]';
+                } else if (imageRecogRegex.test(lastMsg.content) || (lastMsg.parts && lastMsg.parts.some(p => p.type === 'image'))) {
+                    lastMessageText = '[图片]';
+                }else if ((lastMsg.parts && lastMsg.parts.some(p => p.type === 'html'))) {
+                    lastMessageText = '[互动]';
+                } else {
+                    let text = lastMsg.content.trim();
+                    const plainTextMatch = text.match(/^\[.*?：([\s\S]*)\]$/);
+                    if (plainTextMatch && plainTextMatch[1]) {
+                        text = plainTextMatch[1].trim();
+                    }
+                    text = text.replace(/\[发送时间:.*?\]$/, '').trim(); 
+                    const htmlRegex = /<[a-z][\s\S]*>/i;
+                    if (htmlRegex.test(text)) {
                         lastMessageText = '[互动]';
-                        break;
                     } else {
-                        let text = candidateMsg.content.trim();
-                        const plainTextMatch = text.match(/^\[.*?：([\s\S]*)\]$/);
-                        if (plainTextMatch && plainTextMatch[1]) {
-                            text = plainTextMatch[1].trim();
-                        }
-                        text = text.replace(/\[发送时间:.*?\]$/, '').trim();
-                        // 过滤状态栏内容（保持与聊天气泡一致的隐藏逻辑）
-                        if (chat.statusPanel && chat.statusPanel.enabled && chat.statusPanel.regexPattern) {
-                            try {
-                                let pattern = chat.statusPanel.regexPattern;
-                                let flags = 'gs';
-                                const matchParts = pattern.match(/^\/(.*?)\/([a-z]*)$/);
-                                if (matchParts) {
-                                    pattern = matchParts[1];
-                                    flags = matchParts[2] || 'gs';
-                                    if (!flags.includes('g')) flags += 'g';
-                                }
-                                text = text.replace(new RegExp(pattern, flags), '').trim();
-                            } catch (e) {
-                                console.error("对话预览过滤状态栏失败:", e);
-                            }
-                        }
-                        // 如果剥离状态栏后内容变为空，说明此条消息为纯状态更新，继续向前寻找上一条有效内容
-                        if (!text) {
-                            continue;
-                        }
-                        const htmlRegex = /<[a-z][\s\S]*>/i;
-                        if (htmlRegex.test(text)) {
-                            lastMessageText = '[互动]';
-                        } else {
-                            lastMessageText = urlRegex.test(text) ? '[图片]' : text;
-                        }
-                        break;
+                        lastMessageText = urlRegex.test(text) ? '[图片]' : text;
                     }
                 }
             } else {
