@@ -353,6 +353,11 @@
     .list-view .wb-item-name {
         color: #f2f2f7 !important;
     }
+    .list-view .wb-item-preview {
+        background-color: #242426 !important;
+        border-color: #38383a !important;
+        color: #c7c7cc !important;
+    }
     .list-view .wb-folder-icon {
         color: #8e8e93 !important;
         fill: #8e8e93 !important;
