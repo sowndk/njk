@@ -618,9 +618,28 @@ function renderWorldBookList() {
             ? `<div class="wb-icon-wrapper"><svg class="wb-folder-icon" viewBox="0 0 24 24" width="24" height="24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg></div>`
             : '';
 
+        let previewHTML = '';
+        if (!isFolder && item.content) {
+            const rawContent = String(item.content);
+            const previewSlice = rawContent.slice(0, 300);
+            const safePreview = previewSlice
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(new RegExp(String.fromCharCode(34), 'g'), '&quot;')
+                .replace(new RegExp(String.fromCharCode(39), 'g'), '&#039;');
+            if (safePreview) {
+                previewHTML = `<div class="wb-item-preview">${safePreview}${rawContent.length > 300 ? '…' : ''}</div>`;
+                card.classList.add('has-preview');
+            }
+        }
+
         card.innerHTML = `
             ${iconHTML}
-            <div class="wb-item-name">${item.name}</div>
+            <div class="wb-item-info">
+                <div class="wb-item-name">${item.name}</div>
+                ${previewHTML}
+            </div>
         `;
         
         container.appendChild(card);
