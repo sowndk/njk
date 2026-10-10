@@ -188,6 +188,14 @@ async function setupStickerSystem() {
         const result = await mammoth.extractRawText({ arrayBuffer });
         return result && result.value ? result.value : '';
     }
+    function normalizeStickerDocText(raw) {
+        if (!raw) return '';
+        // 1. 针对图片后缀后直接连接文字的情况（如 .png举重: -> .png\n举重:）智能断行
+        let t = raw.replace(/(\.(?:png|jpe?g|gif|webp|bmp|svg))([^\s/])/gi, '$1\n$2');
+        // 2. 针对普通 URL 后面直接连接中文/全角标点的情况断行
+        t = t.replace(/(https?:\/\/[a-zA-Z0-9\-._~:/?#\[\]@!$&'()*+,;=%]+?)([\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef])/g, '$1\n$2');
+        return t;
+    }
     async function handleStickerDocFile(file) {
         if (!file) return;
         stickerDocStatus.textContent = `正在解析 ${file.name}...`;
@@ -203,13 +211,14 @@ async function setupStickerSystem() {
             } else {
                 throw new Error('仅支持 .txt / .md / .docx 格式');
             }
-            // 填入文本域
-            stickerUrlsTextarea.value = text;
+            // 规范化文本，自动修复粘连并填入文本域
+            const normalizedText = normalizeStickerDocText(text);
+            stickerUrlsTextarea.value = normalizedText;
             // 自动填分组：仅在用户没填时才用文件名
             if (!batchStickerGroupInput.value.trim()) {
                 batchStickerGroupInput.value = stripFileExt(file.name);
             }
-            const lineCount = text.split('\n').filter(l => l.trim()).length;
+            const lineCount = normalizedText.split('\n').filter(l => l.trim()).length;
             stickerDocStatus.textContent = `✓ 已解析 ${file.name}（${lineCount} 行有效文本）`;
             stickerDocStatus.style.color = '#34c759';
         } catch (err) {
@@ -240,37 +249,52 @@ async function setupStickerSystem() {
     }
     batchAddStickerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const textInput = stickerUrlsTextarea.value.trim();
+        const rawInput = stickerUrlsTextarea.value.trim();
         const groupName = batchStickerGroupInput.value.trim();
-        if (!textInput) return showToast('请输入数据');
+        if (!rawInput) return showToast('请输入数据');
+        // 提交时再次做一次规范化，支持用户手动粘贴未换行的文本
+        const textInput = normalizeStickerDocText(rawInput);
         const lines = textInput.split('\n');
         const newStickers = [];
-        // 放宽契约：只要行内任意位置出现 http:// 或 https:// 即视为一条 URL
-        // 名字取 URL 之前的文本（去空白），空名字用文件名兜底
-        const urlRegex = /https?:\/\/\S+/i;
+        // 精确匹配合法 URL 字符，防止 \S+ 过度贪婪把紧邻的中文文字吞进 URL
+        const urlRegex = /https?:\/\/[a-zA-Z0-9\-._~:/?#\[\]@!$&'()*+,;=%]+/i;
         // 用于无名字时的兜底：优先用导入文档名，否则用默认前缀
         const fallbackNameBase = (groupName || '表情').replace(/[\\/:*?"<>|]/g, '_');
         let fallbackCounter = 0;
+        let pendingName = '';
         for (const line of lines) {
             const trimmedLine = line.trim();
             if (!trimmedLine) continue;
             const match = trimmedLine.match(urlRegex);
-            if (!match) continue;
-            const url = match[0];
-            const before = trimmedLine.substring(0, match.index).trim();
-            // 去掉常见分隔符尾巴（:,：,=,-,空格 等）以获得更干净的名字
-            let name = before.replace(/[\s:：=\-]+$/, '').trim();
-            if (!name) {
-                fallbackCounter++;
-                name = `${fallbackNameBase}_${fallbackCounter}`;
+            if (match) {
+                const url = match[0];
+                const before = trimmedLine.substring(0, match.index).trim();
+                // 去掉常见分隔符尾巴（:,：,=,-,空格 等）以获得更干净的名字
+                let name = before.replace(/[\s:：=\-]+$/, '').trim();
+                // 若本行 URL 前无名字，但上一行有未消费的独立名称行（如文档中 "求求你:" 单独成行）
+                if (!name && pendingName) {
+                    name = pendingName;
+                    pendingName = '';
+                }
+                if (!name) {
+                    fallbackCounter++;
+                    name = `${fallbackNameBase}_${fallbackCounter}`;
+                }
+                newStickers.push({
+                    id: `sticker_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    name: name,
+                    data: url,
+                    group: groupName,
+                    lastUsedTime: Date.now()
+                });
+                pendingName = '';
+            } else {
+                // 当前行没有 URL，可能为单独占一行的表情名称
+                const cleaned = trimmedLine.replace(/[\s:：=\-]+$/, '').trim();
+                if (cleaned) {
+                    pendingName = cleaned;
+                }
             }
-            newStickers.push({
-                id: `sticker_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                name: name,
-                data: url,
-                group: groupName,
-                lastUsedTime: Date.now()
-            });
         }
         if (newStickers.length > 0) {
             db.myStickers.push(...newStickers);
