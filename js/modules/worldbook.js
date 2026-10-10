@@ -295,65 +295,7 @@ async function setupWorldBookApp() {
         const text = (rawText || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
         if (!text) return [];
 
-        // 方案A：优先检查显式分割标记（Markdown 标题如 ## 标题，或 --- / === 分割线）
-        // 如果文档没有显式的多条目标记，则整篇文档作为 1 个完整独立条目，保留内部全部空行和格式
-        const hasExplicitSections = /(?:^|\n)(?:#{1,3}\s+[^\n]+|[-=]{3,})\s*(?:\n|$)/.test(text);
-
-        if (!hasExplicitSections) {
-            return [{
-                name: baseDocName || '未命名条目',
-                content: text,
-                category: baseDocName || ''
-            }];
-        }
-
-        // 存在显式多条目标记时，按标题或分割线拆分
-        const lines = text.split('\n');
-        const sections = [];
-        let currentHeader = '';
-        let currentContentLines = [];
-
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
-            const headerMatch = line.match(/^#{1,3}\s+(.+)$/);
-            const isDivider = /^[-=]{3,}\s*$/.test(line.trim());
-
-            if (headerMatch) {
-                if (currentHeader || currentContentLines.length > 0) {
-                    sections.push({
-                        name: currentHeader || `${baseDocName || '条目'} #${sections.length + 1}`,
-                        content: currentContentLines.join('\n').trim(),
-                        category: baseDocName || ''
-                    });
-                    currentContentLines = [];
-                }
-                currentHeader = headerMatch[1].trim();
-            } else if (isDivider) {
-                if (currentHeader || currentContentLines.length > 0) {
-                    sections.push({
-                        name: currentHeader || `${baseDocName || '条目'} #${sections.length + 1}`,
-                        content: currentContentLines.join('\n').trim(),
-                        category: baseDocName || ''
-                    });
-                    currentHeader = '';
-                    currentContentLines = [];
-                }
-            } else {
-                currentContentLines.push(line);
-            }
-        }
-
-        if (currentHeader || currentContentLines.length > 0) {
-            sections.push({
-                name: currentHeader || (sections.length === 0 ? (baseDocName || '未命名条目') : `${baseDocName || '条目'} #${sections.length + 1}`),
-                content: currentContentLines.join('\n').trim(),
-                category: baseDocName || ''
-            });
-        }
-
-        // 过滤掉可能全空的切片
-        const validSections = sections.filter(s => s.content || s.name);
-        return validSections.length > 0 ? validSections : [{
+        return [{
             name: baseDocName || '未命名条目',
             content: text,
             category: baseDocName || ''
@@ -476,6 +418,7 @@ async function setupWorldBookApp() {
                         id: `wb_${now}_${index + 1}`,
                         parentId: targetFolderId,
                         type: 'entry',
+                        order: index + 1,
                         name: entry.name || `${baseDocName} #${index + 1}`,
                         content: entry.content || '',
                         position: entry.position || 'before',
@@ -636,6 +579,26 @@ function renderWorldBookList() {
             return !item.parentId;
         }
         return item.parentId === currentFolder.id;
+    });
+
+    // 排序逻辑：
+    // 1. 文件夹优先排在最前
+    // 2. 存在显式 order（如从文档导入时的文档物理顺序）按 order 升序
+    // 3. 否则提取 id 末尾的时间戳/自增序号按创建顺序自然排序，或按名称自然排序
+    currentItems.sort((a, b) => {
+        if (a.type !== b.type) {
+            return a.type === 'folder' ? -1 : 1;
+        }
+        const orderA = typeof a.order === 'number' ? a.order : 999999;
+        const orderB = typeof b.order === 'number' ? b.order : 999999;
+        if (orderA !== orderB) return orderA - orderB;
+
+        // 如果 order 相同或都不存在，按 id 末尾数字（创建时间/序号）升序
+        const numA = parseInt((a.id || '').match(/_(\d+)$/)?.[1] || '0', 10);
+        const numB = parseInt((b.id || '').match(/_(\d+)$/)?.[1] || '0', 10);
+        if (numA && numB && numA !== numB) return numA - numB;
+
+        return (a.name || '').localeCompare(b.name || '', 'zh-CN', { numeric: true, sensitivity: 'base' });
     });
 
     document.getElementById('no-world-books-placeholder').style.display = currentItems.length === 0 ? 'block' : 'none';
