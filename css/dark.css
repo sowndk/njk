@@ -33,7 +33,7 @@
         --kkt-icon-color: #ffffff;      /* KKT 图标白 */
         --global-title-color: #ffffff;
         /* 底部栏/卡片/面板 */
-        --chat-bottom-bar-bg: #2c2c2e;
+        --chat-bottom-bar-bg: transparent;
         --folder-pill-bg: #2c2c2e;
         --folder-pill-text: #d0d0d2;
         --folder-pill-active-bg: #2c2c2e;        /* 修复：原写 #ffffff 导致 active 态白底黑字，现改为深灰保持"深底高亮"一致 */
@@ -95,25 +95,42 @@
     }
 }
 
-/* === 第五层：消息输入区（chat.css 用 #fff / #f5f5f5） === */
+/* === 第五层：消息输入区（保持透明以透出聊天壁纸，内部控件适配暗色） === */
 @media (prefers-color-scheme: dark) {
+    #chat-room-screen .chat-input-wrapper {
+        background-color: transparent !important;
+    }
     #chat-room-screen .message-input-area,
     .message-input-area {
-        background-color: #2c2c2e !important;
-        border-top-color: #3a3a3c !important;
+        background-color: transparent !important;
+        background: transparent !important;
+        border-top-color: transparent !important;
         color: var(--text-color);
     }
-    .message-input-area textarea {
-        background-color: #1c1c1e !important;
+    .message-input-area input {
+        background-color: rgba(30, 30, 32, 0.75) !important;
         color: #e0e0e0 !important;
-        border-color: #3a3a3c !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    }
+    .message-input-area .icon-btn.circle-bg {
+        background-color: rgba(30, 30, 32, 0.75) !important;
+        color: #e0e0e0 !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    }
+    .message-input-area .icon-btn.circle-bg:active {
+        background-color: rgba(60, 60, 64, 0.9) !important;
+    }
+    .message-input-area textarea {
+        background-color: rgba(30, 30, 32, 0.75) !important;
+        color: #e0e0e0 !important;
+        border-color: rgba(255, 255, 255, 0.12) !important;
     }
 }
 
-/* === 第六层：聊天背景区（chat.css L407-415 #chat-room-screen .content 是浅灰） === */
+/* === 第六层：聊天背景区（透明化以显示 #chat-room-screen 的壁纸） === */
 @media (prefers-color-scheme: dark) {
     #chat-room-screen .content {
-        background-color: #1c1c1e;
+        background-color: transparent !important;
     }
 }
 
@@ -1018,5 +1035,11 @@
     }
     #sticker-search-clear-btn:active {
         background-color: #636366 !important;
+    }
+
+    /* 步骤 39d：折叠的夜间聊天背景行暗色适配 */
+    #chat-bg-night-item,
+    #group-chat-bg-night-item {
+        background-color: rgba(255, 255, 255, 0.04) !important;
     }
 }
