@@ -162,40 +162,17 @@ function setupChatSettings() {
                 await saveData();
                 showToast('聊天背景已恢复默认');
             }
-    // 步骤 39：日间/夜间独立壁纸上传与重置
-    const chatBgDayUpload = document.getElementById('setting-chat-bg-day-upload');
-    if (chatBgDayUpload) {
-        chatBgDayUpload.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const char = db.characters.find(c => c.id === currentChatId);
-                if (char) {
-                    try {
-                        const compressedUrl = await compressImage(file, { quality: 0.85, maxWidth: 1080, maxHeight: 1920 });
-                        char.chatBgDay = compressedUrl;
-                        if (typeof applyChatDayNightWallpaper === 'function') {
-                            applyChatDayNightWallpaper(currentChatId, char);
-                        }
-                        await saveData();
-                        showToast('日间聊天背景已更换');
-                    } catch (error) {
-                        showToast('日间背景压缩失败，请重试');
-                    }
-                }
-            }
         });
     }
-    const resetChatBgDayBtn = document.getElementById('reset-chat-bg-day-btn');
-    if (resetChatBgDayBtn) {
-        resetChatBgDayBtn.addEventListener('click', async () => {
-            const char = db.characters.find(c => c.id === currentChatId);
-            if (char) {
-                char.chatBgDay = '';
-                if (typeof applyChatDayNightWallpaper === 'function') {
-                    applyChatDayNightWallpaper(currentChatId, char);
-                }
-                await saveData();
-                showToast('日间聊天背景已恢复默认');
+
+    // 步骤 39d：点击“聊天背景”展开/收起夜间背景配置项
+    const toggleChatBgNightBtn = document.getElementById('toggle-chat-bg-night-btn');
+    if (toggleChatBgNightBtn) {
+        toggleChatBgNightBtn.addEventListener('click', () => {
+            const nightItem = document.getElementById('chat-bg-night-item');
+            if (nightItem) {
+                const isHidden = (nightItem.style.display === 'none' || !nightItem.style.display);
+                nightItem.style.display = isHidden ? 'flex' : 'none';
             }
         });
     }
@@ -236,8 +213,6 @@ function setupChatSettings() {
         });
     }
 
-        });
-    }
     
     document.getElementById('clear-chat-history-btn').addEventListener('click', async () => {
         const character = db.characters.find(c => c.id === currentChatId);

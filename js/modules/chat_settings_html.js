@@ -475,7 +475,7 @@ const chatSettingsHtml = `
                         <!-- 聊天环境分组 -->
                         <div class="kkt-group">
                             <div class="kkt-item">
-                                <div class="kkt-item-label">聊天背景</div>
+                                <div class="kkt-item-label" id="toggle-chat-bg-night-btn" style="cursor:pointer; user-select:none;" title="点击展开/收起夜间聊天背景设置">聊天背景</div>
                                 <div class="kkt-item-control">
                                     <span onclick="document.getElementById('setting-chat-bg-upload').click()" style="cursor:pointer; color:var(--primary-color);">点击更换</span>
                                     <span style="margin: 0 8px; color: #eee;">|</span>
@@ -483,19 +483,10 @@ const chatSettingsHtml = `
                                 </div>
                                 <input type="file" id="setting-chat-bg-upload" accept="image/*" style="display:none;">
                             </div>
-                            <div class="kkt-item">
-                                <div class="kkt-item-label">☀️ 日间聊天背景</div>
+                            <div class="kkt-item" id="chat-bg-night-item" style="display:none; background-color: rgba(0,0,0,0.02);">
+                                <div class="kkt-item-label" style="padding-left:12px; font-size:0.95em; color:var(--text-color);">🌙 夜间聊天背景</div>
                                 <div class="kkt-item-control">
-                                    <span onclick="document.getElementById(x27setting-chat-bg-day-uploadx27).click()" style="cursor:pointer; color:var(--primary-color);">点击更换</span>
-                                    <span style="margin: 0 8px; color: #eee;">|</span>
-                                    <span id="reset-chat-bg-day-btn" style="cursor:pointer; color:#999;">恢复默认</span>
-                                </div>
-                                <input type="file" id="setting-chat-bg-day-upload" accept="image/*" style="display:none;">
-                            </div>
-                            <div class="kkt-item">
-                                <div class="kkt-item-label">🌙 夜间聊天背景</div>
-                                <div class="kkt-item-control">
-                                    <span onclick="document.getElementById(x27setting-chat-bg-night-uploadx27).click()" style="cursor:pointer; color:var(--primary-color);">点击更换</span>
+                                    <span onclick="document.getElementById('setting-chat-bg-night-upload').click()" style="cursor:pointer; color:var(--primary-color);">点击更换</span>
                                     <span style="margin: 0 8px; color: #eee;">|</span>
                                     <span id="reset-chat-bg-night-btn" style="cursor:pointer; color:#999;">恢复默认</span>
                                 </div>
