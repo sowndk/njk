@@ -365,6 +365,28 @@ function applyBubbleDayNightPresetForCurrentMode(chatId, chat) {
     const isNight = (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
     const targetName = isNight ? (chat.bubbleCssPresetNightName || '') : (chat.bubbleCssPresetDayName || '');
     applyBubblePresetByName(chatId, targetName);
+    // 步骤 39：同步切换日间/夜间聊天背景
+    if (typeof applyChatDayNightWallpaper === 'function') {
+        applyChatDayNightWallpaper(chatId, chat);
+    }
+}
+
+/**
+ * 步骤 39：根据当前系统日夜模式渲染独立聊天壁纸
+ * 仅在 chat.useBubbleDayNightPreset === true 时按当前模式选择对应壁纸
+ * 日间优先 chat.chatBgDay，夜间优先 chat.chatBgNight，未设置时回退至通用 chat.chatBg
+ */
+function applyChatDayNightWallpaper(chatId, chat) {
+    if (!chatId || !chat) return;
+    const chatRoomScreen = document.getElementById('chat-room-screen');
+    if (!chatRoomScreen) return;
+    if (chat.useBubbleDayNightPreset === true) {
+        const isNight = (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        const url = isNight ? (chat.chatBgNight || chat.chatBg || '') : (chat.chatBgDay || chat.chatBg || '');
+        chatRoomScreen.style.backgroundImage = url ? `url(${url})` : '';
+    } else {
+        chatRoomScreen.style.backgroundImage = chat.chatBg ? `url(${chat.chatBg})` : '';
+    }
 }
 
 /**
@@ -395,8 +417,13 @@ if (typeof window !== 'undefined' && window.matchMedia) {
                         const chat = (typeof currentChatType !== 'undefined' && currentChatType === 'private')
                             ? db.characters.find(c => c.id === currentChatId)
                             : db.groups.find(g => g.id === currentChatId);
-                        if (chat && typeof applyChatBubbleCss === 'function') {
-                            applyChatBubbleCss(currentChatId, chat);
+                        if (chat) {
+                            if (typeof applyChatBubbleCss === 'function') {
+                                applyChatBubbleCss(currentChatId, chat);
+                            }
+                            if (typeof applyChatDayNightWallpaper === 'function') {
+                                applyChatDayNightWallpaper(currentChatId, chat);
+                            }
                         }
                     }
                 }

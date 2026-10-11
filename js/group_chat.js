@@ -220,6 +220,80 @@ function setupGroupChatSystem() {
             }
         });
     }
+    // 步骤 39：群聊日间/夜间独立壁纸上传与重置
+    const groupChatBgDayUpload = document.getElementById('setting-group-chat-bg-day-upload');
+    if (groupChatBgDayUpload) {
+        groupChatBgDayUpload.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const group = db.groups.find(g => g.id === currentChatId);
+                if (group) {
+                    try {
+                        const compressedUrl = await compressImage(file, { quality: 0.85, maxWidth: 1080, maxHeight: 1920 });
+                        group.chatBgDay = compressedUrl;
+                        if (typeof applyChatDayNightWallpaper === 'function') {
+                            applyChatDayNightWallpaper(currentChatId, group);
+                        }
+                        await saveData();
+                        showToast('日间聊天背景已更换');
+                    } catch (error) {
+                        showToast('日间背景压缩失败，请重试');
+                    }
+                }
+            }
+        });
+    }
+    const resetGroupChatBgDayBtn = document.getElementById('reset-group-chat-bg-day-btn');
+    if (resetGroupChatBgDayBtn) {
+        resetGroupChatBgDayBtn.addEventListener('click', async () => {
+            const group = db.groups.find(g => g.id === currentChatId);
+            if (group) {
+                group.chatBgDay = '';
+                if (typeof applyChatDayNightWallpaper === 'function') {
+                    applyChatDayNightWallpaper(currentChatId, group);
+                }
+                await saveData();
+                showToast('日间聊天背景已恢复默认');
+            }
+        });
+    }
+    const groupChatBgNightUpload = document.getElementById('setting-group-chat-bg-night-upload');
+    if (groupChatBgNightUpload) {
+        groupChatBgNightUpload.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const group = db.groups.find(g => g.id === currentChatId);
+                if (group) {
+                    try {
+                        const compressedUrl = await compressImage(file, { quality: 0.85, maxWidth: 1080, maxHeight: 1920 });
+                        group.chatBgNight = compressedUrl;
+                        if (typeof applyChatDayNightWallpaper === 'function') {
+                            applyChatDayNightWallpaper(currentChatId, group);
+                        }
+                        await saveData();
+                        showToast('夜间聊天背景已更换');
+                    } catch (error) {
+                        showToast('夜间背景压缩失败，请重试');
+                    }
+                }
+            }
+        });
+    }
+    const resetGroupChatBgNightBtn = document.getElementById('reset-group-chat-bg-night-btn');
+    if (resetGroupChatBgNightBtn) {
+        resetGroupChatBgNightBtn.addEventListener('click', async () => {
+            const group = db.groups.find(g => g.id === currentChatId);
+            if (group) {
+                group.chatBgNight = '';
+                if (typeof applyChatDayNightWallpaper === 'function') {
+                    applyChatDayNightWallpaper(currentChatId, group);
+                }
+                await saveData();
+                showToast('夜间聊天背景已恢复默认');
+            }
+        });
+    }
+
 
     const clearGroupHistoryBtn = document.getElementById('clear-group-chat-history-btn');
     if (clearGroupHistoryBtn) {

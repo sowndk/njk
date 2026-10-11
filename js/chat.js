@@ -699,7 +699,12 @@ function openChatRoom(chatId, type) {
         subtitle.style.display = 'none';
     }
     getReplyBtn.style.display = 'inline-flex';
-    chatRoomScreen.style.backgroundImage = chat.chatBg ? `url(${chat.chatBg})` : 'none';
+    // 步骤 39：日夜独立壁纸渲染，开启日夜预设时调用 applyChatDayNightWallpaper
+    if (chat.useBubbleDayNightPreset === true && typeof applyChatDayNightWallpaper === 'function') {
+        applyChatDayNightWallpaper(chatId, chat);
+    } else {
+        chatRoomScreen.style.backgroundImage = chat.chatBg ? `url(${chat.chatBg})` : 'none';
+    }
     typingIndicator.style.display = 'none';
     isGenerating = false;
     getReplyBtn.disabled = false;
