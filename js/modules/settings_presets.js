@@ -64,12 +64,21 @@ async function applyPresetToCurrentChat(presetName) {
                 if (preset.settings.theme !== undefined) chat.theme = preset.settings.theme;
                 if (preset.settings.chatBg !== undefined) {
                     chat.chatBg = preset.settings.chatBg;
-                    const chatRoomScreen = document.getElementById('chat-room-screen');
-                    if (chatRoomScreen) {
-                        if (chat.chatBg) {
-                            chatRoomScreen.style.backgroundImage = `url(${chat.chatBg})`;
+                    // 步骤 39：混合方案——若当前开启日夜组合，则把预设壁纸按当前模式灌入对应槽位
+                    const isNightNow = (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                    if (chat.useBubbleDayNightPreset === true) {
+                        if (isNightNow) {
+                            chat.chatBgNight = preset.settings.chatBg;
                         } else {
-                            chatRoomScreen.style.backgroundImage = '';
+                            chat.chatBgDay = preset.settings.chatBg;
+                        }
+                    }
+                    if (typeof applyChatDayNightWallpaper === 'function') {
+                        applyChatDayNightWallpaper(currentChatId, chat);
+                    } else {
+                        const chatRoomScreen = document.getElementById('chat-room-screen');
+                        if (chatRoomScreen) {
+                            chatRoomScreen.style.backgroundImage = chat.chatBg ? `url(${chat.chatBg})` : '';
                         }
                     }
                 }
@@ -183,6 +192,8 @@ async function applyBubblePresetToAllCharactersAndGroups() {
                 c.useBubbleDayNightPreset = true;
                 c.bubbleCssPresetDayName = dayPresetName;
                 c.bubbleCssPresetNightName = nightPresetName;
+                if (currentChat.chatBgDay !== undefined) c.chatBgDay = currentChat.chatBgDay;
+                if (currentChat.chatBgNight !== undefined) c.chatBgNight = currentChat.chatBgNight;
                 if (currentChatType === 'private') {
                     c.avatarMode = avatarMode;
                 }
@@ -196,6 +207,8 @@ async function applyBubblePresetToAllCharactersAndGroups() {
                 g.useBubbleDayNightPreset = true;
                 g.bubbleCssPresetDayName = dayPresetName;
                 g.bubbleCssPresetNightName = nightPresetName;
+                if (currentChat.chatBgDay !== undefined) g.chatBgDay = currentChat.chatBgDay;
+                if (currentChat.chatBgNight !== undefined) g.chatBgNight = currentChat.chatBgNight;
                 g.titleLayout = titleLayout;
                 g.showTimestamp = showTimestamp;
                 g.timestampStyle = timestampStyle;
@@ -787,6 +800,8 @@ function setupPresetFeatures() {
                     presetData.settings = {
                         theme: document.getElementById('setting-theme-color') ? document.getElementById('setting-theme-color').value : chat.theme,
                         chatBg: chat.chatBg,
+                        chatBgDay: chat.chatBgDay || '',
+                        chatBgNight: chat.chatBgNight || '',
                         bilingualModeEnabled: document.getElementById('setting-bilingual-mode') ? document.getElementById('setting-bilingual-mode').checked : chat.bilingualModeEnabled,
                         bilingualBubbleStyle: document.getElementById('setting-bilingual-style') ? document.getElementById('setting-bilingual-style').value : chat.bilingualBubbleStyle,
                         avatarMode: document.getElementById('setting-avatar-mode') ? document.getElementById('setting-avatar-mode').value : chat.avatarMode,

@@ -484,6 +484,24 @@ const chatSettingsHtml = `
                                 <input type="file" id="setting-chat-bg-upload" accept="image/*" style="display:none;">
                             </div>
                             <div class="kkt-item">
+                                <div class="kkt-item-label">☀️ 日间聊天背景</div>
+                                <div class="kkt-item-control">
+                                    <span onclick="document.getElementById(x27setting-chat-bg-day-uploadx27).click()" style="cursor:pointer; color:var(--primary-color);">点击更换</span>
+                                    <span style="margin: 0 8px; color: #eee;">|</span>
+                                    <span id="reset-chat-bg-day-btn" style="cursor:pointer; color:#999;">恢复默认</span>
+                                </div>
+                                <input type="file" id="setting-chat-bg-day-upload" accept="image/*" style="display:none;">
+                            </div>
+                            <div class="kkt-item">
+                                <div class="kkt-item-label">🌙 夜间聊天背景</div>
+                                <div class="kkt-item-control">
+                                    <span onclick="document.getElementById(x27setting-chat-bg-night-uploadx27).click()" style="cursor:pointer; color:var(--primary-color);">点击更换</span>
+                                    <span style="margin: 0 8px; color: #eee;">|</span>
+                                    <span id="reset-chat-bg-night-btn" style="cursor:pointer; color:#999;">恢复默认</span>
+                                </div>
+                                <input type="file" id="setting-chat-bg-night-upload" accept="image/*" style="display:none;">
+                            </div>
+                            <div class="kkt-item">
                                 <div class="kkt-item-label">主题颜色</div>
                                 <div class="kkt-item-control">
                                     <select id="setting-theme-color" style="border:none; background:transparent; text-align:right;"></select>
