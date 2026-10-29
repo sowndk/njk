@@ -231,7 +231,7 @@
     padding: 5px 15px;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(8, 1fr); /* 8 行自适应等分剩余可用高度 */
+    grid-template-rows: repeat(6, 1fr); /* 6 行自适应等分剩余可用高度 */
     gap: 15px;
     justify-content: center;
     align-content: flex-start;
@@ -245,7 +245,6 @@
 .home-grid-layout::-webkit-scrollbar {
     display: none;
 }
-
 /* Grid Item Sizes */
 .grid-item-1x1 {
     grid-column: span 1;
@@ -253,6 +252,47 @@
     display: flex;
     justify-content: center;
     align-items: center;
+}
+
+/* 4x6 网格槽位指示器（平时隐藏，编辑模式下显现浅色虚线坑位） */
+.home-slots-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    padding: 5px 15px;
+    display: none;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(6, 1fr);
+    gap: 15px;
+    pointer-events: none;
+    box-sizing: border-box;
+    z-index: 0;
+}
+
+.home-screen-page {
+    position: relative;
+}
+
+.home-grid-layout {
+    position: relative;
+    z-index: 1;
+}
+
+.home-grid-slot-cell {
+    width: 100%;
+    height: 100%;
+    border: 1.5px dashed rgba(255, 255, 255, 0.28);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.04);
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+}
+
+.home-grid-layout.edit-mode ~ .home-slots-background,
+.home-screen-page.is-editing .home-slots-background {
+    display: grid !important;
 }
 
 .grid-item-1x2 {
