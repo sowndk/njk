@@ -494,14 +494,29 @@ let isHomeEditMode = false;
 let homePressTimer = null;
 
 /**
+ * 辅助函数：根据 HTML 解析项目尺寸行数与列数
+ */
+function getItemSpan(html) {
+    let rows = 1, cols = 1;
+    if (html) {
+        const match = html.match(/grid-item-(\d+)x(\d+)/);
+        if (match) {
+            rows = parseInt(match[1], 10);
+            cols = parseInt(match[2], 10);
+        }
+    }
+    return { rows, cols };
+}
+
+/**
  * 初始分页计算算法：仅在迁移旧数据或初始化时使用
- * 将小组件按顺序填充到 4x6 的网格页面中，返回 ID 的二维数组
+ * 将项目转换为带具体坐标 { id, r, c, rows, cols } 的槽位放置结构
  */
 function calculatePagesFromIds(ids, allItemsHtmlMap) {
     const PAGE_COLS = 4;
-    const PAGE_ROWS = 8;
+    const PAGE_ROWS = 6;
     let pages = [];
-    let currentPageIds = [];
+    let currentPageItems = [];
     let grid = Array(PAGE_ROWS).fill(null).map(() => Array(PAGE_COLS).fill(false));
     let currR = 0;
     let currC = 0;
@@ -510,12 +525,7 @@ function calculatePagesFromIds(ids, allItemsHtmlMap) {
         const html = allItemsHtmlMap[id];
         if (!html) return;
         
-        let rows = 1, cols = 1;
-        const match = html.match(/grid-item-(\d+)x(\d+)/);
-        if (match) {
-            rows = parseInt(match[1]);
-            cols = parseInt(match[2]);
-        }
+        const { rows, cols } = getItemSpan(html);
         
         let placed = false;
         while (currR <= PAGE_ROWS - rows) {
@@ -540,7 +550,7 @@ function calculatePagesFromIds(ids, allItemsHtmlMap) {
                         grid[currR + i][currC + j] = true;
                     }
                 }
-                currentPageIds.push(id);
+                currentPageItems.push({ id, r: currR, c: currC, rows, cols });
                 placed = true;
                 currC += cols;
                 if (currC >= PAGE_COLS) {
@@ -558,8 +568,8 @@ function calculatePagesFromIds(ids, allItemsHtmlMap) {
         }
         
         if (!placed) {
-            pages.push(currentPageIds);
-            currentPageIds = [id];
+            pages.push(currentPageItems);
+            currentPageItems = [];
             grid = Array(PAGE_ROWS).fill(null).map(() => Array(PAGE_COLS).fill(false));
             currR = 0;
             currC = 0;
@@ -569,6 +579,7 @@ function calculatePagesFromIds(ids, allItemsHtmlMap) {
                         grid[i][j] = true;
                     }
                 }
+                currentPageItems.push({ id, r: 0, c: 0, rows, cols });
                 currC = cols;
                 if (currC >= PAGE_COLS) {
                     currC = 0;
@@ -578,8 +589,8 @@ function calculatePagesFromIds(ids, allItemsHtmlMap) {
         }
     });
     
-    if (currentPageIds.length > 0) {
-        pages.push(currentPageIds);
+    if (currentPageItems.length > 0) {
+        pages.push(currentPageItems);
     }
     
     while (pages.length < 2) {
@@ -656,132 +667,212 @@ function setupHomeScreen() {
     // 确保所有项目都在 allItems 中，并处理新添加的项目
     const allItemIds = Object.keys(allItems);
     
-    // 数据结构迁移与初始化
+    // 数据结构迁移与初始化：确保 db.homeLayoutPages 中每个项目都是 { id, r, c, rows, cols }
+    let needsSaveMigration = false;
     if (!db.homeLayoutPages) {
         const order = db.homeLayoutOrder || ['app-chat', 'app-api', 'app-worldbook', 'app-customize', 'app-console', 'app-widget-market', 'app-placeholder'];
         db.homeLayoutPages = calculatePagesFromIds(order, allItems);
-        saveData();
+        needsSaveMigration = true;
     } else {
-        // 清理已移入 Dock 的图标（app-wallpaper 与 app-tutorial），避免老数据在桌面留下空白占位或幽灵图标
+        // 清理已移入 Dock 的图标（app-wallpaper 与 app-tutorial）
         const removedFromHome = new Set(['app-wallpaper', 'app-tutorial']);
         let cleaned = false;
-        db.homeLayoutPages = db.homeLayoutPages.map(page => page.filter(id => {
-            if (removedFromHome.has(id)) {
-                cleaned = true;
-                return false;
+        db.homeLayoutPages = db.homeLayoutPages.map(page => {
+            return (page || []).filter(item => {
+                const id = typeof item === 'string' ? item : (item && item.id);
+                if (removedFromHome.has(id)) {
+                    cleaned = true;
+                    return false;
+                }
+                return true;
+            });
+        });
+        if (cleaned) needsSaveMigration = true;
+
+        // 如果存在部分老旧的纯 ID 字符串（例如旧预设导入或遗留项），仅清理/转换，不摧毁已有合法坐标对象
+        const hasValidCoordObjects = db.homeLayoutPages.some(page => page && page.some(item => item && typeof item === 'object' && typeof item.r === 'number'));
+        const hasRawStrings = db.homeLayoutPages.some(page => page && page.some(item => typeof item === 'string'));
+        if (hasRawStrings) {
+            if (!hasValidCoordObjects) {
+                // 全是旧版纯字符串数组，整页初始排列迁移
+                let migratedPages = [];
+                db.homeLayoutPages.forEach(page => {
+                    const ids = (page || []).map(item => (typeof item === 'string' ? item : item.id));
+                    const res = calculatePagesFromIds(ids, allItems);
+                    migratedPages.push(...res.filter(p => p.length > 0));
+                });
+                if (migratedPages.length === 0) migratedPages = [[]];
+                db.homeLayoutPages = migratedPages;
+            } else {
+                // 已有自由放置坐标对象：仅剔除混入的裸字符串，交由下方新项目自动寻坑逻辑分配空闲坐标
+                db.homeLayoutPages = db.homeLayoutPages.map(page =>
+                    (page || []).filter(item => item && typeof item === 'object' && typeof item.id === 'string')
+                );
             }
-            return true;
-        }));
-        if (cleaned) {
-            saveData();
+            needsSaveMigration = true;
         }
+
+        // 同步清理已不存在于 allItems 中的悬空项目引用
+        db.homeLayoutPages = db.homeLayoutPages.map(page =>
+            (page || []).filter(item => {
+                if (!item || !item.id || !allItems[item.id]) {
+                    needsSaveMigration = true;
+                    return false;
+                }
+                return true;
+            })
+        );
+
+        // 4x6 规格校验与超界修正：如果已有项目中存在超出 6 行边界（r + rows > 6）或超出 4 列边界，将其移入待重新安置列表
+        const overflowItems = [];
+        db.homeLayoutPages = db.homeLayoutPages.map(page => {
+            return (page || []).filter(item => {
+                const rows = item.rows || 1;
+                const cols = item.cols || 1;
+                const r = typeof item.r === 'number' ? item.r : 0;
+                const c = typeof item.c === 'number' ? item.c : 0;
+                if (r < 0 || r + rows > 6 || c < 0 || c + cols > 4) {
+                    overflowItems.push(item.id);
+                    needsSaveMigration = true;
+                    return false;
+                }
+                return true;
+            });
+        });
+
+        // 检查是否有重叠冲突（例如旧 4x8 数据迁移遗留），若重叠则保留前者，后者重新寻坑安置
+        db.homeLayoutPages.forEach(page => {
+            const gridOcc = Array(6).fill(null).map(() => Array(4).fill(false));
+            const validPage = [];
+            (page || []).forEach(item => {
+                const rows = item.rows || 1;
+                const cols = item.cols || 1;
+                const r = item.r;
+                const c = item.c;
+                let overlap = false;
+                for (let dr = 0; dr < rows; dr++) {
+                    for (let dc = 0; dc < cols; dc++) {
+                        if (gridOcc[r + dr][c + dc]) overlap = true;
+                    }
+                }
+                if (!overlap) {
+                    for (let dr = 0; dr < rows; dr++) {
+                        for (let dc = 0; dc < cols; dc++) {
+                            gridOcc[r + dr][c + dc] = true;
+                        }
+                    }
+                    validPage.push(item);
+                } else {
+                    overflowItems.push(item.id);
+                    needsSaveMigration = true;
+                }
+            });
+            page.length = 0;
+            page.push(...validPage);
+        });
     }
 
-    // 检查是否有新添加但未在分页中的项目
-    const existingIds = new Set(db.homeLayoutPages.flat());
+    // 检查是否有新添加但未在布局中的项目（如新添加的小组件、或超界修正的项目）
+    const existingIds = new Set();
+    db.homeLayoutPages.forEach(page => {
+        (page || []).forEach(item => {
+            if (item && item.id) existingIds.add(item.id);
+        });
+    });
+
     let hasNewItems = false;
     allItemIds.forEach(id => {
         if (!existingIds.has(id)) {
-            // 将新项目添加到第一页，溢出逻辑会自动处理
-            if (!db.homeLayoutPages[0]) db.homeLayoutPages[0] = [];
-            db.homeLayoutPages[0].push(id);
-            hasNewItems = true;
+            const html = allItems[id];
+            const { rows, cols } = getItemSpan(html);
+            // 为新项目在当前页面寻找首个空闲槽位 (4 列 6 行)
+            let placed = false;
+            for (let p = 0; p < db.homeLayoutPages.length; p++) {
+                const page = db.homeLayoutPages[p];
+                const occ = Array(6).fill(null).map(() => Array(4).fill(false));
+                page.forEach(it => {
+                    for (let r = it.r; r < it.r + it.rows && r < 6; r++) {
+                        for (let c = it.c; c < it.c + it.cols && c < 4; c++) {
+                            occ[r][c] = true;
+                        }
+                    }
+                });
+                for (let r = 0; r <= 6 - rows; r++) {
+                    for (let c = 0; c <= 4 - cols; c++) {
+                        let canFit = true;
+                        for (let dr = 0; dr < rows; dr++) {
+                            for (let dc = 0; dc < cols; dc++) {
+                                if (occ[r + dr][c + dc]) { canFit = false; break; }
+                            }
+                            if (!canFit) break;
+                        }
+                        if (canFit) {
+                            page.push({ id, r, c, rows, cols });
+                            placed = true;
+                            hasNewItems = true;
+                            break;
+                        }
+                    }
+                    if (placed) break;
+                }
+                if (placed) break;
+            }
+            if (!placed) {
+                // 若已有页面全满，开辟新页放置
+                db.homeLayoutPages.push([{ id, r: 0, c: 0, rows, cols }]);
+                hasNewItems = true;
+            }
         }
     });
 
-    let pagesChanged = false;
-    // 先清理空页面
+    // 清理空页面并至少保留 1 页
     const originalLength = db.homeLayoutPages.length;
-    db.homeLayoutPages = db.homeLayoutPages.filter(page => page.length > 0);
+    db.homeLayoutPages = db.homeLayoutPages.filter(page => page && page.length > 0);
     if (db.homeLayoutPages.length === 0) {
         db.homeLayoutPages = [[]];
     }
-    if (db.homeLayoutPages.length !== originalLength) {
-        pagesChanged = true;
+    const pagesChanged = (db.homeLayoutPages.length !== originalLength);
+
+    // 同步扁平化的旧版 homeLayoutOrder
+    db.homeLayoutOrder = db.homeLayoutPages.flat().map(item => item.id);
+
+    if (needsSaveMigration || hasNewItems || pagesChanged) {
+        saveData();
     }
 
-    // 溢出处理逻辑：如果某一页超过 8 行，将多余的组件推送到下一页
-    for (let p = 0; p < db.homeLayoutPages.length; p++) {
-        let pageIds = db.homeLayoutPages[p];
-        let validIds = [];
-        let overflowIds = [];
-        
-        let grid = Array(8).fill(null).map(() => Array(4).fill(false));
-        let currR = 0, currC = 0;
-        let overflowStarted = false;
-        
-        for (let id of pageIds) {
-            if (overflowStarted) {
-                overflowIds.push(id);
-                continue;
-            }
-            
-            const html = allItems[id];
-            if (!html) continue;
-            let rows = 1, cols = 1;
-            const match = html.match(/grid-item-(\d+)x(\d+)/);
-            if (match) { rows = parseInt(match[1]); cols = parseInt(match[2]); }
-            
-            let placed = false;
-            while (currR <= 8 - rows) {
-                let canFit = true;
-                if (currC + cols > 4) canFit = false;
-                else {
-                    for (let i=0; i<rows; i++) for (let j=0; j<cols; j++) if (grid[currR+i][currC+j]) canFit = false;
-                }
-                if (canFit) {
-                    for (let i=0; i<rows; i++) for (let j=0; j<cols; j++) grid[currR+i][currC+j] = true;
-                    validIds.push(id);
-                    placed = true;
-                    currC += cols;
-                    if (currC >= 4) { currC = 0; currR++; }
-                    break;
-                } else {
-                    currC++;
-                    if (currC >= 4) { currC = 0; currR++; }
-                }
-            }
-            
-            if (!placed) {
-                overflowStarted = true;
-                overflowIds.push(id);
-            }
-        }
-        
-        if (overflowIds.length > 0) {
-            db.homeLayoutPages[p] = validIds;
-            if (p + 1 >= db.homeLayoutPages.length) {
-                db.homeLayoutPages.push([]);
-            }
-            // 将溢出项插入到下一页的最前面
-            db.homeLayoutPages[p+1] = [...overflowIds, ...db.homeLayoutPages[p+1]];
-            pagesChanged = true;
-        }
-    }
-    
-    // 再次清理可能产生的空页面
-    const afterOverflowLength = db.homeLayoutPages.length;
-    db.homeLayoutPages = db.homeLayoutPages.filter(page => page.length > 0);
-    if (db.homeLayoutPages.length === 0) {
-        db.homeLayoutPages = [[]];
-    }
-    if (db.homeLayoutPages.length !== afterOverflowLength) {
-        pagesChanged = true;
-    }
-    
-    if (pagesChanged || hasNewItems) saveData();
-
-    // 生成 HTML
+    // 生成 HTML：每个项目精准绑定 grid-column 和 grid-row，保持绝对坑位
     let swiperHtml = '';
     let indicatorHtml = '';
     
-    db.homeLayoutPages.forEach((pageIds, index) => {
-        let pageHtml = pageIds.map(id => allItems[id] || '').join('');
+    // 生成 4x6 背景浅色虚线槽位指示网格 (共 24 个槽)
+    let slotsBgHtml = '<div class="home-slots-background">';
+    for (let i = 0; i < 24; i++) {
+        slotsBgHtml += '<div class="home-grid-slot-cell"></div>';
+    }
+    slotsBgHtml += '</div>';
+
+    db.homeLayoutPages.forEach((pageItems, index) => {
+        let pageHtml = pageItems.map(item => {
+            const rawHtml = allItems[item.id];
+            if (!rawHtml) return '';
+            const rowStart = item.r + 1;
+            const colStart = item.c + 1;
+            const styleInject = `grid-column: ${colStart} / span ${item.cols}; grid-row: ${rowStart} / span ${item.rows};`;
+            
+            // 注入 inline 样式与坐标属性
+            if (/style\s*=\s*"[^"]*"/.test(rawHtml)) {
+                return rawHtml.replace(/style\s*=\s*"([^"]*)"/, `style="${styleInject} $1" data-r="${item.r}" data-c="${item.c}" data-rows="${item.rows}" data-cols="${item.cols}"`);
+            } else {
+                return rawHtml.replace(/<div\s+class="([^"]*)"/, `<div class="$1" style="${styleInject}" data-r="${item.r}" data-c="${item.c}" data-rows="${item.rows}" data-cols="${item.cols}"`);
+            }
+        }).join('');
+
         swiperHtml += `
         <div class="home-screen-page">
             <div class="home-grid-layout" id="home-grid-layout-${index + 1}" style="min-height: 500px;">
                 ${pageHtml}
             </div>
+            ${slotsBgHtml}
         </div>`;
         indicatorHtml += `<span class="dot ${index === 0 ? 'active' : ''}"></span>`;
     });
@@ -979,14 +1070,20 @@ function setupHomeScreen() {
             e.stopPropagation();
             const instanceId = btn.getAttribute('data-id');
             if (confirm('确定要删除这个小组件吗？')) {
+                const wasEditing = isHomeEditMode;
                 db.addedWidgets = db.addedWidgets.filter(w => w.id !== instanceId);
-                // 从分页数据中删除
+                // 从分页坐标数据中删除（兼容对象与字符串格式）
                 if (db.homeLayoutPages) {
-                    db.homeLayoutPages = db.homeLayoutPages.map(page => page.filter(id => id !== instanceId));
+                    db.homeLayoutPages = db.homeLayoutPages.map(page =>
+                        (page || []).filter(it => (typeof it === 'string' ? it : it.id) !== instanceId)
+                    );
                 }
-                db.homeLayoutOrder = db.homeLayoutOrder.filter(id => id !== instanceId);
+                db.homeLayoutOrder = (db.homeLayoutOrder || []).filter(id => id !== instanceId);
                 await saveData();
                 setupHomeScreen();
+                if (wasEditing) {
+                    enterHomeEditMode();
+                }
             }
         });
     });
@@ -1105,6 +1202,7 @@ let lastPageFlipTime = 0;
 const flipCooldown = 800; // 翻页冷却时间 800ms
 let edgeFlipInterval = null;
 let currentDragX = 0;
+let currentDragY = 0;
 
 function initHomeSortables() {
     const gridLayouts = document.querySelectorAll('.home-grid-layout');
@@ -1120,7 +1218,11 @@ function initHomeSortables() {
     }
 
     const handleGlobalDrag = (e) => {
-        currentDragX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+        const pt = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]) || e;
+        if (pt && typeof pt.clientX === 'number') {
+            currentDragX = pt.clientX;
+            currentDragY = pt.clientY;
+        }
     };
 
     gridLayouts.forEach(layout => {
@@ -1141,7 +1243,14 @@ function initHomeSortables() {
                 const newPageIdx = document.querySelectorAll('.home-grid-layout').length + 1;
                 const newPage = document.createElement('div');
                 newPage.className = 'home-screen-page';
-                newPage.innerHTML = `<div class="home-grid-layout edit-mode" id="home-grid-layout-${newPageIdx}" style="min-height: 500px;"></div>`;
+                
+                let slotsBgHtml = '<div class="home-slots-background" style="display: grid !important;">';
+                for (let i = 0; i < 24; i++) {
+                    slotsBgHtml += '<div class="home-grid-slot-cell"></div>';
+                }
+                slotsBgHtml += '</div>';
+
+                newPage.innerHTML = `<div class="home-grid-layout edit-mode" id="home-grid-layout-${newPageIdx}" style="min-height: 500px;"></div>${slotsBgHtml}`;
                 swiper.appendChild(newPage);
                 
                 // 为新页初始化 Sortable
@@ -1210,34 +1319,6 @@ function initHomeSortables() {
                 }
             },
             onEnd: async function (evt) {
-                // 获取所有页面的新顺序，保存为二维数组实现持久化分页
-                let newPages = [];
-                document.querySelectorAll('.home-grid-layout').forEach(grid => {
-                    const gridOrder = Array.from(grid.children).map(el => el.getAttribute('data-id'));
-                    newPages.push(gridOrder);
-                });
-                
-                // 过滤掉空页面
-                newPages = newPages.filter(page => page.length > 0);
-                if (newPages.length === 0) newPages = [[]]; // 至少保留一页
-                
-                db.homeLayoutPages = newPages;
-                
-                // 同时更新旧的扁平化 order 以保持兼容性
-                db.homeLayoutOrder = newPages.flat();
-
-                if (typeof saveData === 'function') {
-                    await saveData();
-                }
-                
-                // 重新渲染以应用溢出处理逻辑
-                const wasEditMode = isHomeEditMode;
-                setupHomeScreen();
-                if (wasEditMode) {
-                    enterHomeEditMode();
-                }
-                if (swiper) swiper.style.scrollSnapType = 'x mandatory';
-
                 // 清理全局监听和定时器
                 window.removeEventListener('mousemove', handleGlobalDrag);
                 window.removeEventListener('touchmove', handleGlobalDrag);
@@ -1245,7 +1326,152 @@ function initHomeSortables() {
                     clearInterval(edgeFlipInterval);
                     edgeFlipInterval = null;
                 }
+
+                const dragEl = evt.item;
+                const dragId = dragEl ? dragEl.getAttribute('data-id') : null;
+                const targetGrid = evt.to;
+                const allGrids = Array.from(document.querySelectorAll('.home-grid-layout'));
+                const targetPageIndex = allGrids.indexOf(targetGrid);
+
+                // 如果基础信息丢失，回退重绘
+                if (!dragId || !targetGrid || targetPageIndex === -1) {
+                    setupHomeScreen();
+                    if (isHomeEditMode) enterHomeEditMode();
+                    currentDragX = 0;
+                    currentDragY = 0;
+                    return;
+                }
+
+                // 获取松手指针坐标
+                let clientX = currentDragX;
+                let clientY = currentDragY;
+                if (evt.originalEvent) {
+                    const orig = evt.originalEvent;
+                    const touch = (orig.changedTouches && orig.changedTouches[0]) || (orig.touches && orig.touches[0]);
+                    if (touch && typeof touch.clientX === 'number') {
+                        clientX = touch.clientX;
+                        clientY = touch.clientY;
+                    } else if (typeof orig.clientX === 'number') {
+                        clientX = orig.clientX;
+                        clientY = orig.clientY;
+                    }
+                }
+
+                // 获取项目尺寸规格
+                const dragRows = parseInt(dragEl.getAttribute('data-rows')) || 1;
+                const dragCols = parseInt(dragEl.getAttribute('data-cols')) || 1;
+
+                // 计算相对于目标网格内部有效区域的行列坐标
+                const rect = targetGrid.getBoundingClientRect();
+                const style = window.getComputedStyle(targetGrid);
+                const padLeft = parseFloat(style.paddingLeft) || 15;
+                const padRight = parseFloat(style.paddingRight) || 15;
+                const padTop = parseFloat(style.paddingTop) || 5;
+                const padBottom = parseFloat(style.paddingBottom) || 5;
+                const colGap = parseFloat(style.columnGap) || parseFloat(style.gap) || 15;
+                const rowGap = parseFloat(style.rowGap) || parseFloat(style.gap) || 15;
+
+                const gridW = Math.max(1, rect.width - padLeft - padRight);
+                const gridH = Math.max(1, rect.height - padTop - padBottom);
+
+                const relX = clientX - rect.left - padLeft;
+                const relY = clientY - rect.top - padTop;
+
+                // 精确匹配 4 列 6 行 + gap 的单格宽高与步进跨度
+                const cellW = Math.max(1, (gridW - 3 * colGap) / 4);
+                const cellH = Math.max(1, (gridH - 5 * rowGap) / 6);
+                const stepX = cellW + colGap;
+                const stepY = cellH + rowGap;
+
+                let targetC = Math.floor((relX + colGap / 2) / stepX);
+                let targetR = Math.floor((relY + rowGap / 2) / stepY);
+
+                // 边界约束与对齐（防止超出 4x6 网格）
+                targetC = Math.max(0, Math.min(4 - dragCols, targetC));
+                targetR = Math.max(0, Math.min(6 - dragRows, targetR));
+
+                // 目标页现有项目（排除正在拖拽的自身项）
+                const targetPageList = (db.homeLayoutPages[targetPageIndex] || []).filter(it => (it.id || it) !== dragId);
+
+                // 矩形碰撞检测：检查目标区域内是否与其它已有组件重叠
+                const hasCollision = targetPageList.some(it => {
+                    const r = typeof it.r === 'number' ? it.r : 0;
+                    const c = typeof it.c === 'number' ? it.c : 0;
+                    const rows = it.rows || 1;
+                    const cols = it.cols || 1;
+                    return !(targetR + dragRows <= r ||
+                             r + rows <= targetR ||
+                             targetC + dragCols <= c ||
+                             c + cols <= targetC);
+                });
+
+                let finalPageIndex = targetPageIndex;
+
+                // 方案 A（原生防碰撞）：若发生碰撞，弹回原位，不移动或挤压其他图标
+                if (hasCollision) {
+                    if (typeof triggerHapticFeedback === 'function') {
+                        triggerHapticFeedback('medium');
+                    }
+                    // 找到原所在页保持 swiper 视角
+                    for (let pIdx = 0; pIdx < db.homeLayoutPages.length; pIdx++) {
+                        if (db.homeLayoutPages[pIdx].some(it => (it.id || it) === dragId)) {
+                            finalPageIndex = pIdx;
+                            break;
+                        }
+                    }
+                } else {
+                    // 无碰撞：更新坐标与所在页面
+                    // 1. 从所有页中移除该项目
+                    db.homeLayoutPages.forEach((page, pIdx) => {
+                        db.homeLayoutPages[pIdx] = page.filter(it => (it.id || it) !== dragId);
+                    });
+
+                    // 2. 补齐目标页（如果拖拽到新页面）
+                    while (db.homeLayoutPages.length <= targetPageIndex) {
+                        db.homeLayoutPages.push([]);
+                    }
+
+                    // 3. 将带新坐标的项目加入目标页
+                    db.homeLayoutPages[targetPageIndex].push({
+                        id: dragId,
+                        r: targetR,
+                        c: targetC,
+                        rows: dragRows,
+                        cols: dragCols
+                    });
+
+                    // 4. 清理末尾的多余空页面（至少保留一页）
+                    while (db.homeLayoutPages.length > 1 && db.homeLayoutPages[db.homeLayoutPages.length - 1].length === 0) {
+                        db.homeLayoutPages.pop();
+                    }
+                    if (finalPageIndex >= db.homeLayoutPages.length) {
+                        finalPageIndex = Math.max(0, db.homeLayoutPages.length - 1);
+                    }
+
+                    // 5. 同步扁平化 order 保持兼容性
+                    db.homeLayoutOrder = db.homeLayoutPages.flat().map(it => it.id || it);
+
+                    if (typeof saveData === 'function') {
+                        await saveData();
+                    }
+                }
+
+                // 重新渲染以呈现最新状态
+                const wasEditMode = isHomeEditMode;
+                setupHomeScreen();
+                if (wasEditMode) {
+                    enterHomeEditMode();
+                }
+
+                // 保持 swiper 处于当前操作页面
+                const swiperEl = document.getElementById('home-screen-swiper');
+                if (swiperEl) {
+                    swiperEl.style.scrollSnapType = 'x mandatory';
+                    swiperEl.scrollTo({ left: finalPageIndex * swiperEl.clientWidth, behavior: 'instant' });
+                }
+
                 currentDragX = 0;
+                currentDragY = 0;
             }
         });
         homeSortables.push(sortable);

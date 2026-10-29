@@ -1,5 +1,13 @@
 // --- 主程序入口 (js/main.js) ---
 
+// 禁用 Safari 等移动端长按弹出原生菜单/放大镜（输入框保留）
+document.addEventListener('contextmenu', (e) => {
+    const isInputElement = e.target.closest('input, textarea, [contenteditable="true"]');
+    if (!isInputElement) {
+        e.preventDefault();
+    }
+});
+
 // 注册 Service Worker
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {

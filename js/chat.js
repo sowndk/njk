@@ -602,6 +602,8 @@ html::-webkit-scrollbar, body::-webkit-scrollbar {
         }
     });
     
+    let swipeTouchState = null;
+
     messageArea.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         if (e.target.id === 'load-more-btn' || isInMultiSelectMode) return;
@@ -609,17 +611,121 @@ html::-webkit-scrollbar, body::-webkit-scrollbar {
         if (!messageWrapper) return;
         handleMessageLongPress(messageWrapper, e.clientX, e.clientY);
     });
+
     messageArea.addEventListener('touchstart', (e) => {
         if (e.target.id === 'load-more-btn') return;
+        // 如果手势来自多图堆叠卡片区域，不触发整条消息的滑动引用
+        if (e.target.closest('.stacked-images-container') || e.target.closest('.image-bubble-stack')) {
+            swipeTouchState = null;
+            return;
+        }
         const messageWrapper = e.target.closest('.message-wrapper');
-        if (!messageWrapper) return;
+        if (!messageWrapper) {
+            swipeTouchState = null;
+            return;
+        }
+
+        const touch = e.touches[0];
+        const messageId = messageWrapper.dataset.id;
+
+        // 不支持引用的消息类型（如不可见消息、撤回消息）不触发滑动
+        let canSwipe = false;
+        if (!isInMultiSelectMode && messageId) {
+            const chat = (currentChatType === 'private') ? db.characters.find(c => c.id === currentChatId) : db.groups.find(g => g.id === currentChatId);
+            const msg = chat && chat.history ? chat.history.find(m => m.id === messageId) : null;
+            if (msg && !msg.isWithdrawn) {
+                let invisibleRegex = chat.showStatusUpdateMsg
+                    ? /\[.*?(?:接收|退回).*?的转账\]|\[.*?已接收礼物\]|\[system:.*?\]|\[.*?邀请.*?加入了群聊\]|\[.*?修改群名为：.*?\]|\[system-display:.*?\]/
+                    : /\[.*?(?:接收|退回).*?的转账\]|\[.*?更新状态为：.*?\]|\[.*?已接收礼物\]|\[system:.*?\]|\[.*?邀请.*?加入了群聊\]|\[.*?修改群名为：.*?\]|\[system-display:.*?\]/;
+                canSwipe = !invisibleRegex.test(msg.content);
+            }
+        }
+
+        swipeTouchState = {
+            wrapper: messageWrapper,
+            messageId: messageId,
+            canSwipe: canSwipe,
+            startX: touch.clientX,
+            startY: touch.clientY,
+            currentX: touch.clientX,
+            currentY: touch.clientY,
+            swiping: false,
+            triggered: false
+        };
+
         longPressTimer = setTimeout(() => {
-            const touch = e.touches[0];
-            handleMessageLongPress(messageWrapper, touch.clientX, touch.clientY);
+            if (swipeTouchState && !swipeTouchState.swiping) {
+                handleMessageLongPress(messageWrapper, touch.clientX, touch.clientY);
+            }
         }, 400);
+    }, { passive: true });
+
+    messageArea.addEventListener('touchmove', (e) => {
+        if (!swipeTouchState) {
+            clearTimeout(longPressTimer);
+            return;
+        }
+
+        const touch = e.touches[0];
+        const deltaX = touch.clientX - swipeTouchState.startX;
+        const deltaY = touch.clientY - swipeTouchState.startY;
+
+        // 如果纵向移动明显大于横向移动，视为列表滚动，取消长按和滑动
+        if (Math.abs(deltaY) > 10 && Math.abs(deltaY) > Math.abs(deltaX)) {
+            clearTimeout(longPressTimer);
+            if (swipeTouchState.swiping) {
+                swipeTouchState.wrapper.style.transition = 'transform 0.2s ease-out';
+                swipeTouchState.wrapper.style.transform = '';
+            }
+            swipeTouchState = null;
+            return;
+        }
+
+        // 如果是向左滑动且横向距离超过阈值（如 > 10px）
+        if (deltaX < -10 && Math.abs(deltaX) > Math.abs(deltaY)) {
+            clearTimeout(longPressTimer);
+            if (swipeTouchState.canSwipe) {
+                swipeTouchState.swiping = true;
+                // 最大向左位移限制（如最大 80px），带有阻尼感
+                const dragDistance = Math.min(80, Math.max(0, -deltaX * 0.7));
+                swipeTouchState.wrapper.style.transition = 'none';
+                swipeTouchState.wrapper.style.transform = `translateX(-${dragDistance}px)`;
+
+                // 达到左滑触发阈值（50px）
+                if (-deltaX >= 50 && !swipeTouchState.triggered) {
+                    swipeTouchState.triggered = true;
+                    if (typeof triggerHapticFeedback === 'function') {
+                        triggerHapticFeedback('light');
+                    }
+                }
+            }
+        }
+    }, { passive: true });
+
+    messageArea.addEventListener('touchend', () => {
+        clearTimeout(longPressTimer);
+        if (swipeTouchState) {
+            if (swipeTouchState.wrapper) {
+                swipeTouchState.wrapper.style.transition = 'transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1)';
+                swipeTouchState.wrapper.style.transform = '';
+            }
+            if (swipeTouchState.triggered && swipeTouchState.canSwipe) {
+                startQuoteReply(swipeTouchState.messageId);
+            }
+            swipeTouchState = null;
+        }
     });
-    messageArea.addEventListener('touchend', () => clearTimeout(longPressTimer));
-    messageArea.addEventListener('touchmove', () => clearTimeout(longPressTimer));
+
+    messageArea.addEventListener('touchcancel', () => {
+        clearTimeout(longPressTimer);
+        if (swipeTouchState) {
+            if (swipeTouchState.wrapper) {
+                swipeTouchState.wrapper.style.transition = 'transform 0.2s ease-out';
+                swipeTouchState.wrapper.style.transform = '';
+            }
+            swipeTouchState = null;
+        }
+    });
     
     const messageEditForm = document.getElementById('message-edit-form');
     if(messageEditForm) {
