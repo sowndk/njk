@@ -505,7 +505,7 @@ const contentMatch = content.match(/^\[.*?(?:消息|回复)[：:]([\s\S]+)\]$/);
     const groupTransferRegex = /\[(.*?)\s*向\s*(.*?)\s*转账[：:]([\d.,]+)元[；;]备注[：:](.*?)\]/;
     const privateGiftRegex = /\[(?:.+?)送来的礼物[：:]([\s\S]+?)\]/;
     const groupGiftRegex = /\[(.*?)\s*向\s*(.*?)\s*送来了礼物[：:]([\s\S]+?)\]/;
-    const imageRecogRegex = /\[.*?发来了一张图片[：:]\]/;
+    const imageRecogRegex = /\[.*?发来了(?:一张|\d+张)图片[：:]\]/;
     const textRegex = /\[(?:.+?)的消息[：:]([\s\S]+?)\]/;
     const redPacketRegex = /\[(.*?)发出了一个拼手气红包[：:](.*?)元[；;]留言[：:](.*?)\]/;
     
@@ -951,9 +951,107 @@ const contentMatch = content.match(/^\[.*?(?:消息|回复)[：:]([\s\S]+)\]$/);
         const remarkHTML = remarkText ? `<p class="transfer-remark">${remarkText}</p>` : '';
         bubbleElement.innerHTML = `<div class="overlay"></div><div class="transfer-content"><p class="transfer-title">${titleText}</p><p class="transfer-amount">¥${amount}</p>${remarkHTML}<p class="transfer-status">${statusText}</p></div>`;
     } else if (imageRecogMatch || urlRegex.test(content)) {
-        bubbleElement = document.createElement('div');
-        bubbleElement.className = 'image-bubble';
-        bubbleElement.innerHTML = `<img src="${content}" alt="图片消息">`;
+        const imgList = (message && Array.isArray(message.images) && message.images.length > 0)
+            ? message.images
+            : (message && Array.isArray(message.parts)
+                ? message.parts.filter(p => p.type === 'image' && p.data).map(p => p.data)
+                : []);
+
+        if (imgList.length > 1) {
+            bubbleElement = document.createElement('div');
+            bubbleElement.className = 'image-bubble image-bubble-stack';
+
+            const container = document.createElement('div');
+            container.className = 'stacked-images-container';
+
+            let currentIndex = 0;
+            const total = imgList.length;
+
+            const cards = imgList.map((imgSrc, idx) => {
+                const card = document.createElement('div');
+                card.className = 'stacked-image-card';
+                const img = document.createElement('img');
+                img.src = imgSrc;
+                img.alt = `图片 ${idx + 1}`;
+                card.appendChild(img);
+                container.appendChild(card);
+                return card;
+            });
+
+            function updateCardsPosition() {
+                cards.forEach((card, idx) => {
+                    const offset = idx - currentIndex;
+                    card.classList.remove('active', 'prev', 'next', 'hidden');
+                    if (offset === 0) {
+                        card.classList.add('active');
+                        card.style.transform = 'translate3d(0, 0, 0) scale(1)';
+                        card.style.zIndex = '3';
+                        card.style.opacity = '1';
+                    } else if (offset === 1) {
+                        card.classList.add('next');
+                        card.style.transform = 'translate3d(14px, 0, -20px) scale(0.92)';
+                        card.style.zIndex = '2';
+                        card.style.opacity = '0.75';
+                    } else if (offset === 2) {
+                        card.classList.add('next');
+                        card.style.transform = 'translate3d(26px, 0, -40px) scale(0.85)';
+                        card.style.zIndex = '1';
+                        card.style.opacity = '0.5';
+                    } else if (offset === -1) {
+                        card.classList.add('prev');
+                        card.style.transform = 'translate3d(-14px, 0, -20px) scale(0.92)';
+                        card.style.zIndex = '2';
+                        card.style.opacity = '0.75';
+                    } else {
+                        card.classList.add('hidden');
+                        card.style.transform = offset < 0 ? 'translate3d(-35px, 0, -60px) scale(0.75)' : 'translate3d(35px, 0, -60px) scale(0.75)';
+                        card.style.zIndex = '0';
+                        card.style.opacity = '0';
+                    }
+                });
+            }
+
+            let startX = 0;
+            let startY = 0;
+            let isSwiping = false;
+
+            container.addEventListener('touchstart', (e) => {
+                if (e.touches.length !== 1) return;
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                isSwiping = true;
+                e.stopPropagation();
+            }, { passive: true });
+
+            container.addEventListener('touchend', (e) => {
+                if (!isSwiping || e.changedTouches.length === 0) return;
+                isSwiping = false;
+                const deltaX = e.changedTouches[0].clientX - startX;
+                const deltaY = e.changedTouches[0].clientY - startY;
+
+                // 水平滑动距离大于 30px 且明显大于垂直滚动时触发翻页
+                if (Math.abs(deltaX) > 30 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
+                    e.stopPropagation();
+                    if (deltaX < 0 && currentIndex < total - 1) {
+                        // 左滑查看下一张
+                        currentIndex++;
+                        updateCardsPosition();
+                    } else if (deltaX > 0 && currentIndex > 0) {
+                        // 右滑查看上一张
+                        currentIndex--;
+                        updateCardsPosition();
+                    }
+                }
+            }, { passive: true });
+
+            updateCardsPosition();
+            bubbleElement.appendChild(container);
+        } else {
+            const singleSrc = (imgList.length === 1) ? imgList[0] : content;
+            bubbleElement = document.createElement('div');
+            bubbleElement.className = 'image-bubble';
+            bubbleElement.innerHTML = `<img src="${singleSrc}" alt="图片消息">`;
+        }
     } else if (textMatch) {
         bubbleElement = document.createElement('div');
         bubbleElement.className = `message-bubble ${isSent ? 'sent' : 'received'}`;

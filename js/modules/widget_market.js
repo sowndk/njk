@@ -441,6 +441,19 @@ async function initBuiltInWidgets() {
                 });
                 
                 db.homeLayoutOrder[i] = newInstanceId;
+                // 同步替换 homeLayoutPages 中的旧内置组件 ID，防止产生悬空引用
+                if (db.homeLayoutPages) {
+                    db.homeLayoutPages = db.homeLayoutPages.map(page =>
+                        (page || []).map(item => {
+                            if (typeof item === 'string') {
+                                return item === oldId ? newInstanceId : item;
+                            } else if (item && item.id === oldId) {
+                                return { ...item, id: newInstanceId };
+                            }
+                            return item;
+                        })
+                    );
+                }
                 orderChanged = true;
                 changed = true;
             }
@@ -879,9 +892,7 @@ function renderWidgetList(container, templates, isModal = false, isTemplateLibra
                 if (!db.addedWidgets) db.addedWidgets = [];
                 db.addedWidgets.push(newInstance);
                 
-                if (!db.homeLayoutPages) db.homeLayoutPages = [[]];
-                db.homeLayoutPages[0].push(instanceId);
-                
+                // 仅更新扁平列表，具体坐标由 setupHomeScreen() 自动寻找首个空闲槽位并写入 homeLayoutPages，避免覆盖已摆好的自由坐标
                 if (!db.homeLayoutOrder) db.homeLayoutOrder = [];
                 db.homeLayoutOrder.push(instanceId);
                 
@@ -919,11 +930,19 @@ async function deleteWidgets(ids) {
     if (db.addedWidgets) {
         db.addedWidgets = db.addedWidgets.filter(w => !ids.includes(w.templateId));
     }
-    // 清理布局顺序
+    // 清理布局顺序与分页坐标数据
+    const validInstanceIds = db.addedWidgets ? db.addedWidgets.map(w => w.id) : [];
     if (db.homeLayoutOrder) {
-        const validInstanceIds = db.addedWidgets ? db.addedWidgets.map(w => w.id) : [];
         db.homeLayoutOrder = db.homeLayoutOrder.filter(id => 
             !id.startsWith('custom-widget-') || validInstanceIds.includes(id)
+        );
+    }
+    if (db.homeLayoutPages) {
+        db.homeLayoutPages = db.homeLayoutPages.map(page =>
+            (page || []).filter(it => {
+                const itemId = typeof it === 'string' ? it : (it && it.id);
+                return !itemId || !itemId.startsWith('custom-widget-') || validInstanceIds.includes(itemId);
+            })
         );
     }
     await saveData();

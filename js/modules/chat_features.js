@@ -91,35 +91,56 @@ function setupImageRecognition() {
         imageUploadInput.click();
     });
     imageUploadInput.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            try {
+        const fileList = Array.from(e.target.files || []);
+        if (fileList.length === 0) return;
+
+        if (fileList.length > 9) {
+            showToast('最多只能选择 9 张图片，已截取前 9 张');
+        }
+        const selectedFiles = fileList.slice(0, 9);
+
+        try {
+            const compressedUrls = [];
+            for (const file of selectedFiles) {
                 const compressedUrl = await compressImage(file, {
                     quality: 0.8,
                     maxWidth: 1024,
                     maxHeight: 1024
                 });
-                sendImageForRecognition(compressedUrl);
-            } catch (error) {
-                console.error('Image compression failed:', error);
-                showToast('图片处理失败，请重试');
-            } finally {
-                e.target.value = null;
+                compressedUrls.push(compressedUrl);
             }
+            await sendImageForRecognition(compressedUrls);
+        } catch (error) {
+            console.error('Image compression failed:', error);
+            showToast('图片处理失败，请重试');
+        } finally {
+            e.target.value = null;
         }
     });
 }
 
-async function sendImageForRecognition(base64Data) {
-    if (!base64Data || isGenerating) return;
+async function sendImageForRecognition(base64DataOrArray) {
+    if (!base64DataOrArray || isGenerating) return;
+    const images = Array.isArray(base64DataOrArray) ? base64DataOrArray.filter(Boolean) : [base64DataOrArray];
+    if (images.length === 0) return;
+
     const chat = (currentChatType === 'private') ? db.characters.find(c => c.id === currentChatId) : db.groups.find(g => g.id === currentChatId);
     const myName = (currentChatType === 'private') ? chat.myName : chat.me.nickname;
-    const textPrompt = `[${myName}发来了一张图片：]`;
+    const textPrompt = images.length > 1 
+        ? `[${myName}发来了${images.length}张图片：]`
+        : `[${myName}发来了一张图片：]`;
+
+    const parts = [{type: 'text', text: textPrompt}];
+    images.forEach(imgData => {
+        parts.push({type: 'image', data: imgData});
+    });
+
     const message = {
         id: `msg_${Date.now()}`,
         role: 'user',
-        content: base64Data,
-        parts: [{type: 'text', text: textPrompt}, {type: 'image', data: base64Data}],
+        content: images[0],
+        images: images,
+        parts: parts,
         timestamp: Date.now(),
     };
     if (currentChatType === 'group') {

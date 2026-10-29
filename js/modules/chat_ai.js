@@ -101,10 +101,31 @@ async function getAiReply(chatId, chatType, isBackground = false) {
             systemPrompt += "\n\n以下为当前聊天记录：\n";
         }
 
+        // === 【A+B 方案：真图当轮限流 + 历史轻量标签保留 5 轮】 ===
+        // 1. 找到 historySlice 中最后一条带有真实图片/多模态 parts 的用户消息索引
+        let lastUserImageMsgIndex = -1;
+        for (let i = historySlice.length - 1; i >= 0; i--) {
+            const m = historySlice[i];
+            if (m.role === 'user' && m.parts && m.parts.some(p => p.type === 'image')) {
+                lastUserImageMsgIndex = i;
+                break;
+            }
+        }
+
+        // 2. 统计每条历史消息距离最新一轮消息的轮数差距（计算 user/assistant 交互轮数）
+        // 历史标签保留最近 5 轮以内的图片描述；超出 5 轮则淡出或剥离占位
+        const getRecentTurnDistance = (msgIndex, totalLen) => {
+            let turns = 0;
+            for (let i = msgIndex + 1; i < totalLen; i++) {
+                if (historySlice[i].role === 'user') turns++;
+            }
+            return turns;
+        };
+
         if (provider === 'gemini') {
             let lastMsgTimeForAI = 0;
             let lastTimeMarkerForAI = 0;
-            const contents = historySlice.map(msg => {
+            const contents = historySlice.map((msg, msgIndex) => {
                 const role = msg.role === 'assistant' ? 'model' : 'user';
                 
                 let prefix = '';
@@ -129,13 +150,24 @@ async function getAiReply(chatId, chatType, isBackground = false) {
 
                 let parts;
                 if (msg.parts && msg.parts.length > 0) {
+                    const isLatestImageMsg = (msgIndex === lastUserImageMsgIndex);
+                    const turnDistance = getRecentTurnDistance(msgIndex, historySlice.length);
+                    const isWithin5Turns = turnDistance <= 5;
+
                     parts = msg.parts.map(p => {
                         if (p.type === 'text' || p.type === 'html') {
                             return {text: p.text};
                         } else if (p.type === 'image') {
-                            const match = p.data.match(/^data:(image\/(.+));base64,(.*)$/);
-                            if (match) {
-                                return {inline_data: {mime_type: match[1], data: match[3]}};
+                            // 方案 A+B：真图仅保留当轮；历史轮次在 5 轮内降级为文字标签，超出 5 轮则忽略
+                            if (isLatestImageMsg) {
+                                const match = p.data.match(/^data:(image\/(.+));base64,(.*)$/);
+                                if (match) {
+                                    return {inline_data: {mime_type: match[1], data: match[3]}};
+                                }
+                            } else if (isWithin5Turns) {
+                                // 历史 5 轮内保留轻量文字标签
+                                const tag = msg.imageSummary || msg.imageCaption || '[用户先前发送的图片]';
+                                return {text: `[图片内容参考: ${tag}]`};
                             }
                         }
                         return null;
@@ -280,7 +312,7 @@ async function getAiReply(chatId, chatType, isBackground = false) {
 
             let lastTimeMarkerForAI = 0;
             
-            historySlice.forEach(msg => {
+            historySlice.forEach((msg, msgIndex) => {
                let content;
                let prefix = '';
                
@@ -304,6 +336,9 @@ async function getAiReply(chatId, chatType, isBackground = false) {
                } else {
                    if (msg.parts && msg.parts.length > 0) {
                        let prefixAdded = false;
+                       const isLatestImageMsg = (msgIndex === lastUserImageMsgIndex);
+                       const turnDistance = getRecentTurnDistance(msgIndex, historySlice.length);
+                       const isWithin5Turns = turnDistance <= 5;
                        
                        content = msg.parts.map(p => {
                            if (p.type === 'text' || p.type === 'html') {
@@ -311,7 +346,13 @@ async function getAiReply(chatId, chatType, isBackground = false) {
                                prefixAdded = true;
                                return {type: 'text', text: textContent};
                            } else if (p.type === 'image') {
-                               return {type: 'image_url', image_url: {url: p.data}};
+                               // 方案 A+B：真图仅保留当轮；历史轮次在 5 轮内降级为文字标签，超出 5 轮则忽略
+                               if (isLatestImageMsg) {
+                                   return {type: 'image_url', image_url: {url: p.data}};
+                               } else if (isWithin5Turns) {
+                                   const tag = msg.imageSummary || msg.imageCaption || '[用户先前发送的图片]';
+                                   return {type: 'text', text: `[图片内容参考: ${tag}]`};
+                               }
                            }
                            return null;
                        }).filter(p => p);
