@@ -114,12 +114,28 @@ async function getAiReply(chatId, chatType, isBackground = false) {
 
         // 2. 统计每条历史消息距离最新一轮消息的轮数差距（计算 user/assistant 交互轮数）
         // 历史标签保留最近 5 轮以内的图片描述；超出 5 轮则淡出或剥离占位
+        // 轮数 = 该消息之后 AI 回复的条数（0 表示 AI 尚未看过这张图，即发图当轮）
         const getRecentTurnDistance = (msgIndex, totalLen) => {
             let turns = 0;
             for (let i = msgIndex + 1; i < totalLen; i++) {
-                if (historySlice[i].role === 'user') turns++;
+                if (historySlice[i].role === 'assistant') turns++;
             }
             return turns;
+        };
+        // 图片文字标签：优先用持久化字段，否则取 AI 看图那轮回复的前 120 字（零额外 Token 调用）
+        const getImageTag = (msgIndex) => {
+            const m = historySlice[msgIndex];
+            if (m.imageSummary || m.imageCaption) return m.imageSummary || m.imageCaption;
+            const n = (m.parts || []).filter(p => p.type === 'image').length;
+            for (let i = msgIndex + 1; i < historySlice.length; i++) {
+                const r = historySlice[i];
+                if (r.role === 'assistant') {
+                    const t = String(r.content || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+                    if (t) return `${n}张图片，你当时看图后的回复：${t.slice(0, 120)}`;
+                    break;
+                }
+            }
+            return `用户先前发送的${n}张图片`;
         };
 
         if (provider === 'gemini') {
@@ -150,7 +166,7 @@ async function getAiReply(chatId, chatType, isBackground = false) {
 
                 let parts;
                 if (msg.parts && msg.parts.length > 0) {
-                    const isLatestImageMsg = (msgIndex === lastUserImageMsgIndex);
+                    const isLatestImageMsg = (msgIndex === lastUserImageMsgIndex) && getRecentTurnDistance(msgIndex, historySlice.length) === 0;
                     const turnDistance = getRecentTurnDistance(msgIndex, historySlice.length);
                     const isWithin5Turns = turnDistance <= 5;
 
@@ -166,7 +182,7 @@ async function getAiReply(chatId, chatType, isBackground = false) {
                                 }
                             } else if (isWithin5Turns) {
                                 // 历史 5 轮内保留轻量文字标签
-                                const tag = msg.imageSummary || msg.imageCaption || '[用户先前发送的图片]';
+                                const tag = getImageTag(msgIndex);
                                 return {text: `[图片内容参考: ${tag}]`};
                             }
                         }
@@ -336,7 +352,7 @@ async function getAiReply(chatId, chatType, isBackground = false) {
                } else {
                    if (msg.parts && msg.parts.length > 0) {
                        let prefixAdded = false;
-                       const isLatestImageMsg = (msgIndex === lastUserImageMsgIndex);
+                       const isLatestImageMsg = (msgIndex === lastUserImageMsgIndex) && getRecentTurnDistance(msgIndex, historySlice.length) === 0;
                        const turnDistance = getRecentTurnDistance(msgIndex, historySlice.length);
                        const isWithin5Turns = turnDistance <= 5;
                        
@@ -350,7 +366,7 @@ async function getAiReply(chatId, chatType, isBackground = false) {
                                if (isLatestImageMsg) {
                                    return {type: 'image_url', image_url: {url: p.data}};
                                } else if (isWithin5Turns) {
-                                   const tag = msg.imageSummary || msg.imageCaption || '[用户先前发送的图片]';
+                                   const tag = getImageTag(msgIndex);
                                    return {type: 'text', text: `[图片内容参考: ${tag}]`};
                                }
                            }
