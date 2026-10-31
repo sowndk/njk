@@ -340,42 +340,6 @@ updateClock_{{id}}();`,
             "signature": "编辑个性签名..."
         }
     },
-    {
-        id: "builtin-placeholder-1x1",
-        name: "透明占位块 (1x1)",
-        size: "1x1",
-        html: `<div id="{{id}}" class="home-widget-placeholder"></div>`,
-        css: ``,
-        js: ``,
-        defaultVars: {}
-    },
-    {
-        id: "builtin-placeholder-2x2",
-        name: "透明占位块 (2x2)",
-        size: "2x2",
-        html: `<div id="{{id}}" class="home-widget-placeholder"></div>`,
-        css: ``,
-        js: ``,
-        defaultVars: {}
-    },
-    {
-        id: "builtin-placeholder-4x2",
-        name: "透明占位块 (4x2)",
-        size: "4x2",
-        html: `<div id="{{id}}" class="home-widget-placeholder"></div>`,
-        css: ``,
-        js: ``,
-        defaultVars: {}
-    },
-    {
-        id: "builtin-placeholder-4x4",
-        name: "透明占位块 (4x4)",
-        size: "4x4",
-        html: `<div id="{{id}}" class="home-widget-placeholder"></div>`,
-        css: ``,
-        js: ``,
-        defaultVars: {}
-    }
 ];
 
 // 初始化预置模板
@@ -385,6 +349,20 @@ async function initBuiltInWidgets() {
     }
     
     let changed = false;
+    // 清理可能已保存在用户数据中的透明占位组件
+    const placeholderIds = ['builtin-placeholder-1x1', 'builtin-placeholder-2x2', 'builtin-placeholder-4x2', 'builtin-placeholder-4x4'];
+    const initialTplCount = db.widgetTemplates.length;
+    db.widgetTemplates = db.widgetTemplates.filter(t => !placeholderIds.includes(t.id));
+    if (db.widgetTemplates.length !== initialTplCount) {
+        changed = true;
+    }
+    if (db.addedWidgets) {
+        const initialAddedCount = db.addedWidgets.length;
+        db.addedWidgets = db.addedWidgets.filter(w => !placeholderIds.includes(w.templateId));
+        if (db.addedWidgets.length !== initialAddedCount) {
+            changed = true;
+        }
+    }
     
     // 注入提取的内置组件到“我的组件”
     extractedBuiltInTemplates.forEach(tpl => {

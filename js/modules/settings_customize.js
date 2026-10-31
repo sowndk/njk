@@ -774,21 +774,21 @@ function renderHomeLayoutPresets() {
 
         const applyBtn = document.createElement('button');
         applyBtn.className = 'btn btn-primary';
-        applyBtn.style.cssText = 'padding:5px 8px;font-size:12px;border-radius:6px;';
+        applyBtn.style.cssText = 'padding:4px 8px;font-size:12px;border-radius:6px;';
         applyBtn.textContent = '应用';
         applyBtn.onclick = () => applyHomeLayoutPreset(idx);
         btnWrap.appendChild(applyBtn);
 
         const renameBtn = document.createElement('button');
         renameBtn.className = 'btn';
-        renameBtn.style.cssText = 'padding:5px 8px;font-size:12px;border-radius:6px;';
+        renameBtn.style.cssText = 'padding:4px 8px;font-size:12px;border-radius:6px;';
         renameBtn.textContent = '重命名';
         renameBtn.onclick = () => renameHomeLayoutPreset(idx);
         btnWrap.appendChild(renameBtn);
 
         const delBtn = document.createElement('button');
         delBtn.className = 'btn btn-danger';
-        delBtn.style.cssText = 'padding:5px 8px;font-size:12px;border-radius:6px;';
+        delBtn.style.cssText = 'padding:4px 8px;font-size:12px;border-radius:6px;';
         delBtn.textContent = '删除';
         delBtn.onclick = () => deleteHomeLayoutPreset(idx);
         btnWrap.appendChild(delBtn);

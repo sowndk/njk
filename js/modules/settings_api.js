@@ -441,13 +441,8 @@ function openApiManageModal() {
         btns.style.display = 'flex';
         btns.style.gap = '6px';
 
-        const applyBtn = document.createElement('button');
-        applyBtn.className = 'btn';
-        applyBtn.textContent = '应用';
-        applyBtn.onclick = function(){ applyApiPreset(p.name); modal.style.display='none'; };
-
         const renameBtn = document.createElement('button');
-        renameBtn.className = 'btn';
+        renameBtn.className = 'btn'; renameBtn.style.cssText = 'padding:4px 8px;font-size:12px;border-radius:6px;width:auto;min-width:unset;';
         renameBtn.textContent = '重命名';
         renameBtn.onclick = function(){
             const newName = prompt('输入新名称：', p.name);
@@ -460,11 +455,11 @@ function openApiManageModal() {
         };
 
         const delBtn = document.createElement('button');
-        delBtn.className = 'btn';
+        delBtn.className = 'btn'; delBtn.style.cssText = 'padding:4px 8px;font-size:12px;border-radius:6px;width:auto;min-width:unset;';
         delBtn.textContent = '删除';
         delBtn.onclick = function(){ if(!confirm('确定删除 "'+p.name+'" ?')) return; const all=_getApiPresets(); all.splice(idx,1); _saveApiPresets(all); openApiManageModal(); populateApiSelect(); };
 
-        btns.appendChild(applyBtn); btns.appendChild(renameBtn); btns.appendChild(delBtn);
+        btns.appendChild(renameBtn); btns.appendChild(delBtn);
 
         row.appendChild(left); row.appendChild(btns);
         list.appendChild(row);

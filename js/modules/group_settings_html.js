@@ -271,7 +271,7 @@ const groupSettingsHtml = `
                              <textarea id="setting-group-custom-bubble-css" rows="4" placeholder="CSS代码..." style="width:100%; border:1px solid #eee; border-radius:8px; padding:5px;" disabled></textarea>
                              <div class="bubble-preset-toolbar">
                                  <select id="group-bubble-preset-select"><option value="">选择预设</option></select>
-                                 <button type="button" id="group-save-preset-btn" class="btn btn-preset-action">存</button>
+                                 <button type="button" id="group-save-preset-btn" class="btn btn-preset-action">更新</button>
                                  <button type="button" id="group-manage-presets-btn" class="btn btn-preset-action">管</button>
                                  <button type="button" id="group-export-preset-btn" class="btn btn-preset-action">导出</button>
                                  <button type="button" id="group-import-preset-btn" class="btn btn-preset-action">导入</button>
