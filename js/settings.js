@@ -989,11 +989,6 @@ function openApiManageModal() {
         btns.style.display = 'flex';
         btns.style.gap = '6px';
 
-        const applyBtn = document.createElement('button');
-        applyBtn.className = 'btn';
-        applyBtn.textContent = '应用';
-        applyBtn.onclick = function(){ applyApiPreset(p.name); modal.style.display='none'; };
-
         const renameBtn = document.createElement('button');
         renameBtn.className = 'btn';
         renameBtn.textContent = '重命名';
@@ -1012,7 +1007,7 @@ function openApiManageModal() {
         delBtn.textContent = '删除';
         delBtn.onclick = function(){ if(!confirm('确定删除 "'+p.name+'" ?')) return; const all=_getApiPresets(); all.splice(idx,1); _saveApiPresets(all); openApiManageModal(); populateApiSelect(); };
 
-        btns.appendChild(applyBtn); btns.appendChild(renameBtn); btns.appendChild(delBtn);
+        btns.appendChild(renameBtn); btns.appendChild(delBtn);
 
         row.appendChild(left); row.appendChild(btns);
         list.appendChild(row);
@@ -1161,19 +1156,41 @@ async function applyPresetToCurrentChat(presetName) {
 }
 
 function saveCurrentTextareaAsPreset() {
-    const textarea = document.getElementById('setting-custom-bubble-css') || document.getElementById('setting-group-custom-bubble-css');
+    let textarea = null;
+    let selectEl = null;
+    let previewBox = null;
+    let chat = null;
+
+    if (currentChatType === 'private') {
+        textarea = document.getElementById('setting-custom-bubble-css');
+        selectEl = document.getElementById('bubble-preset-select');
+        previewBox = document.getElementById('private-bubble-css-preview');
+        chat = db.characters.find(c => c.id === currentChatId);
+    } else {
+        textarea = document.getElementById('setting-group-custom-bubble-css');
+        selectEl = document.getElementById('group-bubble-preset-select');
+        previewBox = document.getElementById('group-bubble-css-preview');
+        chat = db.groups.find(g => g.id === currentChatId);
+    }
+
     if (!textarea) return showToast('找不到自定义 CSS 文本框');
     const css = textarea.value.trim();
-    
-    let name = prompt('请输入预设名称（将覆盖同名预设）:');
-    if (!name) return;
-    
-    const includeSettings = confirm('是否连带当前的各项美化设置（主题、聊天背景、头像圆角、气泡模糊等）一起保存进预设？');
-    
+
+    // 优先读取当前下拉框选中的预设名称
+    const selectedPresetName = selectEl && selectEl.value ? selectEl.value.trim() : '';
+    let name = selectedPresetName;
+
+    if (!name) {
+        name = prompt('当前未选中预设，请输入要更新/保存的预设名称:');
+        if (!name || !name.trim()) return;
+        name = name.trim();
+    }
+
+    const includeSettings = confirm(`确定将当前编辑的气泡代码更新保存到预设「${name}」吗？\n\n点击“确定”将连带更新当前聊天界面的美化配置，点击“取消”仅更新气泡CSS代码。`);
+
     let settings = null;
-    if (includeSettings) {
-        const chat = (currentChatType === 'private') ? db.characters.find(c => c.id === currentChatId) : db.groups.find(g => g.id === currentChatId);
-        if (chat) {
+    if (includeSettings && chat) {
+        if (currentChatType === 'private') {
             settings = {
                 theme: document.getElementById('setting-theme-color') ? document.getElementById('setting-theme-color').value : chat.theme,
                 chatBg: chat.chatBg,
@@ -1186,29 +1203,56 @@ function saveCurrentTextareaAsPreset() {
                 showTimestamp: document.getElementById('setting-show-timestamp') ? document.getElementById('setting-show-timestamp').checked : chat.showTimestamp,
                 timestampStyle: document.getElementById('setting-timestamp-style') ? document.getElementById('setting-timestamp-style').value : chat.timestampStyle
             };
+        } else {
+            settings = {
+                theme: document.getElementById('setting-group-theme-color') ? document.getElementById('setting-group-theme-color').value : chat.theme,
+                chatBg: chat.chatBg,
+                bilingualModeEnabled: document.getElementById('setting-group-bilingual-mode') ? document.getElementById('setting-group-bilingual-mode').checked : chat.bilingualModeEnabled,
+                bilingualBubbleStyle: document.getElementById('setting-group-bilingual-style') ? document.getElementById('setting-group-bilingual-style').value : chat.bilingualBubbleStyle,
+                avatarRadius: document.getElementById('setting-group-avatar-radius') ? parseInt(document.getElementById('setting-group-avatar-radius').value, 10) : chat.avatarRadius,
+                showTimestamp: document.getElementById('setting-group-show-timestamp') ? document.getElementById('setting-group-show-timestamp').checked : chat.showTimestamp,
+                timestampStyle: document.getElementById('setting-group-timestamp-style') ? document.getElementById('setting-group-timestamp-style').value : chat.timestampStyle
+            };
         }
     }
 
     const presets = _getBubblePresets();
     const idx = presets.findIndex(p => p.name === name);
-    
+
     const presetData = { name, css };
     if (settings) {
         presetData.settings = settings;
+    } else if (idx >= 0 && presets[idx].settings) {
+        // 保留原预设已有的美化配置
+        presetData.settings = presets[idx].settings;
     }
-    
+
     if (idx >= 0) {
-        presets[idx].css = css;
-        if (settings) presets[idx].settings = settings;
-        else delete presets[idx].settings;
+        presets[idx] = presetData;
     } else {
         presets.push(presetData);
     }
-    
+
     _saveBubblePresets(presets);
     populateBubblePresetSelect('bubble-preset-select'); 
     populateBubblePresetSelect('group-bubble-preset-select');
-    showToast('预设已保存');
+    if (selectEl) selectEl.value = name;
+
+    // 实时同步更新到当前聊天的配置并刷新预览与数据保存
+    if (chat) {
+        chat.customBubbleCss = css;
+        if (typeof updateBubbleCssPreview === 'function' && previewBox) {
+            const themeKey = chat.theme || 'white_pink';
+            const theme = (typeof colorThemes !== 'undefined' && colorThemes[themeKey]) ? colorThemes[themeKey] : { sent: { bg: '#95ec69', text: '#000' }, received: { bg: '#fff', text: '#000' } };
+            updateBubbleCssPreview(previewBox, css, false, theme);
+        }
+        if (typeof updateCustomBubbleStyle === 'function') {
+            updateCustomBubbleStyle(currentChatId, css, true);
+        }
+        saveData();
+    }
+
+    showToast(`预设「${name}」已更新保存`);
 }
 
 function openManagePresetsModal() {
@@ -1237,15 +1281,9 @@ function openManagePresetsModal() {
         btnWrap.style.display = 'flex';
         btnWrap.style.gap = '6px';
 
-        const applyBtn = document.createElement('button');
-        applyBtn.className = 'btn btn-primary';
-        applyBtn.style.padding = '6px 8px;border-radius:8px';
-        applyBtn.textContent = '应用';
-        applyBtn.onclick = function(){ applyPresetToCurrentChat(p.name); modal.style.display = 'none'; };
-
         const renameBtn = document.createElement('button');
         renameBtn.className = 'btn';
-        renameBtn.style.padding = '6px 8px;border-radius:8px';
+        renameBtn.style.cssText = 'padding:4px 8px;font-size:12px;border-radius:6px;width:auto;min-width:unset;';
         renameBtn.textContent = '重命名';
         renameBtn.onclick = function(){
             const newName = prompt('输入新名称：', p.name);
@@ -1259,7 +1297,7 @@ function openManagePresetsModal() {
 
         const delBtn = document.createElement('button');
         delBtn.className = 'btn btn-danger';
-        delBtn.style.padding = '6px 8px;border-radius:8px';
+        delBtn.style.cssText = 'padding:4px 8px;font-size:12px;border-radius:6px;width:auto;min-width:unset;';
         delBtn.textContent = '删除';
         delBtn.onclick = function(){
             if (!confirm('确定删除预设 \"' + p.name + '\" ?')) return;
@@ -1270,7 +1308,6 @@ function openManagePresetsModal() {
             populateBubblePresetSelect('bubble-preset-select'); populateBubblePresetSelect('group-bubble-preset-select');
         };
 
-        btnWrap.appendChild(applyBtn);
         btnWrap.appendChild(renameBtn);
         btnWrap.appendChild(delBtn);
         row.appendChild(btnWrap);
@@ -1374,15 +1411,9 @@ function openManageMyPersonaModal() {
         btnWrap.style.display = 'flex';
         btnWrap.style.gap = '6px';
 
-        const applyBtn = document.createElement('button');
-        applyBtn.className = 'btn btn-primary';
-        applyBtn.style.padding = '6px 8px;border-radius:8px';
-        applyBtn.textContent = '应用';
-        applyBtn.onclick = function(){ applyMyPersonaPresetToCurrentChat(p.name); modal.style.display = 'none'; };
-
         const renameBtn = document.createElement('button');
         renameBtn.className = 'btn';
-        renameBtn.style.padding = '6px 8px;border-radius:8px';
+        renameBtn.style.cssText = 'padding:4px 8px;font-size:12px;border-radius:6px;width:auto;min-width:unset;';
         renameBtn.textContent = '重命名';
         renameBtn.onclick = function(){
             const newName = prompt('输入新名称：', p.name);
@@ -1396,7 +1427,7 @@ function openManageMyPersonaModal() {
 
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'btn';
-        deleteBtn.style.padding = '6px 8px;border-radius:8px;color:#e53935';
+        deleteBtn.style.cssText = 'padding:4px 8px;font-size:12px;border-radius:6px;width:auto;min-width:unset;color:#e53935;';
         deleteBtn.textContent = '删除';
         deleteBtn.onclick = function(){
             if (!confirm('确认删除该预设？')) return;
@@ -1407,7 +1438,6 @@ function openManageMyPersonaModal() {
             populateMyPersonaSelect();
         };
 
-        btnWrap.appendChild(applyBtn);
         btnWrap.appendChild(renameBtn);
         btnWrap.appendChild(deleteBtn);
         row.appendChild(btnWrap);
@@ -1517,15 +1547,9 @@ function openFontManageModal() {
         btnWrap.style.display = 'flex';
         btnWrap.style.gap = '6px';
 
-        const applyBtn = document.createElement('button');
-        applyBtn.className = 'btn btn-primary';
-        applyBtn.style.padding = '6px 8px;border-radius:8px';
-        applyBtn.textContent = '应用';
-        applyBtn.onclick = function(){ applyFontPreset(p.name); modal.style.display = 'none'; };
-
         const renameBtn = document.createElement('button');
         renameBtn.className = 'btn';
-        renameBtn.style.padding = '6px 8px;border-radius:8px';
+        renameBtn.style.cssText = 'padding:4px 8px;font-size:12px;border-radius:6px;width:auto;min-width:unset;';
         renameBtn.textContent = '重命名';
         renameBtn.onclick = function(){
             const newName = prompt('输入新名称：', p.name);
@@ -1539,7 +1563,7 @@ function openFontManageModal() {
 
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'btn';
-        deleteBtn.style.padding = '6px 8px;border-radius:8px;color:#e53935';
+        deleteBtn.style.cssText = 'padding:4px 8px;font-size:12px;border-radius:6px;width:auto;min-width:unset;color:#e53935;';
         deleteBtn.textContent = '删除';
         deleteBtn.onclick = async function(){
             if (!confirm('确认删除该预设？')) return;
@@ -1564,7 +1588,6 @@ function openFontManageModal() {
             populateFontPresetSelect();
         };
 
-        btnWrap.appendChild(applyBtn);
         btnWrap.appendChild(renameBtn);
         btnWrap.appendChild(deleteBtn);
         row.appendChild(btnWrap);
@@ -1926,7 +1949,7 @@ function openGlobalCssManageModal() {
 
         const renameBtn = document.createElement('button');
         renameBtn.className = 'btn';
-        renameBtn.style.padding = '6px 8px';
+        renameBtn.style.cssText = 'padding:4px 8px;font-size:12px;border-radius:6px;width:auto;min-width:unset;';
         renameBtn.textContent = '重命名';
         renameBtn.onclick = function() {
             const newName = prompt('输入新名称：', p.name);
@@ -1939,7 +1962,7 @@ function openGlobalCssManageModal() {
 
         const delBtn = document.createElement('button');
         delBtn.className = 'btn btn-danger';
-        delBtn.style.padding = '6px 8px';
+        delBtn.style.cssText = 'padding:4px 8px;font-size:12px;border-radius:6px;width:auto;min-width:unset;';
         delBtn.textContent = '删除';
         delBtn.onclick = function() {
             if (!confirm('确定删除预设 "' + p.name + '" ?')) return;
@@ -2046,15 +2069,9 @@ function openSoundManageModal() {
         btnWrap.style.display = 'flex';
         btnWrap.style.gap = '6px';
 
-        const applyBtn = document.createElement('button');
-        applyBtn.className = 'btn btn-primary';
-        applyBtn.style.padding = '6px 8px;border-radius:8px';
-        applyBtn.textContent = '应用';
-        applyBtn.onclick = function(){ applySoundPreset(p.name); modal.style.display = 'none'; };
-
         const renameBtn = document.createElement('button');
         renameBtn.className = 'btn';
-        renameBtn.style.padding = '6px 8px;border-radius:8px';
+        renameBtn.style.cssText = 'padding:4px 8px;font-size:12px;border-radius:6px;width:auto;min-width:unset;';
         renameBtn.textContent = '重命名';
         renameBtn.onclick = function(){
             const newName = prompt('输入新名称：', p.name);
@@ -2068,7 +2085,7 @@ function openSoundManageModal() {
 
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'btn';
-        deleteBtn.style.padding = '6px 8px;border-radius:8px;color:#e53935';
+        deleteBtn.style.cssText = 'padding:4px 8px;font-size:12px;border-radius:6px;width:auto;min-width:unset;color:#e53935;';
         deleteBtn.textContent = '删除';
         deleteBtn.onclick = function(){
             if (!confirm('确认删除该预设？')) return;
@@ -2079,7 +2096,6 @@ function openSoundManageModal() {
             populateSoundPresetSelect();
         };
 
-        btnWrap.appendChild(applyBtn);
         btnWrap.appendChild(renameBtn);
         btnWrap.appendChild(deleteBtn);
         row.appendChild(btnWrap);
