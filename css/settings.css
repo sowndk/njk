@@ -887,3 +887,21 @@ input:checked + .kkt-slider:before {
     opacity: 0.8;
     transform: scale(0.98);
 }
+
+/* 预设管理弹窗列表中的操作按钮统一缩小样式 (应用、重命名、删除) */
+#bubble-presets-list button,
+#mypersona-presets-list button,
+#font-presets-list button,
+#global-css-presets-list button,
+#sound-presets-list button,
+#api-presets-list button,
+#home-layout-presets-list button,
+#gallery-presets-list button {
+    padding: 4px 8px !important;
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+    border-radius: 6px !important;
+    width: auto !important;
+    min-width: unset !important;
+    height: auto !important;
+}
