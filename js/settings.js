@@ -989,6 +989,36 @@ function openApiManageModal() {
         btns.style.display = 'flex';
         btns.style.gap = '6px';
 
+        const updateBtn = document.createElement('button');
+        updateBtn.className = 'btn btn-primary';
+        updateBtn.style.cssText = 'padding:4px 8px;font-size:12px;border-radius:6px;width:auto;min-width:unset;';
+        updateBtn.textContent = '更新';
+        updateBtn.onclick = function(){
+            if (!confirm(`确定用当前 API 设置更新预设「${p.name}」吗？`)) return;
+            const apiKeyEl = document.querySelector('#api-key');
+            const apiUrlEl = document.querySelector('#api-url');
+            const providerEl = document.querySelector('#api-provider');
+            const modelEl = document.querySelector('#api-model');
+            const tempEnabledSwitch = document.getElementById('temperature-enabled-switch');
+            const tempSlider = document.getElementById('temperature-slider');
+
+            p.data = {
+                apiKey: apiKeyEl ? apiKeyEl.value : '',
+                apiUrl: apiUrlEl ? apiUrlEl.value : '',
+                provider: providerEl ? providerEl.value : '',
+                model: modelEl ? modelEl.value : '',
+                temperatureEnabled: tempEnabledSwitch ? tempEnabledSwitch.checked : false,
+                temperature: tempSlider ? parseFloat(tempSlider.value) : 1.0
+            };
+
+            const all = _getApiPresets();
+            all[idx] = p;
+            _saveApiPresets(all);
+            openApiManageModal();
+            populateApiSelect();
+            showToast(`已更新 API 预设「${p.name}」`);
+        };
+
         const renameBtn = document.createElement('button');
         renameBtn.className = 'btn';
         renameBtn.textContent = '重命名';
@@ -1007,7 +1037,7 @@ function openApiManageModal() {
         delBtn.textContent = '删除';
         delBtn.onclick = function(){ if(!confirm('确定删除 "'+p.name+'" ?')) return; const all=_getApiPresets(); all.splice(idx,1); _saveApiPresets(all); openApiManageModal(); populateApiSelect(); };
 
-        btns.appendChild(renameBtn); btns.appendChild(delBtn);
+        btns.appendChild(updateBtn); btns.appendChild(renameBtn); btns.appendChild(delBtn);
 
         row.appendChild(left); row.appendChild(btns);
         list.appendChild(row);
@@ -2450,8 +2480,8 @@ function renderCustomizeForm() {
             <div class="kkt-item-control" style="gap: 8px;">
                 <input type="url" placeholder="URL" value="${(db.customIcons && db.customIcons[id]) || ''}" data-icon-id="${id}" style="text-align:right; border:none; background:transparent; width: 100px; font-size: 13px; color: #888;">
                 <input type="file" id="upload-icon-${id}" data-icon-id="${id}" accept="image/*" style="display:none;" class="icon-upload-input">
-                <label for="upload-icon-${id}" class="btn btn-small btn-neutral" style="padding: 4px 8px; font-size: 12px; margin: 0; cursor: pointer;">📷</label>
-                <button type="button" class="reset-icon-btn btn btn-small" data-id="${id}" style="padding: 4px 8px; font-size: 12px; margin: 0; background-color: #f0f0f0; color: #666; border:none;">↺</button>
+                <label for="upload-icon-${id}" class="btn btn-small kkt-op-icon-btn" title="上传图标" style="padding: 5px 8px; margin: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg></label>
+                <button type="button" class="reset-icon-btn btn btn-small kkt-op-icon-btn" data-id="${id}" title="重置图标" style="padding: 5px 8px; margin: 0; display: inline-flex; align-items: center; justify-content: center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg></button>
             </div>
         </div>`;
     });
@@ -2462,22 +2492,22 @@ function renderCustomizeForm() {
         <!-- 字体大小 -->
         <div class="kkt-item" style="flex-direction: column; align-items: stretch; padding-bottom: 15px;">
             <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                <div class="kkt-item-icon" style="background: transparent; color: #007AFF;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
+                <div class="kkt-item-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
                 </div>
                 <div class="kkt-item-content">
                     <div class="kkt-item-title">全局字体大小</div>
                     <div class="kkt-item-subtitle">调整应用内文字的缩放比例</div>
                 </div>
-                <span id="font-size-value" style="color: var(--primary-color); font-weight: bold; font-size: 16px;">${(db.fontSizeScale || 1.0).toFixed(1)}x</span>
+                <span id="font-size-value" class="kkt-slider-value" style="color: #1c1c1e; font-weight: bold; font-size: 16px;">${(db.fontSizeScale || 1.0).toFixed(1)}x</span>
             </div>
             <input type="range" id="font-size-slider" min="0.8" max="1.5" step="0.1" value="${db.fontSizeScale || 1.0}" style="width: 100%; accent-color: var(--primary-color); margin-top: 8px;">
         </div>
 
         <!-- 字体设置 -->
         <div class="kkt-item" onclick="document.getElementById('font-settings-modal').classList.add('visible')" style="cursor: pointer;">
-            <div class="kkt-item-icon" style="background: transparent; color: #FF9500;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+            <div class="kkt-item-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
             </div>
             <div class="kkt-item-content">
                 <div class="kkt-item-title">自定义字体</div>
@@ -2488,8 +2518,8 @@ function renderCustomizeForm() {
 
         <!-- 全局CSS -->
         <div class="kkt-item" onclick="document.getElementById('global-css-modal').classList.add('visible')" style="cursor: pointer;">
-            <div class="kkt-item-icon" style="background: transparent; color: #AF52DE;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"></path><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path><path d="M2 2l7.586 7.586"></path><circle cx="11" cy="11" r="2"></circle></svg>
+            <div class="kkt-item-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"></path><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path><path d="M2 2l7.586 7.586"></path><circle cx="11" cy="11" r="2"></circle></svg>
             </div>
             <div class="kkt-item-content">
                 <div class="kkt-item-title">全局CSS美化</div>
@@ -2504,8 +2534,8 @@ function renderCustomizeForm() {
     <div class="kkt-group-title" style="margin-left: 15px; margin-bottom: 8px; font-size: 13px; color: #666; margin-top: 20px;">声音与振动</div>
     <div class="kkt-group">
         <div class="kkt-item" onclick="document.getElementById('sound-settings-modal').classList.add('visible')" style="cursor: pointer;">
-            <div class="kkt-item-icon" style="background: transparent; color: #34C759;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            <div class="kkt-item-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
             </div>
             <div class="kkt-item-content">
                 <div class="kkt-item-title">消息提示音</div>
@@ -2520,8 +2550,8 @@ function renderCustomizeForm() {
     <div class="kkt-group-title" style="margin-left: 15px; margin-bottom: 8px; font-size: 13px; color: #666; margin-top: 20px;">个性化</div>
     <div class="kkt-group">
         <div class="kkt-item" onclick="document.getElementById('icon-settings-modal').classList.add('visible')" style="cursor: pointer;">
-            <div class="kkt-item-icon" style="background: transparent; color: #FF2D55;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            <div class="kkt-item-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
             </div>
             <div class="kkt-item-content">
                 <div class="kkt-item-title">自定义图标</div>
@@ -2551,7 +2581,7 @@ function renderCustomizeForm() {
                 <div class="form-group" style="margin-top: 10px;">
                     <input type="file" id="local-font-upload" accept=".ttf,.woff,.woff2,.otf" style="display: none;">
                     <label for="local-font-upload" class="btn btn-secondary" style="display: block; text-align: center; cursor: pointer; padding: 10px; border-radius: 8px; border: 1px dashed #ccc; background: #fafafa; color: #666;">
-                        <span style="font-size: 16px; margin-right: 5px;">📁</span> 从本地上传字体文件
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -3px; margin-right: 6px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>从本地上传字体文件
                     </label>
                 </div>
                 <div style="background:#f9f9f9; padding:10px; border-radius:8px; margin-top:15px; border: 1px solid #f0f0f0;">
@@ -2612,9 +2642,9 @@ function renderCustomizeForm() {
                     <div style="display: flex; gap: 8px; margin-top: 5px;">
                         <input type="url" id="global-send-sound-url" placeholder="音频URL" value="${db.globalSendSound || ''}" style="flex: 1; border: 1px solid #eee; border-radius: 8px; padding: 8px; font-size: 13px;">
                         <input type="file" id="global-send-sound-upload" accept="audio/*" style="display: none;">
-                        <label for="global-send-sound-upload" class="btn btn-secondary btn-small" style="margin: 0; display: flex; align-items: center; cursor: pointer;">📂</label>
-                        <button type="button" id="test-send-sound-btn" class="btn btn-primary btn-small" style="margin: 0;">▶</button>
-                        <button type="button" id="reset-send-sound-btn" class="btn btn-danger btn-small" style="margin: 0;">×</button>
+                        <label for="global-send-sound-upload" class="btn btn-small kkt-op-icon-btn" title="选择音频文件" style="margin: 0; padding: 6px 10px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg></label>
+                        <button type="button" id="test-send-sound-btn" class="btn btn-small kkt-op-icon-btn" title="试听" style="margin: 0; padding: 6px 10px; display: inline-flex; align-items: center; justify-content: center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg></button>
+                        <button type="button" id="reset-send-sound-btn" class="btn btn-small kkt-op-icon-btn" title="清除" style="margin: 0; padding: 6px 10px; display: inline-flex; align-items: center; justify-content: center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
                     </div>
                 </div>
                 <div class="form-group">
@@ -2622,9 +2652,9 @@ function renderCustomizeForm() {
                     <div style="display: flex; gap: 8px; margin-top: 5px;">
                         <input type="url" id="global-receive-sound-url" placeholder="音频URL" value="${db.globalReceiveSound || ''}" style="flex: 1; border: 1px solid #eee; border-radius: 8px; padding: 8px; font-size: 13px;">
                         <input type="file" id="global-receive-sound-upload" accept="audio/*" style="display: none;">
-                        <label for="global-receive-sound-upload" class="btn btn-secondary btn-small" style="margin: 0; display: flex; align-items: center; cursor: pointer;">📂</label>
-                        <button type="button" id="test-receive-sound-btn" class="btn btn-primary btn-small" style="margin: 0;">▶</button>
-                        <button type="button" id="reset-receive-sound-btn" class="btn btn-danger btn-small" style="margin: 0;">×</button>
+                        <label for="global-receive-sound-upload" class="btn btn-small kkt-op-icon-btn" title="选择音频文件" style="margin: 0; padding: 6px 10px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg></label>
+                        <button type="button" id="test-receive-sound-btn" class="btn btn-small kkt-op-icon-btn" title="试听" style="margin: 0; padding: 6px 10px; display: inline-flex; align-items: center; justify-content: center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg></button>
+                        <button type="button" id="reset-receive-sound-btn" class="btn btn-small kkt-op-icon-btn" title="清除" style="margin: 0; padding: 6px 10px; display: inline-flex; align-items: center; justify-content: center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
                     </div>
                 </div>
                 
