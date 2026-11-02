@@ -213,7 +213,7 @@
     /* 设置里贴纸/标签组 */
     .sticker-group-tag {
         background-color: #2c2c2e !important;
-        color: #e0e0e0 !important;
+        color: #8e8e93 !important;
     }
     .sticker-group-tag.selected {
         background-color: #0a84ff !important;
@@ -669,12 +669,14 @@
     /* ---- 7. 表情贴纸分组标签 .sticker-group-tag ---- */
     .sticker-group-tag {
         background-color: #2c2c2e !important;
-        color: #e0e0e0 !important;
+        color: #8e8e93 !important;
         border: 1px solid #3a3a3c !important;
     }
     .sticker-group-tag.selected {
-        background-color: var(--primary-color) !important;
+        background-color: #0a84ff !important;
         color: #ffffff !important;
+        border-color: #0a84ff !important;
+        box-shadow: 0 2px 8px rgba(10, 132, 255, 0.35) !important;
     }
 
     /* ---- 8. 壁纸预览 .wallpaper-preview ---- */
@@ -976,7 +978,7 @@
         color: #8e8e93 !important;
     }
     .sticker-category-item.active {
-        background-color: var(--primary-color) !important;
+        background-color: #0a84ff !important;
         color: #ffffff !important;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3) !important;
     }
@@ -1002,7 +1004,7 @@
     }
     .sticker-item.is-selected::after {
         border: 2px solid #1c1c1e !important;
-        background-color: var(--primary-color) !important;
+        background-color: #0a84ff !important;
         color: #ffffff !important;
     }
     #sticker-preview {
@@ -1041,5 +1043,40 @@
     #chat-bg-night-item,
     #group-chat-bg-night-item {
         background-color: rgba(255, 255, 255, 0.04) !important;
+    }
+
+    /* ---- API 设置与个性化设置图标及操作按钮暗色模式适配 ---- */
+    #api-settings-screen {
+        background-color: #1c1c1e !important;
+    }
+    .kkt-item-icon,
+    #api-settings-screen .kkt-item-icon,
+    #customize-screen .kkt-item-icon {
+        color: #ffffff !important;
+    }
+    .kkt-item-icon svg {
+        stroke: currentColor !important;
+        color: #ffffff !important;
+    }
+    .kkt-op-icon-btn {
+        background-color: #3a3a3c !important;
+        color: #ffffff !important;
+        border-color: #48484a !important;
+    }
+    .kkt-op-icon-btn svg {
+        color: #ffffff !important;
+    }
+
+    /* ---- 设置页面滑动拉条旁边的数值文字暗黑适配 ---- */
+    .kkt-slider-value,
+    #font-size-value,
+    #temperature-value,
+    #setting-avatar-radius-value,
+    #setting-group-avatar-radius-value,
+    #workshop-vibe-info-val,
+    #workshop-vibe-ref-val,
+    .group-info-val,
+    .group-ref-val {
+        color: #ffffff !important;
     }
 }

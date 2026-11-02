@@ -80,11 +80,37 @@
 .kkt-item-icon {
     width: 24px;
     height: 24px;
-    margin-right: 16px;
-    color: var(--primary-color, #007AFF);
+    margin-right: 14px;
+    color: #1c1c1e !important;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
+}
+
+.kkt-item-icon svg {
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px;
+    min-height: 20px;
+    display: block;
+    stroke: currentColor;
+    color: inherit;
+    flex-shrink: 0;
+}
+
+/* 个性化与设置弹窗内的通用黑色操作图标按钮 */
+.kkt-op-icon-btn {
+    background-color: #f0f0f2 !important;
+    color: #1c1c1e !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    border-radius: 6px !important;
+    width: auto !important;
+}
+.kkt-op-icon-btn svg {
+    width: 15px !important;
+    height: 15px !important;
+    display: block;
     flex-shrink: 0;
 }
 
@@ -904,4 +930,17 @@ input:checked + .kkt-slider:before {
     width: auto !important;
     min-width: unset !important;
     height: auto !important;
+}
+
+/* 设置页面滑动拉条旁边的数值文字统一样式（黑色） */
+.kkt-slider-value,
+#font-size-value,
+#temperature-value,
+#setting-avatar-radius-value,
+#setting-group-avatar-radius-value,
+#workshop-vibe-info-val,
+#workshop-vibe-ref-val,
+.group-info-val,
+.group-ref-val {
+    color: #1c1c1e !important;
 }
