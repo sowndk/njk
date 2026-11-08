@@ -517,8 +517,12 @@ html::-webkit-scrollbar, body::-webkit-scrollbar {
             messageInput.focus();
         }, 50);
     });
-    messageInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !isGenerating) sendMessage();
+    messageInput.addEventListener('keydown', (e) => {
+        if (e.isComposing || e.keyCode === 229) return;
+        if (e.key === 'Enter' || e.keyCode === 13) {
+            e.preventDefault();
+            sendMessage();
+        }
     });
 
     // 监听输入框聚焦事件：自动收起底部面板，避免与键盘冲突
@@ -900,8 +904,14 @@ function openChatRoom(chatId, type) {
 }
 
 async function sendMessage() {
+    if (!messageInput) messageInput = document.getElementById('message-input');
+    if (!messageInput) return;
     const text = messageInput.value.trim();
-    if (!text || isGenerating) return;
+    if (!text) return;
+    if (isGenerating) {
+        if (typeof showToast === 'function') showToast('正在等待对方回复中...');
+        return;
+    }
     messageInput.value = ''; 
     const chat = (currentChatType === 'private') ? db.characters.find(c => c.id === currentChatId) : db.groups.find(g => g.id === currentChatId);
 
