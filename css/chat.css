@@ -1,7 +1,7 @@
 /* --- 聊天相关样式 --- */
 
 :root {
-    --panel-height: 35vh; /* 默认面板高度 */
+    --panel-height: 48vh; /* 默认面板高度 */
 }
 
 /* 聊天列表屏幕 */
@@ -1657,7 +1657,9 @@
 }
 
 #chat-expansion-panel.visible {
-    height: 35%; /* 固定高度 */
+    height: var(--panel-height, 48vh);
+    min-height: 45vh;
+    max-height: 55vh;
     border-top: 1px solid #eee;
 }
 
