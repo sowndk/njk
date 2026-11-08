@@ -544,6 +544,71 @@ async function getAiReply(chatId, chatType, isBackground = false) {
         logText += "============================================";
         console.log(logText);
 
+        // ===== Cloudflare 后台模式拦截 =====
+        if (window.CfBackend && window.CfBackend.getConfig().enabled) {
+            try {
+
+                const cfResult = await window.CfBackend.submitAiJob({
+                    chatId,
+                    chatType,
+                    chatName: chat.remarkName || chat.realName || chat.name || 'AI',
+                    requestBody,
+                    aiConfig: {
+                        provider,
+                        url,
+                        key,
+                        model
+                    }
+                });
+                console.log('[CF Backend] 任务提交成功:', cfResult);
+                
+                // 收到任务后如果是前台，开始轮询等待完成
+                if (cfResult && cfResult.jobId) {
+                    const cfg = window.CfBackend.getConfig();
+                    const cleanUrl = cfg.workerUrl.trim().replace(/\/+$/, '').replace(/\/setup\/?$/, '');
+                    let attempts = 0;
+                    const maxAttempts = 60; // 5分钟
+                    const pollInterval = setInterval(async () => {
+                        attempts++;
+                        try {
+                            const jobRes = await fetch(`${cleanUrl}/v1/ai/jobs/${cfResult.jobId}?userId=${encodeURIComponent(cfg.userId)}`, {
+                                headers: { 'Authorization': `Bearer ${cfg.backendToken.trim()}` }
+                            });
+                            if (jobRes.ok) {
+                                const jobData = await jobRes.json();
+                                if (jobData && jobData.job && (jobData.job.status === 'completed' || jobData.job.response)) {
+                                    clearInterval(pollInterval);
+                                    const replyText = jobData.job.response || '';
+                                    if (replyText) {
+                                        await handleAiReplyContent(replyText, chat, chatId, chatType, isBackground);
+                                        // 确认应答释放云端存储
+                                        await fetch(`${cleanUrl}/v1/ai/jobs/${cfResult.jobId}?action=ack`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${cfg.backendToken.trim()}` },
+                                            body: JSON.stringify({ userId: cfg.userId })
+                                        });
+                                    }
+                                } else if (jobData && jobData.job && jobData.job.status === 'failed') {
+                                    clearInterval(pollInterval);
+                                    if (typeof showToast === 'function') showToast('后台回复失败：' + (jobData.job.error || '未知错误'));
+                                }
+                            }
+                        } catch (err) {
+                            console.warn('[CF Backend] 轮询任务状态出错', err);
+                        }
+                        if (attempts >= maxAttempts) clearInterval(pollInterval);
+                    }, 5000);
+                }
+                return; // 后台已托管，前台直接返回
+            } catch (cfErr) {
+                console.error('[CF Backend] 提交后台任务失败，自动降级为前台执行:', cfErr);
+                if (typeof showToast === 'function') {
+                    showToast('后台任务提交失败，已转为直接请求: ' + cfErr.message);
+                }
+            }
+        }
+        // ===================================
+
         const endpoint = (provider === 'gemini') ? `${url}/v1beta/models/${model}:streamGenerateContent?key=${getRandomValue(key)}` : `${url}/v1/chat/completions`;
         const headers = (provider === 'gemini') ? {'Content-Type': 'application/json'} : {
             'Content-Type': 'application/json',

@@ -488,3 +488,134 @@ function importApiPresets() {
     };
     inp.click();
 }
+
+
+// ==================== Cloudflare 后台消息服务设置 ====================
+function initCfBackendSettings() {
+    const cfSwitch = document.getElementById('cf-backend-switch');
+    const cfContainer = document.getElementById('cf-backend-config-container');
+    const cfStatus = document.getElementById('cf-backend-status');
+    const cfWorkerUrl = document.getElementById('cf-worker-url');
+    const cfBackendToken = document.getElementById('cf-backend-token');
+
+    const btnTestBackend = document.getElementById('btn-cf-test-backend');
+    const btnRegisterPush = document.getElementById('btn-cf-register-push');
+    const btnTestPush = document.getElementById('btn-cf-test-push');
+
+    if (!cfSwitch || !window.CfBackend) return;
+
+    const cfg = window.CfBackend.getConfig();
+    cfSwitch.checked = !!cfg.enabled;
+    if (cfWorkerUrl) cfWorkerUrl.value = cfg.workerUrl || '';
+    if (cfBackendToken) cfBackendToken.value = cfg.backendToken || '';
+    if (cfContainer) cfContainer.style.display = cfg.enabled ? 'block' : 'none';
+
+    function updateStatusLabel(text, color) {
+        if (!cfStatus) return;
+        cfStatus.textContent = text;
+        if (color) cfStatus.style.color = color;
+    }
+
+    if (cfg.enabled) {
+        updateStatusLabel(cfg.workerUrl ? '已启用' : '已开启（未填地址）', cfg.workerUrl ? '#34c759' : '#ff9500');
+    } else {
+        updateStatusLabel('未开启', '#8e8e93');
+    }
+
+    cfSwitch.addEventListener('change', () => {
+        const isEnabled = cfSwitch.checked;
+        if (cfContainer) cfContainer.style.display = isEnabled ? 'block' : 'none';
+        
+        // 如果开启 Cloudflare 后台，建议关掉持续运行增强（按教程互斥）
+        if (isEnabled) {
+            const keepAliveSwitch = document.getElementById('keep-alive-switch');
+            if (keepAliveSwitch && keepAliveSwitch.checked) {
+                keepAliveSwitch.checked = false;
+                keepAliveSwitch.dispatchEvent(new Event('change'));
+                if (typeof showToast === 'function') showToast('已自动停用“持续运行增强”音频保活');
+            }
+        }
+
+        const currentCfg = window.CfBackend.getConfig();
+        currentCfg.enabled = isEnabled;
+        window.CfBackend.saveConfig(currentCfg);
+
+        updateStatusLabel(isEnabled ? (currentCfg.workerUrl ? '已启用' : '已开启（未填地址）') : '未开启', isEnabled ? '#34c759' : '#8e8e93');
+        if (typeof showToast === 'function') {
+            showToast(isEnabled ? 'Cloudflare 后台服务已开启' : 'Cloudflare 后台服务已关闭');
+        }
+    });
+
+    if (cfWorkerUrl) {
+        cfWorkerUrl.addEventListener('change', () => {
+            const currentCfg = window.CfBackend.getConfig();
+            currentCfg.workerUrl = cfWorkerUrl.value.trim();
+            window.CfBackend.saveConfig(currentCfg);
+        });
+    }
+
+    if (cfBackendToken) {
+        cfBackendToken.addEventListener('change', () => {
+            const currentCfg = window.CfBackend.getConfig();
+            currentCfg.backendToken = cfBackendToken.value.trim();
+            window.CfBackend.saveConfig(currentCfg);
+        });
+    }
+
+    if (btnTestBackend) {
+        btnTestBackend.addEventListener('click', async () => {
+            try {
+                btnTestBackend.disabled = true;
+                btnTestBackend.textContent = '测试中…';
+                const res = await window.CfBackend.testBackend();
+                if (typeof showToast === 'function') showToast('后台连接成功！Worker 运行正常');
+                updateStatusLabel('连接正常', '#34c759');
+            } catch (e) {
+                alert('测试后台失败: ' + (e.message || e));
+                updateStatusLabel('连接失败', '#ff3b30');
+            } finally {
+                btnTestBackend.disabled = false;
+                btnTestBackend.textContent = '测试后台';
+            }
+        });
+    }
+
+    if (btnRegisterPush) {
+        btnRegisterPush.addEventListener('click', async () => {
+            try {
+                btnRegisterPush.disabled = true;
+                btnRegisterPush.textContent = '注册中…';
+                await window.CfBackend.registerPush(true);
+                if (typeof showToast === 'function') showToast('后台通知注册成功！');
+            } catch (e) {
+                alert('注册后台通知失败: ' + (e.message || e));
+            } finally {
+                btnRegisterPush.disabled = false;
+                btnRegisterPush.textContent = '注册后台通知';
+            }
+        });
+    }
+
+    if (btnTestPush) {
+        btnTestPush.addEventListener('click', async () => {
+            try {
+                btnTestPush.disabled = true;
+                btnTestPush.textContent = '发送中…';
+
+await window.CfBackend.testPush();
+                if (typeof showToast === 'function') showToast('测试通知已发出，请查看系统通知栏');
+            } catch (e) {
+                alert('发送测试通知失败: ' + (e.message || e));
+            } finally {
+                btnTestPush.disabled = false;
+                btnTestPush.textContent = '发送测试通知';
+            }
+        });
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCfBackendSettings);
+} else {
+    initCfBackendSettings();
+}
