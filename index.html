@@ -469,6 +469,37 @@
                                 </label>
                             </div>
                         </div>
+                        <div class="kkt-item">
+                            <div class="kkt-item-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>
+                            </div>
+                            <div class="kkt-item-content">
+                                <div class="kkt-item-title">Cloudflare 后台消息服务</div>
+                                <div class="kkt-item-subtitle">交给专属 Worker 云端生成，通过 Web Push 发送通知</div>
+                                <div class="kkt-item-subtitle" id="cf-backend-status" style="color: #0a84ff;">未配置</div>
+                            </div>
+                            <div class="kkt-item-control">
+                                <label class="kkt-switch">
+                                    <input type="checkbox" id="cf-backend-switch">
+                                    <span class="kkt-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div id="cf-backend-config-container" style="display: none; padding: 12px 16px; background: rgba(0, 0, 0, 0.03); border-radius: 12px; margin: 8px 16px 16px 16px;">
+                            <div style="margin-bottom: 12px;">
+                                <label style="font-size: 13px; font-weight: 500; display: block; margin-bottom: 4px;">Cloudflare Worker 地址</label>
+                                <input type="text" id="cf-worker-url" placeholder="https://background-message-backend.xxx.workers.dev" class="kkt-input" style="width: 100%; box-sizing: border-box; font-size: 13px; padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.15);">
+                            </div>
+                            <div style="margin-bottom: 14px;">
+                                <label style="font-size: 13px; font-weight: 500; display: block; margin-bottom: 4px;">后台访问 Token (BACKEND_TOKEN)</label>
+                                <input type="password" id="cf-backend-token" placeholder="至少 32 位的随机 Token" class="kkt-input" style="width: 100%; box-sizing: border-box; font-size: 13px; padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.15);">
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button type="button" id="btn-cf-test-backend" class="kkt-btn" style="flex: 1; min-width: 90px; padding: 6px 12px; font-size: 12px; border-radius: 8px; background: #007aff; color: #fff; border: none; cursor: pointer;">测试后台</button>
+                                <button type="button" id="btn-cf-register-push" class="kkt-btn" style="flex: 1; min-width: 100px; padding: 6px 12px; font-size: 12px; border-radius: 8px; background: #34c759; color: #fff; border: none; cursor: pointer;">注册后台通知</button>
+                                <button type="button" id="btn-cf-test-push" class="kkt-btn" style="flex: 1; min-width: 100px; padding: 6px 12px; font-size: 12px; border-radius: 8px; background: #ff9500; color: #fff; border: none; cursor: pointer;">发送测试通知</button>
+                            </div>
+                        </div>
                         <div class="kkt-item" style="flex-direction: column; align-items: stretch; padding-bottom: 20px;">
                             <div style="display: flex; align-items: center; margin-bottom: 12px;">
                                 <div class="kkt-item-icon">
@@ -2757,7 +2788,8 @@
 <script src="js/modules/my_profile_html.js"></script> <!-- 我的档案HTML注入 -->
 <script src="js/modules/shop_html.js"></script> <!-- 商城HTML注入 -->
 <script src="js/modules/settings_chat.js"></script> <!-- 聊天设置与管理 -->
-<script src="js/modules/keep_alive.js"></script> <!-- 跨平台持续运行增强 -->
+<script src="js/modules/keep_alive.js"></script>
+    <script src="js/modules/cf_background.js"></script> <!-- 跨平台持续运行增强 -->
 <script src="js/modules/settings_api.js"></script> <!-- API 设置与预设 -->
 <script src="js/modules/settings_presets.js"></script> <!-- 预设管理 (气泡、人设等) -->
 <script src="js/modules/settings_customize.js"></script> <!-- 个性化与外观设置 -->
