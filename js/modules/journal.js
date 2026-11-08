@@ -1,6 +1,7 @@
 // --- 回忆日记功能 (js/modules/journal.js) ---
 
 let generatingChatId = null;
+let isJournalGenerating = false;
 
 function setupMemoryJournalScreen() {
     const generateNewJournalBtn = document.getElementById('generate-new-journal-btn');
@@ -156,14 +157,16 @@ function setupMemoryJournalScreen() {
             <div class="spinner"></div>
             <div class="text">正在合并回忆...</div>
         `;
-        if (container.firstChild) {
-            container.insertBefore(loadingCard, container.firstChild);
-        } else {
-            container.appendChild(loadingCard);
+        if (container) {
+            if (container.firstChild) {
+                container.insertBefore(loadingCard, container.firstChild);
+            } else {
+                container.appendChild(loadingCard);
+            }
+            container.scrollTop = 0;
         }
-        container.scrollTop = 0;
 
-        isGenerating = true;
+        isJournalGenerating = true;
         generatingChatId = currentChatId;
 
         try {
@@ -218,7 +221,7 @@ function setupMemoryJournalScreen() {
             if(card) card.remove();
             showApiError(error);
         } finally {
-            isGenerating = false;
+            isJournalGenerating = false;
             generatingChatId = null;
         }
     }
@@ -448,7 +451,7 @@ function renderJournalList() {
 
     let isShowingLoading = false;
     // 恢复生成状态卡片
-    if (typeof isGenerating !== 'undefined' && isGenerating && generatingChatId === currentChatId) {
+    if (typeof isJournalGenerating !== 'undefined' && isJournalGenerating && generatingChatId === currentChatId) {
         const loadingCard = document.createElement('li');
         loadingCard.className = 'journal-card generating';
         loadingCard.id = 'journal-generating-card';
@@ -523,14 +526,16 @@ async function generateJournal(start, end, includeFavorited = false) {
         <div class="text">正在${currentChatType === 'group' ? '总结群聊' : '编织回忆'}...</div>
     `;
     
-    if (container.firstChild) {
-        container.insertBefore(loadingCard, container.firstChild);
-    } else {
-        container.appendChild(loadingCard);
+    if (container) {
+        if (container.firstChild) {
+            container.insertBefore(loadingCard, container.firstChild);
+        } else {
+            container.appendChild(loadingCard);
+        }
+        container.scrollTop = 0;
     }
-    container.scrollTop = 0;
 
-    isGenerating = true; 
+    isJournalGenerating = true; 
     generatingChatId = currentChatId;
 
     try {
@@ -819,7 +824,7 @@ async function generateJournal(start, end, includeFavorited = false) {
         }
         showApiError(error);
     } finally {
-        isGenerating = false; 
+        isJournalGenerating = false; 
         generatingChatId = null;
     }
 }
