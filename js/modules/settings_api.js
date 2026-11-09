@@ -526,15 +526,7 @@ function initCfBackendSettings() {
         const isEnabled = cfSwitch.checked;
         if (cfContainer) cfContainer.style.display = isEnabled ? 'block' : 'none';
         
-        // 如果开启 Cloudflare 后台，建议关掉持续运行增强（按教程互斥）
-        if (isEnabled) {
-            const keepAliveSwitch = document.getElementById('keep-alive-switch');
-            if (keepAliveSwitch && keepAliveSwitch.checked) {
-                keepAliveSwitch.checked = false;
-                keepAliveSwitch.dispatchEvent(new Event('change'));
-                if (typeof showToast === 'function') showToast('已自动停用“持续运行增强”音频保活');
-            }
-        }
+        // Cloudflare 后台与本地持续运行增强共存，提供双重保障
 
         const currentCfg = window.CfBackend.getConfig();
         currentCfg.enabled = isEnabled;

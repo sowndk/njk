@@ -161,6 +161,7 @@
             chatId,
             chatType,
             chatName,
+            chatStatusRegex,
             requestBody,
             aiConfig
         } = params;
@@ -178,6 +179,7 @@
                 chatId,
                 chatType,
                 chatName,
+                chatStatusRegex: chatStatusRegex || '',
                 aiConfig,
                 requestBody,
                 appUrl: window.location.href
@@ -235,20 +237,140 @@
         });
     }
 
+    // 处理从 Cloudflare 拉取回来的后台未读消息
+    async function handleReceivedPendingMessages(msgs) {
+        if (!Array.isArray(msgs) || msgs.length === 0) return;
+        let hasNew = false;
+        for (const item of msgs) {
+            const chatId = item.chatId;
+            const chatType = item.chatType || 'private';
+            const chat = (chatType === 'private')
+                ? db.characters.find(c => c.id === chatId)
+                : db.groups.find(g => g.id === chatId);
+            
+            if (!chat) continue;
+            if (!chat.history) chat.history = [];
+
+            // 避免重复追加：检查是否已经存过该消息
+            const isAlreadyAdded = chat.history.some(m => m.id === item.id || (m.timestamp === item.timestamp && m.content === item.content));
+            if (!isAlreadyAdded) {
+                if (typeof handleAiReplyContent === 'function') {
+                    // 交给 handleAiReplyContent 进行完整的思维链/状态栏/朋友圈/气泡解析
+                    await handleAiReplyContent(item.content, chat, chatId, chatType, false);
+                } else {
+                    const newMsg = {
+                        id: item.id || `msg_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+                        role: item.role || 'assistant',
+                        content: item.content,
+                        timestamp: item.timestamp || Date.now()
+                    };
+                    chat.history.push(newMsg);
+                    if (typeof addMessageBubble === 'function') {
+                        addMessageBubble(newMsg, chatId, chatType);
+                    }
+                }
+                hasNew = true;
+            }
+        }
+
+        if (hasNew) {
+            if (typeof saveData === 'function') await saveData();
+            if (typeof renderChatList === 'function') renderChatList();
+            if (typeof renderMessages === 'function' && typeof currentChatId !== 'undefined') {
+                renderMessages(false, true);
+            }
+        }
+    }
+    window.handleReceivedPendingMessages = handleReceivedPendingMessages;
+
     // 页面切回前台时，自动尝试拉取后台累积的消息
     document.addEventListener('visibilitychange', async () => {
         if (document.visibilityState === 'visible') {
             const cfg = getConfig();
             if (cfg.enabled) {
                 const msgs = await pullMessages();
-                if (msgs.length > 0 && typeof window.handleReceivedPendingMessages === 'function') {
-                    window.handleReceivedPendingMessages(msgs);
+                if (msgs.length > 0) {
+                    await handleReceivedPendingMessages(msgs);
                 }
             }
         }
     });
 
+    // 页面初始化加载时也尝试拉取一次
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', async () => {
+            const cfg = getConfig();
+            if (cfg.enabled) {
+                const msgs = await pullMessages();
+                if (msgs.length > 0) await handleReceivedPendingMessages(msgs);
+            }
+        });
+    } else {
+        setTimeout(async () => {
+            const cfg = getConfig();
+            if (cfg.enabled) {
+                const msgs = await pullMessages();
+                if (msgs.length > 0) await handleReceivedPendingMessages(msgs);
+            }
+        }, 1000);
+    }
+
+
+    // 同步角色上下文与自动消息设置到 Cloudflare Worker
+    async function syncChat(params) {
+        const cfg = getConfig();
+        const base = cleanUrl(cfg.workerUrl);
+        if (!cfg.enabled || !base || !cfg.backendToken) return false;
+
+        const {
+            chatId,
+            chatType,
+            realName,
+            remarkName,
+            chatStatusRegex,
+            myName,
+            autoReply,
+            requestBody,
+            aiConfig
+        } = params;
+
+        try {
+            const uid = getOrCreateUserId();
+            const res = await fetch(`${base}/v1/sync`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${cfg.backendToken.trim()}`
+                },
+                body: JSON.stringify({
+                    userId: uid,
+                    chatId,
+                    chatType: chatType || 'private',
+                    realName: realName || '',
+                    remarkName: remarkName || realName || '',
+                    chatStatusRegex: chatStatusRegex || '',
+                    myName: myName || '用户',
+                    autoReply: autoReply || { enabled: false },
+                    requestBody: requestBody || null,
+                    aiConfig: aiConfig || null,
+                    appUrl: window.location.href
+                })
+            });
+            if (!res.ok) {
+                const err = await res.text();
+                console.warn('[CF Backend] 同步角色上下文失败:', err);
+                return false;
+            }
+            console.log('[CF Backend] 角色上下文及主动消息设置已同步到云端:', chatId);
+            return true;
+        } catch (e) {
+            console.warn('[CF Backend] 同步请求异常:', e);
+            return false;
+        }
+    }
+
     window.CfBackend = {
+        syncChat,
         getConfig,
         saveConfig,
         testBackend,

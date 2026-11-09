@@ -1040,6 +1040,7 @@ async function saveSettingsFromSidebar() {
 
         await saveData();
         showToast('设置已保存！');
+        if (typeof syncCurrentChatToCf === 'function') syncCurrentChatToCf(e.id, 'private');
         chatRoomTitle.textContent = e.remarkName;
         renderChatList();
         // updateCustomBubbleStyle(currentChatId, e.customBubbleCss, e.useCustomBubbleCss); // 移除实时应用以防污染设置页

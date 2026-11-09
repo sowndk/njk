@@ -1101,6 +1101,11 @@ const contentMatch = content.match(/^\[.*?(?:消息|回复)[：:]([\s\S]+)\]$/);
             }
         }
 
+        // 兜底渲染隐藏：剥离通用状态栏格式 (id=... || m=..., [POST: ...], <status>..., 【内心独白...】)
+        if (!isDebugMode && !isSent) {
+            displayedContent = displayedContent.replace(/(?:id=[A-Za-z0-9_]+\s*\|\|\s*m=[\s\S]*$|\[POST:[\s\S]*?\]|<(?:status|state|panel)>[\s\S]*?<\/(?:status|state|panel)>|【(?:内心独白|当前主播|状态栏|评论区)[\s\S]*?】)/gi, '').trim();
+        }
+
         bubbleElement.innerHTML = `<span class="bubble-content">${DOMPurify.sanitize(displayedContent)}</span>`;
         if (!chat.useCustomBubbleCss) {
             bubbleElement.style.backgroundColor = bubbleTheme.bg;

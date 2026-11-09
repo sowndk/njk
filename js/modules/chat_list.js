@@ -407,9 +407,34 @@ function renderChatList() {
                         text = plainTextMatch[1].trim();
                     }
                     text = text.replace(/\[发送时间:.*?\]$/, '').trim(); 
+
+                    // 【状态栏清洗】若包含状态栏/心率/POST 等标记，进行安全剔除
+                    if (chat.type === 'private' && chat.statusPanel && chat.statusPanel.regexPattern) {
+                        try {
+                            let sp = chat.statusPanel.regexPattern;
+                            const mParts = sp.match(/^\/(.*?)\/([a-z]*)$/);
+                            const reg = new RegExp(mParts ? mParts[1] : sp, 'gs');
+                            text = text.replace(reg, '').trim();
+                        } catch(e) {}
+                    }
+                    text = text.replace(/\[POST:[\s\S]*?\]/gi, '').replace(/【(?:内心独白|当前主播|状态栏|评论区)[\s\S]*?】/g, '').replace(/(?:id=[A-Za-z0-9_]+\s*\|\|\s*m=[\s\S]*$)/gi, '').replace(/<(?:status|state|panel)>[\s\S]*?<\/(?:status|state|panel)>/gi, '').trim();
+
                     const htmlRegex = /<[a-z][\s\S]*>/i;
                     if (htmlRegex.test(text)) {
                         lastMessageText = '[互动]';
+                    } else if (!text) {
+                        let fallbackText = '';
+                        for (let k = visibleHistory.length - 2; k >= 0; k--) {
+                            let prevContent = visibleHistory[k].content || '';
+                            let cleanPrev = prevContent.replace(/\[POST:[\s\S]*?\]/gi, '').replace(/【(?:内心独白|当前主播|状态栏|评论区)[\s\S]*?】/g, '').replace(/(?:id=[A-Za-z0-9_]+\s*\|\|\s*m=[\s\S]*$)/gi, '').replace(/<(?:status|state|panel)>[\s\S]*?<\/(?:status|state|panel)>/gi, '').trim();
+                            const pMatch = cleanPrev.match(/^\[.*?：([\s\S]*)\]$/);
+                            if (pMatch && pMatch[1]) cleanPrev = pMatch[1].trim();
+                            if (cleanPrev) {
+                                fallbackText = cleanPrev;
+                                break;
+                            }
+                        }
+                        lastMessageText = fallbackText || 'ta正在等你';
                     } else {
                         lastMessageText = urlRegex.test(text) ? '[图片]' : text;
                     }

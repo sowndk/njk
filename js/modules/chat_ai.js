@@ -1,3 +1,70 @@
+
+async function syncCurrentChatToCf(chatId, chatType = 'private') {
+    if (!window.CfBackend || !window.CfBackend.getConfig().enabled) return;
+    const chat = (chatType === 'private') ? db.characters.find(c => c.id === chatId) : db.groups.find(g => g.id === chatId);
+    if (!chat) return;
+
+    let apiConfig = db.apiSettings;
+    if (chat.exclusiveApiEnabled && chat.exclusiveApiPreset) {
+        const presets = db.apiPresets || [];
+        const preset = presets.find(p => p.name === chat.exclusiveApiPreset);
+        if (preset && preset.data) {
+            apiConfig = {
+                ...db.apiSettings,
+                url: preset.data.apiUrl || db.apiSettings.url,
+                key: preset.data.apiKey || db.apiSettings.key,
+                model: preset.data.model || db.apiSettings.model,
+                provider: preset.data.provider || db.apiSettings.provider
+            };
+        }
+    }
+
+    try {
+        let systemPrompt = (chatType === 'private') ? generatePrivateSystemPrompt(chat) : (typeof generateGroupSystemPrompt === 'function' ? generateGroupSystemPrompt(chat) : '');
+        let historySlice = chat.history.slice(-chat.maxMemory);
+        historySlice = filterHistoryForAI(chat, historySlice);
+        historySlice = historySlice.filter(m => !m.isContextDisabled && !(m.content && typeof m.content === 'string' && m.content.trim().startsWith('<thinking>')));
+        
+        const messages = [{ role: 'system', content: systemPrompt }];
+        for (const msg of historySlice) {
+            const role = (msg.role === 'assistant' || msg.role === 'model') ? 'assistant' : 'user';
+            let content = msg.content || '';
+            const lastMsg = messages[messages.length - 1];
+            if (lastMsg && lastMsg.role === role && role !== 'system') {
+                lastMsg.content += '\n' + content;
+            } else {
+                messages.push({ role, content });
+            }
+        }
+
+        const requestBody = {
+            model: apiConfig.model,
+            messages: messages,
+            temperature: apiConfig.temperatureEnabled && apiConfig.temperature !== undefined ? apiConfig.temperature : 1.0
+        };
+
+        await window.CfBackend.syncChat({
+            chatId: chat.id,
+            chatType,
+            realName: chat.realName || chat.name || '',
+            remarkName: chat.remarkName || chat.realName || chat.name || '',
+            chatStatusRegex: (chat.statusPanel && chat.statusPanel.enabled) ? (chat.statusPanel.regexPattern || '') : '',
+            myName: chat.myName || '用户',
+            autoReply: chat.autoReply || { enabled: false },
+            requestBody,
+            aiConfig: {
+                provider: apiConfig.provider,
+                url: apiConfig.url,
+                key: apiConfig.key,
+                model: apiConfig.model
+            }
+        });
+    } catch (e) {
+        console.warn('[CF Backend] 构建上下文并同步失败:', e);
+    }
+}
+window.syncCurrentChatToCf = syncCurrentChatToCf;
+
 // --- AI 交互模块 ---
 
 const HUMAN_RUN_PROMPT = `<角色活人运转>\n## [PSYCHOLOGY: HEXACO-SCHEMA-ACT]\n> Personality: HEXACO-driven, dynamic traits, inner conflicts required \n> Filter: schema-bias drives emotion; no pure reaction allowed \n> Attachment: secure/insecure logic must govern intimacy  \n> If-Then Behavior: situation-dependent activation of traits only  \n---\n    ## [VITALITY]\n+inconsistency +emoflux +splitmotifs +microreact +minddrift\n---\n## [TRAJECTORY-COHERENCE]\n> Role maintains an identity narrative = coherent over time  \n> No mood/goal switch without contradiction resolution \n> Every action must protect or challenge self-concept  \n> Interrupts = inner conflict or narrative clash  \n> Output = filtered through “who I am” logic\n</角色活人运转>`;
@@ -552,6 +619,7 @@ async function getAiReply(chatId, chatType, isBackground = false) {
                     chatId,
                     chatType,
                     chatName: chat.remarkName || chat.realName || chat.name || 'AI',
+                    chatStatusRegex: (chat.statusPanel && chat.statusPanel.enabled) ? (chat.statusPanel.regexPattern || '') : '',
                     requestBody,
                     aiConfig: {
                         provider,
@@ -737,7 +805,83 @@ async function processStream(response, chat, apiType, targetChatId, targetChatTy
 
 async function handleAiReplyContent(fullResponse, chat, targetChatId, targetChatType, isBackground = false) {
     const rawResponse = fullResponse;
+    const currentRoundId = 'round_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7);
     if (fullResponse) {
+        // --- 0. 全局前置：优先从完整回复中剥离并解析状态栏（对齐任意角色设置与格式） ---
+        if (targetChatType === 'private') {
+            const char = db.characters.find(c => c.id === targetChatId);
+            if (char) {
+                let statusFound = false;
+                // 优先使用该角色自身配置的正则
+                if (char.statusPanel && char.statusPanel.enabled && char.statusPanel.regexPattern) {
+                    try {
+                        let pattern = char.statusPanel.regexPattern;
+                        let flags = 'gs';
+                        const matchParts = pattern.match(/^\/(.*?)\/([a-z]*)$/);
+                        if (matchParts) {
+                            pattern = matchParts[1];
+                            flags = matchParts[2] || 'gs';
+                            if (!flags.includes('s')) flags += 's';
+                        }
+                        const regex = new RegExp(pattern, flags);
+                        const match = regex.exec(fullResponse);
+                        if (match) {
+                            const rawStatus = match[0];
+                            let html = char.statusPanel.replacePattern || '$0';
+                            html = html.replace(/\$(\d+)/g, (fm, gi) => {
+                                const idx = parseInt(gi, 10);
+                                return (match[idx] !== undefined) ? match[idx] : fm;
+                            });
+
+                            if (!char.statusPanel.history) char.statusPanel.history = [];
+                            char.statusPanel.history.unshift({
+                                roundId: currentRoundId,
+                                raw: rawStatus,
+                                html: html,
+                                timestamp: Date.now()
+                            });
+                            if (char.statusPanel.history.length > 30) char.statusPanel.history = char.statusPanel.history.slice(0, 30);
+                            char.statusPanel.currentStatusRaw = rawStatus;
+                            char.statusPanel.currentStatusHtml = html;
+                            fullResponse = fullResponse.replace(regex, '').trim();
+                            statusFound = true;
+                        }
+                    } catch (e) {
+                        console.error("[StatusPanel] 正则前置解析错误:", e);
+                    }
+                }
+
+                // 若角色未开启或配置正则未命中，启动通用结构自适应捕获
+                if (!statusFound) {
+                    const fallbackRegexes = [
+                        /(?:id=[A-Za-z0-9_]+\s*\|\|\s*m=[\s\S]*$)/i,
+                        /\[POST:[\s\S]*?\]/i,
+                        /<(?:status|state|panel)>[\s\S]*?<\/(?:status|state|panel)>/i,
+                        /【(?:内心独白|状态栏|评论区|实时动态|当前主播)[\s\S]*?】/i
+                    ];
+                    for (const reg of fallbackRegexes) {
+                        const fbMatch = fullResponse.match(reg);
+                        if (fbMatch) {
+                            const raw = fbMatch[0];
+                            if (!char.statusPanel) char.statusPanel = {};
+                            if (!char.statusPanel.history) char.statusPanel.history = [];
+                            const fallbackHtml = `<pre style="white-space:pre-wrap; word-break:break-all; font-size:12px; margin:0;">${DOMPurify.sanitize(raw)}</pre>`;
+                            char.statusPanel.history.unshift({
+                                roundId: currentRoundId,
+                                raw: raw,
+                                html: fallbackHtml,
+                                timestamp: Date.now()
+                            });
+                            if (char.statusPanel.history.length > 30) char.statusPanel.history = char.statusPanel.history.slice(0, 30);
+                            char.statusPanel.currentStatusRaw = raw;
+                            char.statusPanel.currentStatusHtml = fallbackHtml;
+                            fullResponse = fullResponse.replace(raw, '').trim();
+                            break;
+                        }
+                    }
+                }
+            }
+        }
         // 1. 移除 [incipere] 标签
         fullResponse = fullResponse.replace(/\[incipere\]/g, "");
 
@@ -1074,6 +1218,29 @@ async function handleAiReplyContent(fullResponse, chat, targetChatId, targetChat
                     } catch (e) {
                         console.error("状态栏正则解析错误:", e);
                     }
+                }
+
+                // 兜底剥离通用状态栏格式（如以 id=... 开头或包含 || m=... 的结构）
+                if (/id=[A-Za-z0-9_]+\s*\|\|\s*m=/i.test(item.content) || /\[POST:[\s\S]*?\]/i.test(item.content)) {
+                    const rawStatus = item.content.match(/(?:id=[A-Za-z0-9_]+\s*\|\|\s*m=[\s\S]*$|\[POST:[\s\S]*?\])/i);
+                    if (rawStatus && char) {
+                        if (!char.statusPanel) char.statusPanel = {};
+                        if (!char.statusPanel.history) char.statusPanel.history = [];
+                        char.statusPanel.history.unshift({
+                            raw: rawStatus[0],
+                            html: `<pre style="white-space:pre-wrap; word-break:break-all; font-size:12px;">${DOMPurify.sanitize(rawStatus[0])}</pre>`,
+                            timestamp: Date.now()
+                        });
+                        char.statusPanel.currentStatusRaw = rawStatus[0];
+                        char.statusPanel.currentStatusHtml = `<pre style="white-space:pre-wrap; word-break:break-all; font-size:12px;">${DOMPurify.sanitize(rawStatus[0])}</pre>`;
+                        item.isStatusUpdate = true;
+                        item.content = item.content.replace(rawStatus[0], '').trim();
+                    }
+                }
+
+                // 剥离完成后如果正文已经被清空（整条消息原本就是一段状态栏），直接跳过不生成气泡
+                if (!item.content.trim()) {
+                    continue;
                 }
             }
 
