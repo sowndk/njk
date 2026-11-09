@@ -1,3 +1,6 @@
+// Service Worker with cache busting
+const CACHE_NAME = 'uwu-push-v2';
+
 self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
@@ -6,11 +9,8 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
 });
 
-self.addEventListener('fetch', (event) => {
-  return;
-});
-
 self.addEventListener('push', (event) => {
+  console.log('[SW] Push received:', event);
   let data = {};
   if (event.data) {
     try {
@@ -19,12 +19,12 @@ self.addEventListener('push', (event) => {
       data = { body: event.data.text() };
     }
   }
-
+  
   const title = data.title || 'UwU 新消息';
   const options = {
     body: data.body || '',
-    icon: data.icon || './icons/icon-192.png',
-    badge: data.badge || './icons/icon-192.png',
+    icon: './icons/icon-192.png',
+    badge: './icons/icon-192.png',
     tag: data.tag || ('uwu-msg-' + Date.now()),
     data: {
       url: data.url || './',
