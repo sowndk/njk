@@ -601,9 +601,10 @@ function initCfBackendSettings() {
             try {
                 btnTestPush.disabled = true;
                 btnTestPush.textContent = '发送中…';
-
-await window.CfBackend.testPush();
-                if (typeof showToast === 'function') showToast('测试通知已发出，请查看系统通知栏');
+                if (window.Notification) { await Notification.requestPermission(); }
+                const res = await window.CfBackend.testPush();
+                if (navigator.serviceWorker && Notification.permission === 'granted') { const reg = await navigator.serviceWorker.ready; reg.showNotification('UwU 通知通道畅通', { body: '你的手机通知权限与 Service Worker 完全正常！', icon: './icons/icon-192.png' }); }
+                alert('云端返回: ' + JSON.stringify(res));
             } catch (e) {
                 alert('发送测试通知失败: ' + (e.message || e));
             } finally {

@@ -562,12 +562,12 @@ async function getAiReply(chatId, chatType, isBackground = false) {
                 });
                 console.log('[CF Backend] 任务提交成功:', cfResult);
                 
-                // 收到任务后如果是前台，开始轮询等待完成
+                // 收到任务后如果是前台，开始快速轮询等待完成
                 if (cfResult && cfResult.jobId) {
                     const cfg = window.CfBackend.getConfig();
                     const cleanUrl = cfg.workerUrl.trim().replace(/\/+$/, '').replace(/\/setup\/?$/, '');
                     let attempts = 0;
-                    const maxAttempts = 60; // 5分钟
+                    const maxAttempts = 120; // 3分钟 (1.5s * 120)
                     const pollInterval = setInterval(async () => {
                         attempts++;
                         try {
@@ -578,9 +578,22 @@ async function getAiReply(chatId, chatType, isBackground = false) {
                                 const jobData = await jobRes.json();
                                 if (jobData && jobData.job && (jobData.job.status === 'completed' || jobData.job.response)) {
                                     clearInterval(pollInterval);
-                                    const replyText = jobData.job.response || '';
+                                    const rawResp = jobData.job.response;
+                                    let replyText = '';
+                                    if (typeof rawResp === 'string') {
+                                        replyText = rawResp;
+                                    } else if (rawResp && typeof rawResp === 'object') {
+                                        replyText = rawResp.choices?.[0]?.message?.content || rawResp.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                                    }
                                     if (replyText) {
-                                        await handleAiReplyContent(replyText, chat, chatId, chatType, isBackground);
+                                        // 防止与 visibilitychange 的 pullMessages 重复处理
+                                        const isAlreadyHandled = chat.history && chat.history.some(m => m.cfJobId === cfResult.jobId);
+                                        if (!isAlreadyHandled) {
+                                            await handleAiReplyContent(replyText, chat, chatId, chatType, isBackground);
+                                            if (chat.history && chat.history.length > 0) {
+                                                chat.history[chat.history.length - 1].cfJobId = cfResult.jobId;
+                                            }
+                                        }
                                         // 确认应答释放云端存储
                                         await fetch(`${cleanUrl}/v1/ai/jobs/${cfResult.jobId}?action=ack`, {
                                             method: 'POST',
@@ -597,7 +610,7 @@ async function getAiReply(chatId, chatType, isBackground = false) {
                             console.warn('[CF Backend] 轮询任务状态出错', err);
                         }
                         if (attempts >= maxAttempts) clearInterval(pollInterval);
-                    }, 5000);
+                    }, 1500);
                 }
                 return; // 后台已托管，前台直接返回
             } catch (cfErr) {
@@ -1037,29 +1050,26 @@ async function handleAiReplyContent(fullResponse, chat, targetChatId, targetChat
     });
 
 
-                        // Save to history
                         if (!char.statusPanel.history) char.statusPanel.history = [];
                         
-                        // Add new status to the beginning
+                        // 记录本轮快照，关联轮次
                         char.statusPanel.history.unshift({
                             raw: rawStatus,
                             html: html,
                             timestamp: Date.now()
                         });
 
-                        // Keep only last 20 items
-                        if (char.statusPanel.history.length > 20) {
-                            char.statusPanel.history = char.statusPanel.history.slice(0, 20);
+                        // Keep only last 30 items
+                        if (char.statusPanel.history.length > 30) {
+                            char.statusPanel.history = char.statusPanel.history.slice(0, 30);
                         }
 
                         char.statusPanel.currentStatusRaw = rawStatus;
                         char.statusPanel.currentStatusHtml = html;
                         
                         item.isStatusUpdate = true;
-                        item.statusSnapshot = {
-                            regex: pattern,
-                            replacePattern: char.statusPanel.replacePattern
-                        };
+                        // 【物理截断】从气泡正文中彻底剥离，气泡永不存储或显示状态栏代码
+                        item.content = item.content.replace(regex, '').trim();
                         }
                     } catch (e) {
                         console.error("状态栏正则解析错误:", e);
