@@ -313,7 +313,8 @@ async function checkAutoReply() {
             }
 
             // 4. 失败退避策略 (1m -> 3m -> 15m)
-            if (!success) {
+            // 如果已启用 Cloudflare 后台服务，任务已由 Worker 接管或在排队，不当作本地即时失败处理
+            if (!success && (!window.CfBackend || !window.CfBackend.getConfig().enabled)) {
                 const failCount = (char.autoReply.failureCount || 0) + 1;
                 char.autoReply.failureCount = failCount;
                 const backoffMinutes = failCount === 1 ? 1 : (failCount === 2 ? 3 : 15);
